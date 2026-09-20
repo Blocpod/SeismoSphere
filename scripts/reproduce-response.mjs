@@ -1,0 +1,11 @@
+import {readFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+import {hash} from '../server/store.mjs';
+import {instrumentSourceValid} from '../server/instruments.mjs';
+import {instrumentResponse} from '../server/response.mjs';
+import {spectrumWindow} from '../public/spectrum-data.js';
+import {waveformUtc} from '../public/waveform-geometry.js';
+const {record,source,response}=JSON.parse(readFileSync(process.argv[2]??'artifacts/chromium-response.json','utf8'));
+for(const r of [record,source,response]){const {id,...body}=r;assert.equal(hash(body),id);}assert.equal(instrumentSourceValid(source),true);assert.equal(instrumentSourceValid(response),true);
+const selection=spectrumWindow(source,{...record.query,window:'boxcar'}),result=await instrumentResponse({operation:'correct',xmlBase64:response.raw,station:source.station,startUtc:waveformUtc(source.query.start*1000),endUtc:waveformUtc(source.query.end*1000),selectionStartUtc:waveformUtc(selection.firstSampleUs),values:selection.values,sampleRateHz:selection.run.sampleRateHz,options:record.query});
+assert.deepEqual(result.values,record.segments[0].samples.map(s=>s[1]));assert.deepEqual(result.responseCurve,record.responseCurve);assert.deepEqual(result.implementation,record.implementation);console.log(JSON.stringify({id:record.id,source:source.id,response:response.id,samples:result.values.length,units:result.units,allSamplesExact:true,transferCurveExact:true}));

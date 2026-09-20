@@ -1,0 +1,8 @@
+data/
+logs/
+node_modules/
+artifacts/
+.env
+public/vendor/
+public/assets/
+__pycache__/

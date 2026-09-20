@@ -1,0 +1,15 @@
+import {readFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {basename} from 'node:path';
+const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
+let pending;
+export function slabSurfaces(){return pending??=readFile('config/slab-surfaces.json','utf8').then(JSON.parse).catch(e=>{pending=null;throw e;});}
+export async function slabSource(id,field){const data=await slabSurfaces(),region=data.regions.find(r=>r.id===id),source=field==='supplement'?region?.supplement?.source:region?.sourceFiles.find(f=>f.name.includes('_'+field+'_'));if(!source||!['dep','unc','dip','str','thk','supplement'].includes(field))throw new Error('Unknown Slab2 source file.');const bytes=await readFile('data/geology/slab2-volume/text/'+basename(source.name));if(sha(bytes)!==source.sha256)throw new Error('Slab2 source integrity mismatch.');return {bytes,name:basename(source.name)};}
+export async function slabSample(id,point,asOf){
+ const metadata=await slabSurfaces(),region=metadata.regions.find(r=>r.id===id);if(!region)throw new Error('Unknown Slab2 region.');if(!Number.isFinite(asOf)||asOf<Date.parse(metadata.source.receivedAt))throw new Error('Slab2 source was received after this observation cutoff.');
+ const lat=point?.lat,lon=point?.lon;if(!Number.isFinite(lat)||Math.abs(lat)>90||!Number.isFinite(lon)||Math.abs(lon)>180)throw new Error('Invalid Slab2 sample coordinates.');
+ const middle=region.longitudeStart+(region.width-1)*region.step/2,unwrapped=lon+360*Math.round((middle-lon)/360),row=Math.round((lat-region.latitudeStart)/region.step),column=Math.round((unwrapped-region.longitudeStart)/region.step);if(row<0||row>=region.height||column<0||column>=region.width)throw new Error('Point is outside this regional grid.');
+ const bytes=await readFile('public/assets/slab-surfaces/'+region.gridFile);if(sha(bytes)!==region.sha256)throw new Error('Slab2 grid integrity mismatch.');const values=Array.from({length:5},(_,i)=>bytes.readFloatLE(((row*region.width+column)*5+i)*4));
+ const depth=values[0],depthText=Number.isFinite(depth)?depth===0?'at the reference radius':`${depth>0?'below':'above'} the reference radius`:'Depth is missing at this masked grid node';
+ return {region:{id:region.id,name:region.name},query:{lat,lon},depthText,sample:{row,column,lat:region.latitudeStart+row*region.step,lon:region.longitudeStart+column*region.step,depthKm:Number.isFinite(depth)?depth:null,pdfStandardDeviationKm:Number.isFinite(values[1])?values[1]:null,dipDegrees:Number.isFinite(values[2])?values[2]:null,strikeDegrees:Number.isFinite(values[3])?values[3]:null,thicknessKm:Number.isFinite(values[4])?values[4]:null},provenance:{...metadata,regions:undefined,grid:region},policy:'Nearest retained grid node, not an interpolated value or hypocenter. Signed depth is positive downward; depthText gives the selected node’s relation to the reference radius. A masked node has no grid depth; supplements may represent a separate branch. PDF standard deviation is not thickness, an event probability or a calibrated confidence interval. Static reference only; no causal pressure claim.'};
+}

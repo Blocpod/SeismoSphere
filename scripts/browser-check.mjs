@@ -1,0 +1,15 @@
+import {createRequire} from 'node:module';
+import {mkdirSync,writeFileSync} from 'node:fs';
+const require=createRequire(import.meta.url);
+const {chromium}=require('C:/Users/blocp/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+mkdirSync('artifacts',{recursive:true});
+const browser=await chromium.launch({channel:'chrome',headless:true,args:['--enable-webgl','--ignore-gpu-blocklist']});
+const page=await browser.newPage({viewport:{width:1536,height:1024},deviceScaleFactor:1});
+const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+await page.goto('http://127.0.0.1:4318');await page.locator('.event-row').first().waitFor({timeout:30000});await page.waitForTimeout(1500);await page.screenshot({path:'artifacts/desktop.png'});
+console.log(JSON.stringify({events:await page.locator('.event-row').count(),watches:await page.locator('.forecast-row').count(),errors,canvas:await page.locator('canvas').count()}));
+await page.getByRole('button',{name:'Deep',exact:true}).click();await page.locator('.event-row').first().click();await page.screenshot({path:'artifacts/deep-event.png'});
+await page.getByRole('button',{name:'Close selection'}).click();await page.locator('.forecast-row').first().click();await page.screenshot({path:'artifacts/reasoning.png'});
+await page.getByRole('button',{name:'Close selection'}).click();await page.getByRole('button',{name:'Settings',exact:true}).click();await page.locator('#provider-status').filter({hasText:'Codex:'}).waitFor({timeout:15000});console.log('Providers:',await page.locator('#provider-status').textContent());await page.getByRole('button',{name:'Close settings'}).click();
+await page.setViewportSize({width:390,height:844});await page.locator('[data-mobile="earth"]').click();await page.waitForTimeout(1000);await page.screenshot({path:'artifacts/mobile.png'});console.log('Mobile overflow:',await page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,width:innerWidth,scrollHeight:document.documentElement.scrollHeight,height:innerHeight})));await page.locator('[data-mobile="events"]').click();await page.screenshot({path:'artifacts/mobile-events.png'});
+writeFileSync('artifacts/browser-errors.json',JSON.stringify(errors,null,2));await browser.close();

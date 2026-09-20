@@ -1,0 +1,46 @@
+{
+  "type": "object",
+  "properties": {
+    "answer": {
+      "type": "string"
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "deep",
+          "all",
+          "paths",
+          "forecasts",
+          "xray",
+          "surface",
+          "pacific",
+          "global",
+          "ledger",
+          "research",
+          "explain",
+          "counterevidence",
+          "faults",
+          "stations",
+          "scientific",
+          "cinematic",
+          "volcanoes",
+          "cratons",
+          "gnss",
+          "relief",
+          "slabSurfaces",
+          "volcanoActivity",
+          "weeklyVolcanoes",
+          "hemisphere",
+          "wedge"
+        ]
+      }
+    }
+  },
+  "required": [
+    "answer",
+    "actions"
+  ],
+  "additionalProperties": false
+}

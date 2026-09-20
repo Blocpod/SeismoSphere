@@ -1,0 +1,20 @@
+import {createRequire} from 'node:module';
+import {readFileSync,writeFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+const engines=createRequire(import.meta.url)('C:/Users/blocp/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright'),reports=[];
+for(const engine of ['chromium','webkit']){
+ const browser=await engines[engine].launch({headless:true,...(engine==='chromium'?{channel:'chrome'}:{})}),page=await browser.newPage({viewport:{width:1536,height:1024}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ try{
+  await page.goto('http://127.0.0.1:4318');await page.locator('.event-row').first().waitFor();const before=await(await page.request.get('http://127.0.0.1:4318/api/status')).json();await page.getByRole('button',{name:'Research lab',exact:true}).click();await page.locator('.randomization-lab').scrollIntoViewIfNeeded();
+  const creating=page.waitForResponse(r=>r.url().endsWith('/api/randomization-run'));await page.locator('#randomization-form button').click();const response=await creating,created=await response.json();assert.equal(response.status(),202,JSON.stringify(created));const id=created.id;writeFileSync('artifacts/randomization-active.json',JSON.stringify({id,engine,created},null,2));
+  if(created.status!=='completed'){
+   await page.waitForFunction(()=>Number(document.querySelector('#randomization-progress').value)>=2,{},{timeout:120000});await page.locator('#randomization-pause').click();await page.locator('#randomization-status').filter({hasText:'PAUSED'}).waitFor();const paused=await(await page.request.get('http://127.0.0.1:4318/api/randomization-job?id='+id)).json();assert.ok(paused.completed>=2&&paused.completed<99);await page.screenshot({path:`artifacts/${engine}-randomization-paused.png`});await page.locator('#randomization-resume').click();
+  }
+  await page.locator('#randomization-status').filter({hasText:'COMPLETED'}).waitFor({timeout:600000});await page.locator('#randomization-result svg').waitFor();const job=await(await page.request.get('http://127.0.0.1:4318/api/randomization-job?id='+id)).json();assert.equal(job.completed,99);assert.equal(job.report.replicates.length,99);assert.ok(job.report.comparison.monteCarloTail>=.01);assert.match(await page.locator('#randomization-result').innerText(),/not a confidence interval/);
+  const download=page.waitForEvent('download');await page.getByRole('link',{name:'Export report + exact inputs ↓',exact:true}).click();const filename=`artifacts/${engine}-randomization.json`;await(await download).saveAs(filename);const exported=JSON.parse(readFileSync(filename,'utf8'));assert.deepEqual(exported.integrity,{inputValid:true,snapshotValid:true,reportValid:true});assert.equal(exported.report.id,id);assert.equal(exported.input.options.seed,71);assert.equal(exported.input.options.blockDays,7);assert.ok(exported.snapshot.events.every(e=>e.time<=exported.report.options.end));
+  await page.locator('#randomization-result svg').scrollIntoViewIfNeeded();await page.screenshot({path:`artifacts/${engine}-randomization-result.png`});const layouts=[];
+  for(const [width,height]of [[320,740],[390,844],[768,1024],[844,390]]){await page.setViewportSize({width,height});await page.locator('#randomization-result svg').scrollIntoViewIfNeeded();const size=await page.locator('#research-dialog').evaluate(e=>({client:e.clientWidth,scroll:e.scrollWidth}));assert.ok(size.scroll<=size.client+1,JSON.stringify({width,...size}));layouts.push({width,height,...size});await page.screenshot({path:`artifacts/${engine}-randomization-${width}.png`});}
+  const after=await(await page.request.get('http://127.0.0.1:4318/api/status')).json();assert.deepEqual(after.integrity,before.integrity);assert.deepEqual(errors,[]);reports.push({engine,id,observed:job.report.observed.summary,comparison:job.report.comparison,ledgerUnchanged:true,layouts,errors});
+ }finally{await browser.close();}
+}
+writeFileSync('artifacts/randomization-browser-report.json',JSON.stringify(reports,null,2));console.log(JSON.stringify(reports));

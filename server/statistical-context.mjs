@@ -1,0 +1,5 @@
+export function statisticalContext(report,asOf,horizonDays=7){
+  if(report.fit.options.end>asOf)throw new Error('Statistical training ends after the analysis cutoff');
+  const fit=report.fit,map=report.projection.maps.find(m=>m.days===horizonDays);if(!map)throw new Error('Choose a saved statistical horizon');
+  return structuredClone({id:report.id,version:fit.version,options:fit.options,parameters:fit.parameters,region:fit.region,training:{events:fit.training.events,conditioningEvents:fit.training.conditioningEvents},diagnostics:{converged:fit.fit.optimizerConverged,boundaries:fit.fit.boundaryParameters,logLikelihood:fit.fit.logLikelihood,starts:fit.fit.starts,kdeBandwidthKm:fit.fit.kde.bandwidthKm},projection:{horizonDays,units:report.projection.units,totalDirectIntensity:map.totalDirectIntensity,maximumCellIntensity:Math.max(...map.cells),size:report.projection.size,method:report.projection.method},holdout:report.holdout&&report.holdout.end<=asOf?{...report.holdout,eventIds:undefined}:null,holdoutPolicy:'Holdout results are withheld until their end time is at or before the analysis cutoff.',limitations:fit.limitations,catalogMode:report.catalogMode});
+}

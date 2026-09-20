@@ -1,0 +1,20 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {Store} from '../server/store.mjs';
+import {GNSS,parseMidas,gnssEvidence,gnssFrame} from '../server/gnss.mjs';
+import {velocityArrow} from '../public/gnss-geometry.js';
+import {commandActions} from '../server/ai.mjs';
+test('GNSS arrow geometry preserves EN direction and explicitly caps display lengths without changing velocities',()=>{
+ const east=velocityArrow({lat:0,lon:0,eastMyr:.05,northMyr:0}),north=velocityArrow({lat:0,lon:0,eastMyr:0,northMyr:.05});assert.equal(east.lengthKm,200);assert.ok(east.segments[7][2]<0);assert.equal(east.segments[7][1],0);assert.ok(north.segments[7][1]>0);const source={lat:89.9,lon:179.9,eastMyr:99.999999,northMyr:-2},copy={...source},capped=velocityArrow(source);assert.equal(capped.capped,true);assert.equal(capped.lengthKm,500);assert.deepEqual(source,copy);assert.ok(capped.segments.flat().every(Number.isFinite));for(const p of capped.segments)assert.ok(Math.abs(Math.hypot(...p)-1.006)<1e-12);assert.equal(velocityArrow({lat:0,lon:0,eastMyr:0,northMyr:0}).segments.length,0);assert.throws(()=>velocityArrow({lat:100,lon:0,eastMyr:1,northMyr:1}));
+});
+const line='P090 MIDAS5 2007.8576 2026.6585 18.8009 6746 5287 8651 -0.020291 -0.005902 -0.000824 0.000170 0.000154 0.000593 12.6215 4382097.1776 1503.6608 0.087 0.078 0.062 0.002006 0.001823 0.007103 9 39.5728031105 -119.7998549084 1503.65396';
+test('GNSS parser preserves units, source longitude, reported uncertainties and anomalous fit epochs',()=>{
+ assert.deepEqual(commandActions('Explain this GNSS velocity',{gnssEvidence:{}}),[]);assert.deepEqual(commandActions('Show this GNSS station',{gnssEvidence:{}}),['gnss']);const s=parseMidas(line)[0];assert.equal(s.velocityMyr.east*1000,-20.291);assert.equal(s.uncertaintyMyr.up*1000,.593);assert.equal(s.validFitInterval,true);assert.equal(parseMidas(line,'IGS20',Date.UTC(2026,0,1))[0].validFitInterval,false);assert.equal(parseMidas(line,'IGS20',Date.UTC(2026,8,13))[0].validFitInterval,true);assert.equal(parseMidas(line.replace('-119.7998549084','-229.1560119207'))[0].lon,130.8439880793);assert.equal(parseMidas(line.replace('2007.8576','0.0099'))[0].validFitInterval,false);assert.equal(parseMidas(line.replace('P090','MN__'))[0].id,'MN__');assert.throws(()=>parseMidas(line+'\n'+line),/duplicate/);assert.throws(()=>parseMidas(line.replace('0.000170','NaN')),/27 documented fields/);assert.throws(()=>parseMidas(line.replace('0.000170','-1')),/Invalid MIDAS values/);assert.throws(()=>gnssFrame('../../secret'));assert.equal(parseMidas(line.replace('-0.020291','99.999999'))[0].velocityMyr.east,99.999999);
+});
+test('GNSS raw receipts are immutable and repeat data reuse its first reception cutoff',async()=>{
+ const store=new Store(path.join(mkdtempSync(path.join(tmpdir(),'seismo-gnss-')),'test.sqlite')),gnss=new GNSS(store),receipt={url:'https://geodesy.unr.edu/gps_timeseries/IGS20/midas/midas.IGS.txt',fetchedAt:Date.now(),lastModified:null};
+ try{const summary=gnss.save(line,'IGS20',receipt),record=gnss.get(summary.id);assert.equal(record.stations.length,1);assert.equal(gnss.save(line,'IGS20',{...receipt,fetchedAt:Date.now()+1000}).reused,true);assert.equal(gnss.list().length,1);assert.equal(gnss.get(summary.id).createdAt,summary.createdAt);assert.throws(()=>gnss.save(line,'NA',receipt),/does not match/);assert.throws(()=>gnssEvidence(record,'P090',record.createdAt-1),/cutoff/);assert.throws(()=>gnssEvidence(record,'MISS',record.createdAt),/not present/);assert.equal(gnssEvidence(record,'P090',record.createdAt).station.frame,'IGS20');assert.throws(()=>gnssEvidence({...record,stations:[{...record.stations[0],fitAvailableAtReceipt:false}]},'P090',record.createdAt),/fit end/);assert.throws(()=>store.db.exec('DELETE FROM gnss_receipts'),/immutable/);assert.throws(()=>store.db.exec("UPDATE gnss_receipts SET body='{}'"),/immutable/);assert.equal(store.ledger().length,0);await gnss.shutdown();}finally{store.close();}
+});

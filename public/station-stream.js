@@ -1,0 +1,32 @@
+import {waveformUtc} from './waveform-geometry.js';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const name=c=>[c.network,c.station,c.location||'--',c.channel].join('.');
+export class StationStream{
+ constructor(host){
+  this.host=host;this.token=0;this.root=document.createElement('section');this.root.id='station-stream';this.root.innerHTML=`<h3>Continuous station feed</h3><p class="muted">Start one channel on this PC. Acquisition continues when this dialog closes, until Stop or the app exits. Keep up to 15 minutes / 250,000 samples in memory; capture a recording to retain its original packets.</p><div class="instrument-downloads"><button id="stream-start" class="primary" disabled>Start selected channel</button><button id="stream-stop" class="secondary" disabled>Stop feed</button><button id="stream-capture" class="secondary" disabled>Capture recording</button></div><p id="stream-status" role="status">No connection is started automatically.</p><p id="stream-action" role="status"></p><div id="stream-preview"></div>`;host.dialog.querySelector('#waveform-panel').before(this.root);
+  this.root.querySelector('#stream-start').onclick=()=>this.act('station-stream-start',{stationRecordId:host.record?.id,channelId:host.channel?.id});
+  this.root.querySelector('#stream-stop').onclick=()=>this.act('station-stream-stop',{});
+  this.root.querySelector('#stream-capture').onclick=()=>this.act('station-stream-capture',{});
+  let lastWidth=0;new ResizeObserver(entries=>{const width=entries[0].contentRect.width;if(width>0&&width!==lastWidth){lastWidth=width;this.render();}}).observe(this.root);host.dialog.addEventListener('close',()=>{clearTimeout(this.timer);});document.addEventListener('visibilitychange',()=>{clearTimeout(this.timer);if(!document.hidden&&host.dialog.open)this.refresh();});
+ }
+ async act(endpoint,input){
+  if(this.busy)return;const token=++this.token,serial=this.host.waveSerial;this.busy=true;this.render();const message=this.root.querySelector('#stream-action');message.textContent='Working…';
+  try{const result=await this.host.api(endpoint,input);if(token!==this.token)return;if(endpoint==='station-stream-capture'){message.textContent=`${result.summary.samples.toLocaleString()} samples saved with original source packets.`;await this.host.refreshHistory();if(serial===this.host.waveSerial)await this.host.loadSavedWave(result);}else{this.data=result;message.textContent=endpoint==='station-stream-start'?'Connecting to EarthScope…':'Stop requested; retained samples can still be captured.';}}
+  catch(error){message.textContent=error.message;}finally{this.busy=false;this.render();this.refresh();}
+ }
+ async refresh(){
+  clearTimeout(this.timer);if(this.polling||document.hidden||!this.host.dialog.open)return;this.polling=true;const token=this.token;
+  try{const result=await this.host.api('station-stream?preview=1');if(token===this.token){this.data=result;this.render();}}
+  catch(error){if(token===this.token)this.root.querySelector('#stream-status').textContent='Feed status unavailable: '+error.message;}
+  finally{this.polling=false;if(this.host.dialog.open&&!document.hidden)this.timer=setTimeout(()=>this.refresh(),2000);}
+ }
+ render(){
+  const d=this.data,state=this.host.getState(),live=state.live&&!state.future,channel=this.host.channel,now=Date.now()*1000,valid=channel&&channel.startUs!==null&&channel.startUs<=now&&(channel.endUs===null||channel.endUs>now),write=this.host.canWrite();
+  this.root.querySelector('#stream-start').disabled=this.busy||!write||!live||!valid||!d||d.active||d.state==='stopping';this.root.querySelector('#stream-stop').disabled=this.busy||!write||!d?.active;this.root.querySelector('#stream-capture').disabled=this.busy||!write||!d?.samples||!live;
+  const preview=this.root.querySelector('#stream-preview'),status=this.root.querySelector('#stream-status');if(!d){status.textContent=valid?'Open this dialog to check feed status.':'Select a channel with a metadata epoch valid now.';return;}
+  status.textContent=`${d.channel?name(d.channel)+' · ':''}${d.state.toUpperCase()}${d.stale?' · STALE': ''}${d.sourceClockAhead?' · SOURCE CLOCK AHEAD':''} · ${d.samples.toLocaleString()} retained samples / ${d.packets} packets. ${d.lastReceipt?`Last receipt ${d.receiptAgeSeconds.toFixed(1)} s ago; newest source sample age ${d.sourceAgeSeconds.toFixed(1)} s.`:'No samples received.'} ${d.reconnects} reconnects; ${d.duplicates} duplicate packets omitted; ${d.evictedPackets} evicted.${d.error?' '+d.error:''}${!live?' Replay: current feed preview and acquisition controls are withheld. Any running host feed continues; Stop remains available.':!valid?' Load current metadata and select a valid channel to start.':''}`;
+  if(!live){preview.innerHTML='<p class="muted">Return Earth to Live to inspect current station data. Saved recordings follow the replay cutoff.</p>';return;}
+  const p=d.preview;if(!p){preview.replaceChildren();return;}const width=Math.max(240,Math.min(700,this.root.clientWidth)),left=55,right=width-12,range=Math.max(1,p.summary.max-p.summary.min),duration=Math.max(1,p.endUs-p.startUs),x=t=>left+(t-p.startUs)/duration*(right-left),y=v=>155-(v-p.summary.min)/range*115;
+  preview.innerHTML=`<p class="muted">Preview: ${p.summary.samples.toLocaleString()} most recently retained samples in ${p.summary.segments} packets; ${p.summary.gapTransitions} gap transitions, ${p.summary.overlapTransitions} overlap transitions. Packet boundaries remain separate. Capture includes the full retained buffer.</p><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} 210" role="img" aria-label="Continuous ${esc(name(d.channel))} raw digital counts preview"><style>text{font:12px Arial,sans-serif;fill:#c5dbdf}</style><rect width="${width}" height="210" fill="#0b1822"/><text x="14" y="22">RAW DIGITAL COUNTS</text><path d="M${left} 35V155H${right}" stroke="#3d5564" fill="none"/>${p.paths.map(points=>`<polyline points="${points.map(([t,v])=>x(t).toFixed(2)+','+y(v).toFixed(2)).join(' ')}" stroke="#9de6d4" stroke-width="1" fill="none"/>`).join('')}<text x="5" y="45">${p.summary.max.toExponential(1)}</text><text x="5" y="155">${p.summary.min.toExponential(1)}</text><text x="${left}" y="175">0 s</text><text x="${right-40}" y="175">${(duration/1e6).toFixed(1)} s</text><text x="14" y="197">UTC start ${waveformUtc(p.startUs)}</text></svg>`;
+ }
+}

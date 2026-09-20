@@ -1,0 +1,15 @@
+// Follow the visible UI when an Earth control lives in a native popover.
+export async function clickGlobeControl(page,id){
+  const control=page.locator('#'+id),panel=await control.evaluate(e=>e.closest('[popover]')?.id);
+  if(panel&&!await page.locator('#'+panel).evaluate(e=>e.matches(':popover-open')))await page.locator('#'+panel.replace('-panel','-open')).click();
+  await control.click();
+  if(panel&&await page.locator('#'+panel).evaluate(e=>e.matches(':popover-open')))await page.keyboard.press('Escape');
+}
+
+// Controlled WebXR sessions exercise application behavior, not native devices.
+export async function installControlledSpatialSession(page){
+ await page.evaluate(async()=>{const {Earth}=await import('/globe.js'),animate=Earth.prototype.animate;Earth.prototype.animate=function(...args){window.spatialTestEarth=this;return animate.apply(this,args);};});await page.waitForFunction(()=>window.spatialTestEarth);
+ // Controlled WebXR session and poses exercise the real app and GPU renderer.
+ // They do not emulate stereo optics, native permissions or actual tracking hardware.
+ await page.evaluate(async()=>{const THREE=await import('three');window.spatialTHREE=THREE;const xr=new EventTarget();xr.isSessionSupported=async()=>true;xr.requestSession=async(mode)=>{if(window.spatialReject)throw new Error('Controlled permission denial');const s=new EventTarget();s.end=async()=>s.dispatchEvent(new Event('end'));s.requestReferenceSpace=async()=>({});s.requestHitTestSource=async()=>{const source={cancel(){window.spatialHitCancelled=true;}};if(window.spatialHoldHit)return new Promise(resolve=>window.spatialReleaseHit=()=>resolve(source));return source;};window.spatialTestSession=s;return s;};Object.defineProperty(navigator,'xr',{configurable:true,value:xr});const e=window.spatialTestEarth;const render=e.renderer.render.bind(e.renderer);e.renderer.render=(scene,camera)=>{if(e.spatialView.active){camera.aspect=e.container.clientWidth/e.container.clientHeight;camera.fov=90;camera.updateProjectionMatrix();}render(scene,camera);};e.renderer.xr.setSession=async()=>{};e.renderer.xr.getReferenceSpace=()=>({});const xrCamera=new THREE.PerspectiveCamera(90,e.container.clientWidth/e.container.clientHeight,.01,100);xrCamera.viewport=new THREE.Vector4(0,0,e.container.clientWidth,e.container.clientHeight);e.renderer.xr.getCamera=()=>({cameras:[xrCamera]});e.camera.position.set(0,0,4);e.camera.lookAt(0,0,0);e.targetCamera=null;window.spatialBefore={camera:e.camera.position.toArray(),events:JSON.stringify(e.events),scene:e.scene.matrix.toArray(),controls:e.controls.enabled};window.spatialPose=(x=0,y=0,z=0)=>({transform:{matrix:new THREE.Matrix4().makeTranslation(x,y,z).toArray()}});window.spatialFrame={getViewerPose:()=>window.spatialPose(),getPose:()=>window.spatialPose(0,-.1,0),getHitTestResults:()=>[{getPose:()=>window.spatialPose(0,-.5,-1.8)}]};window.spatialDraw=()=>e.spatialView.render(performance.now(),window.spatialFrame);window.spatialSelect=()=>{const ev=new Event('select');ev.frame=window.spatialFrame;ev.inputSource={targetRaySpace:{}};window.spatialTestSession.dispatchEvent(ev);};});
+}

@@ -1,0 +1,41 @@
+{
+  "schema": "seismosphere.relief.v1",
+  "name": "ETOPO 2022 v1 ice-surface / seafloor relief",
+  "source": "https://www.ngdc.noaa.gov/thredds/dodsC/global/ETOPO2022/60s/60s_surface_elev_netcdf/ETOPO_2022_v1_60s_N90W180_surface.nc.dods?z[4:9:10795][4:9:21595]",
+  "sourceSha256": "655f4b486080aa9983a28ae52a44d3f2f547224dcdcdaa6b439e5861b25a2e8b",
+  "attributesSource": "https://www.ngdc.noaa.gov/thredds/dodsC/global/ETOPO2022/60s/60s_surface_elev_netcdf/ETOPO_2022_v1_60s_N90W180_surface.nc.das",
+  "attributesSha256": "719939e2f21687bbea552e898f3ce0bb7b9a5b25fb781507e2e4e4360f4b61da",
+  "receivedAt": "2026-09-13T13:26:54.164Z",
+  "sha256": "6466f4468cef8942e5bafd4ca1a1d0fb728b221e9bf857e86f6e06a994846a5c",
+  "width": 2400,
+  "height": 1200,
+  "latitudeStart": -89.925,
+  "longitudeStart": -179.925,
+  "latitudeStep": 0.14999999999999147,
+  "longitudeStep": 0.15000000000000568,
+  "encoding": "signed 16-bit little-endian metres; rows south to north, columns west to east",
+  "sourceSubset": {
+    "sourceResolutionArcSeconds": 60,
+    "stride": 9,
+    "startIndex": 4,
+    "method": "One central source cell from each 9×9 block; point decimation, not a block mean.",
+    "displayGridArcMinutes": 9
+  },
+  "minimumM": -10445.2724609375,
+  "maximumM": 7678.34619140625,
+  "maximumQuantizationErrorM": 0.5,
+  "horizontalDatum": "WGS84 geographic coordinates",
+  "verticalDatum": "EGM2008 geoid heights, positive up",
+  "citation": "NOAA National Centers for Environmental Information (2022), ETOPO 2022 15 Arc-Second Global Relief Model",
+  "doi": "https://doi.org/10.25921/fd45-gt74",
+  "homepage": "https://www.ncei.noaa.gov/products/etopo-global-relief-model",
+  "documentation": "https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO2022/docs/1.2%20ETOPO%202022%20User%20Guide.pdf",
+  "terms": "Freely available for private, academic and commercial uses; retain source citation.",
+  "limitations": [
+    "Static composite elevation model, not current terrain, tide or a survey at every cell.",
+    "The 60-arc-second source is itself downsampled from ETOPO 2022 15-arc-second grids.",
+    "The application retains central 9-arc-minute samples and rounds display elevations to the nearest metre; smaller islands, peaks and trenches may be missed.",
+    "EGM2008 heights are rendered radially on a mean-radius sphere, not converted to WGS84 ellipsoid heights.",
+    "Ice-surface variant: Greenland and Antarctic ice heights are shown, not sub-ice bedrock."
+  ]
+}

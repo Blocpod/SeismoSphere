@@ -1,0 +1,12 @@
+import {readFileSync,readdirSync,statSync,writeFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+import {Store} from '../server/store.mjs';
+import {Instruments} from '../server/instruments.mjs';
+import {PhaseAnalysis} from '../server/phase.mjs';
+import {chat} from '../server/ai.mjs';
+const file='artifacts/phase-ai-report.json';
+function verify(rows){for(const row of rows){const r=row.result;assert.deepEqual(r.actions,[]);assert.equal(r.provider,row.provider);if(row.provider==='codex')assert.equal(r.model,'gpt-6-astra');assert.match(r.answer,/iasp91/i);assert.match(r.answer,/\b6\b|six/i);assert.match(r.answer,/manual|operator/i);assert.match(r.answer,/theoretical|modeled|modelled/i);assert.match(r.answer,/later|positive|earlier|preceded/i);assert.match(r.answer,/m\/s²|acceleration/i);assert.match(r.answer,/not|no |unverified/i);}}
+if(process.argv.includes('--verify-saved')){verify(JSON.parse(readFileSync(file,'utf8')));console.log('Saved local/Astra phase explanations verified.');}else{
+ const directory=readdirSync('artifacts').filter(n=>n.startsWith('phase-browser-')&&statSync('artifacts/'+n).isDirectory()).sort((a,b)=>statSync('artifacts/'+b).birthtimeMs-statSync('artifacts/'+a).birthtimeMs)[0],report=JSON.parse(readFileSync('artifacts/phase-browser-report.json')),id=report.find(r=>r.corrected).recordId,store=new Store('artifacts/'+directory+'/test.sqlite'),instruments=new Instruments(store),phases=new PhaseAnalysis(instruments),context={asOf:Date.now(),mode:'catalog-replay',phaseEvidence:{...phases.context(instruments.get(id),Date.now(),'catalog-replay'),acceptanceScope:'The single manual pick was inserted into an isolated software acceptance database. It is not a scientist-confirmed phase.'},candidates:[],selected:null};store.db.close();const {config}=await(await fetch('http://127.0.0.1:4318/api/status')).json(),rows=[];
+ for(const provider of ['ollama','codex']){const result=await chat('Explain the saved phase comparison. State the reference model, total theoretical arrivals, arrivals in the recording interval, saved manual-pick count and amplitude units. Define the residual sign, explain the manual uncertainty and avoid asserting phase detection or source association. This pick is a controlled software fixture.',context,{...config,aiProvider:provider});rows.push({provider,context,result});writeFileSync(file,JSON.stringify(rows,null,2));console.log(JSON.stringify({provider,answer:result.answer}));}verify(rows);
+}

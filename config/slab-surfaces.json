@@ -1,0 +1,1254 @@
+{
+  "schema": "seismosphere.slab-surfaces.v1",
+  "source": {
+    "url": "https://www.sciencebase.gov/catalog/file/get/5aa1b00ee4b0b1c392e86467?f=__disk__d5%2F91%2F39%2Fd591399bf4f249ab49ffec8a366e5070fe96e0ba",
+    "catalog": "https://www.sciencebase.gov/catalog/item/5aa1b00ee4b0b1c392e86467?format=json",
+    "receivedAt": "2026-09-13T14:21:09.658Z",
+    "bytes": 140213438,
+    "sha256": "3f53a835bfff6196eb89912deed131855fc525dc5e1332f2c5459b1e3b9f7b1d"
+  },
+  "citation": "Hayes, G. (2018), Slab2 — A Comprehensive Subduction Zone Geometry Model, USGS data release",
+  "doi": "https://doi.org/10.5066/F7PV6JNV",
+  "publication": "https://doi.org/10.1126/science.aat4723",
+  "license": "CC0 1.0",
+  "gridEncoding": "Float32 little-endian; rows south to north; columns west to east; five interleaved fields: depth km positive down, PDF depth standard deviation km, dip degrees, strike degrees, thickness km. NaN remains masked.",
+  "supplementEncoding": "Float32 little-endian: lon,lat,depth,strike,dip,dz1,dz2,dz3,thickness; source positive depth retained.",
+  "limitations": [
+    "Static published model, not a measured slab boundary or a live observation.",
+    "Grid spacing is retained per region from actual XYZ coordinates; connecting valid adjacent nodes is a display interpolation.",
+    "Four overturned regions also require separate supplied nodes; they are not flattened into a single depth grid.",
+    "Negative signed depth values in the source are retained above the reference radius, not repaired into zero.",
+    "Depth uncertainty is the source PDF standard deviation, not slab thickness or a calibrated confidence interval.",
+    "Heights are placed radially on a mean-radius sphere."
+  ],
+  "regions": [
+    {
+      "id": "alu",
+      "name": "Alaska",
+      "width": 1301,
+      "height": 461,
+      "longitudeStart": 161.0,
+      "latitudeStart": 45.0,
+      "step": 0.05,
+      "gridFile": "alu.bin",
+      "sha256": "39bf2ce3883c3f4300e6c19fb1a8210dcaa0a292a9773c2d16102c35a9bbd751",
+      "bytes": 11995220,
+      "validNodes": 70465,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 1.3996927738189697,
+      "maximumDepthKm": 265.97430419921875,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/alu_slab2_dep_02.23.18.xyz",
+          "bytes": 10239188,
+          "sha256": "d845fcf63d33c111fbf5b734be2e3b38f07394b0449bbeccd08df66020afaa4b"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/alu_slab2_unc_02.23.18.xyz",
+          "bytes": 10168732,
+          "sha256": "3663e6629d57d208fbd78abf9d4594782d49e0cf410f2295417fed7b789446de"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/alu_slab2_dip_02.23.18.xyz",
+          "bytes": 10168614,
+          "sha256": "c6e9c3ed2821b69ab52bfb978bf11b4c71328de724c57f604c96fa48a1071f50"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/alu_slab2_str_02.23.18.xyz",
+          "bytes": 10168861,
+          "sha256": "9944dd63fe38e701aab779ed0c6b6ca9689a1242256550013972274fc82059b4"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/alu_slab2_thk_02.23.18.xyz",
+          "bytes": 10168909,
+          "sha256": "220b5593161269173641366568e615f795437e1e5b9b55aa5d63357a45ad9456"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "cal",
+      "name": "Calabria",
+      "width": 321,
+      "height": 301,
+      "longitudeStart": 8.0,
+      "latitudeStart": 30.0,
+      "step": 0.05,
+      "gridFile": "cal.bin",
+      "sha256": "75542b8da39b899954f70a634c6e7f5c6278756cdb1c265d685eb50959d7be86",
+      "bytes": 1932420,
+      "validNodes": 9796,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 6.04594087600708,
+      "maximumDepthKm": 483.9405822753906,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cal_slab2_dep_02.24.18.xyz",
+          "bytes": 1523087,
+          "sha256": "879f25160dfb9640a0acf279d96dcdfcdc7238ba714fa8f92745788f7b961113"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cal_slab2_unc_02.24.18.xyz",
+          "bytes": 1513384,
+          "sha256": "239248f3697e3ad86aaef5aaa4dbde6000e56b20e52306b260fbd4034d564a3c"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cal_slab2_dip_02.24.18.xyz",
+          "bytes": 1514158,
+          "sha256": "56475a64e9f60fa9e9c3e3982dc4699bc5018145d820a7a3042ec4f34de2234f"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cal_slab2_str_02.24.18.xyz",
+          "bytes": 1513290,
+          "sha256": "6c579c910a1032854f6a2caceac5a90a3437fb8c1e492ee935d9ffe457a7fd6a"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cal_slab2_thk_02.24.18.xyz",
+          "bytes": 1513588,
+          "sha256": "0e31243b161b7836bcda377be71ad378f90adebe031c36e18495d1185f72ef11"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "cam",
+      "name": "Central America",
+      "width": 681,
+      "height": 481,
+      "longitudeStart": 247.0,
+      "latitudeStart": 3.0,
+      "step": 0.05,
+      "gridFile": "cam.bin",
+      "sha256": "2ab5e3f11b7db61a0dcaace19a3ff7bf6e6c77663e4677863161c30785662daf",
+      "bytes": 6551220,
+      "validNodes": 30897,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 3.9490270614624023,
+      "maximumDepthKm": 393.7538146972656,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cam_slab2_dep_02.24.18.xyz",
+          "bytes": 5413805,
+          "sha256": "00d5f738d6b0646678385f3c4d418b3cbf8776802738cf1794a9bdc2b27caf01"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cam_slab2_unc_02.24.18.xyz",
+          "bytes": 5382845,
+          "sha256": "ce6ad863dac7939ca8547e4301b35158b510dfe30e1e4a3b74db839c1336d274"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cam_slab2_dip_02.24.18.xyz",
+          "bytes": 5382921,
+          "sha256": "f64909037d3299ea6dae41f2c960a851cbf33050602112ebae3fa4799eb575d0"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cam_slab2_str_02.24.18.xyz",
+          "bytes": 5382648,
+          "sha256": "7a6c1f01de89f97ea2315f02607bc5f71388d7c8fc8ada40c320c25601a0bd3f"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cam_slab2_thk_02.24.18.xyz",
+          "bytes": 5382869,
+          "sha256": "29bde87767b8c4f9a02d2c3ea343ab70999d811fce978fba48eaecfbb23a3f67"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "car",
+      "name": "Caribbean",
+      "width": 481,
+      "height": 421,
+      "longitudeStart": 283.0,
+      "latitudeStart": 5.0,
+      "step": 0.05,
+      "gridFile": "car.bin",
+      "sha256": "955bf13bb5eefdb18bd6cec720cc882ef1c53974f5f0e776b2d3cb8eec85c70e",
+      "bytes": 4050020,
+      "validNodes": 21367,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 6.478424549102783,
+      "maximumDepthKm": 180.54510498046875,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/car_slab2_dep_02.24.18.xyz",
+          "bytes": 3381923,
+          "sha256": "e36fb3817ad76a9707ccb61fcd4ba3ef2fcdf6d183f7e5e34640d68cfd41f25f"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/car_slab2_unc_02.24.18.xyz",
+          "bytes": 3362121,
+          "sha256": "5de5df2bc15ad8bd8d3e36891a9884b9f354c3d703b0927e21df41dd363eccea"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/car_slab2_dip_02.24.18.xyz",
+          "bytes": 3362060,
+          "sha256": "15a765ab591790646e9f8ea10865fbe9c3226402508f8496675a85ab69e5705d"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/car_slab2_str_02.24.18.xyz",
+          "bytes": 3362112,
+          "sha256": "0ff6be1d88c475b983e3df94291f2e0511b04cd973ccb57c79f18e83199fe6b7"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/car_slab2_thk_02.24.18.xyz",
+          "bytes": 3362138,
+          "sha256": "a69d77d59d4814391287e55837f087eb4d6d40e3c5c68a76789b642a3dbfb9bd"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "cas",
+      "name": "Cascadia",
+      "width": 361,
+      "height": 381,
+      "longitudeStart": 227.0,
+      "latitudeStart": 35.0,
+      "step": 0.05,
+      "gridFile": "cas.bin",
+      "sha256": "6306fd492d037ea122dc2064f0fa7b5e52be9c25a300539bce6f97142c685975",
+      "bytes": 2750820,
+      "validNodes": 26637,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 4.699939250946045,
+      "maximumDepthKm": 437.01348876953125,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cas_slab2_dep_02.24.18.xyz",
+          "bytes": 2461361,
+          "sha256": "d67aebcba62b97f60f263f920a2c2e2aabcda3d702547040202340a54cecb9a8"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cas_slab2_unc_02.24.18.xyz",
+          "bytes": 2434773,
+          "sha256": "708fb2db2134acbaecd35706f9fe3da79348019d64a42bcf5978874fc7628b60"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cas_slab2_dip_02.24.18.xyz",
+          "bytes": 2434814,
+          "sha256": "78a2709b3d626a0918251bae0a050aada835b15c48d50c90eab5d7bc084aa443"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cas_slab2_str_02.24.18.xyz",
+          "bytes": 2435666,
+          "sha256": "e82fa25ec58fedd7c63c6dac03063887f931f9d4e1edb3f71e378f7ffd317ce6"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cas_slab2_thk_02.24.18.xyz",
+          "bytes": 2434764,
+          "sha256": "6558ef6b3c72cd7d325822d9321d23d5dc266cf677de6b15f0136f8b190b5a65"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "cot",
+      "name": "Cotabato",
+      "width": 221,
+      "height": 221,
+      "longitudeStart": 118.0,
+      "latitudeStart": 1.0,
+      "step": 0.05,
+      "gridFile": "cot.bin",
+      "sha256": "936314df2b7587da0a3955dd5e8ed0d7d760c9089511fd1c5259675085c1c665",
+      "bytes": 976820,
+      "validNodes": 1510,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 7.252231597900391,
+      "maximumDepthKm": 145.25733947753906,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cot_slab2_dep_02.24.18.xyz",
+          "bytes": 747245,
+          "sha256": "0bfe91b75f0195e2bac8b614c579de5f6764c2de1de1bed5b41266ff6d90f29e"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cot_slab2_unc_02.24.18.xyz",
+          "bytes": 745794,
+          "sha256": "4ef449e6ed772d5bc5dbe210e090183cf2b2b51b65880718c9d082ad66ff17ea"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cot_slab2_dip_02.24.18.xyz",
+          "bytes": 745786,
+          "sha256": "18b8721ba74c0c62f075cf60b4186a813904e62d34c912bc9f6a15083e777989"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cot_slab2_str_02.24.18.xyz",
+          "bytes": 745779,
+          "sha256": "efd319993a3a1932bfb58fdd392e50b81f62bdc52bcbc2ef8b2c6f8d9b479339"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/cot_slab2_thk_02.24.18.xyz",
+          "bytes": 745775,
+          "sha256": "a763acc52301c3ad2fa6364fec8fdf419f8ad77b8d82b1880d51e3f6eaf39733"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "hal",
+      "name": "Halmahera",
+      "width": 341,
+      "height": 361,
+      "longitudeStart": 116.0,
+      "latitudeStart": -4.0,
+      "step": 0.05,
+      "gridFile": "hal.bin",
+      "sha256": "6ce471b9ef283aa23474fd0bdb0a569ec2ad212863981ae2f5df52d8d8336c11",
+      "bytes": 2462020,
+      "validNodes": 22485,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 33.30185317993164,
+      "maximumDepthKm": 675.5418090820312,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/hal_slab2_dep_02.23.18.xyz",
+          "bytes": 2119741,
+          "sha256": "3f1cd90fb031ba8506041301aa65a43630c6af0c06049f58b40ae752363c7757"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/hal_slab2_unc_02.23.18.xyz",
+          "bytes": 2097440,
+          "sha256": "3f2aab516d0d4a76d2fc0f5bd12381fb3ed852cb2e34fb4a4a3d6fb3bcb1c916"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/hal_slab2_dip_02.23.18.xyz",
+          "bytes": 2097473,
+          "sha256": "38e99eb574cd48adadd212ba73f9acb7153268535524ba15d8815011f1ac6946"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/hal_slab2_str_02.23.18.xyz",
+          "bytes": 2097613,
+          "sha256": "9ab696290a8e2a3243897acc337c51274ad932fc59bc693a15df24f401862069"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/hal_slab2_thk_02.23.18.xyz",
+          "bytes": 1875111,
+          "sha256": "b7b1df856e8c2b1794d81d538c1f35fd8cba8788f5ba8a3e4c033ce143626db1"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "hel",
+      "name": "Hellenic Arc",
+      "width": 541,
+      "height": 341,
+      "longitudeStart": 13.0,
+      "latitudeStart": 27.0,
+      "step": 0.05,
+      "gridFile": "hel.bin",
+      "sha256": "073b2e4c170c3360f9a0b0c2b1ded0956e7eff374be20ead1097cfdc0fae7926",
+      "bytes": 3689620,
+      "validNodes": 31138,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 6.557468891143799,
+      "maximumDepthKm": 445.4860534667969,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/hel_slab2_dep_02.24.18.xyz",
+          "bytes": 3067186,
+          "sha256": "82150588f1db630d708e7650aabed70c2a511da4779e5c43cd85533a03920ce1"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/hel_slab2_unc_02.24.18.xyz",
+          "bytes": 3036095,
+          "sha256": "5bdd4db4fa38602f54ffcba4e671f2de05d4909cb00f8e27cba966703a2d520d"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/hel_slab2_dip_02.24.18.xyz",
+          "bytes": 3036308,
+          "sha256": "6db3b9623be3fa05e14e02cc47eeec146f38aa361d759630fce12b2f1d202f06"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/hel_slab2_str_02.24.18.xyz",
+          "bytes": 3036021,
+          "sha256": "f6dbbd52ca0d855636636929b66caec1dd48fdd96874c36f8b43c9761ab5288c"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/hel_slab2_thk_02.24.18.xyz",
+          "bytes": 3036137,
+          "sha256": "3114a76191fc6e0c12362287313ebc0ed71e2537a6a81d3534dd8ae5c12ae562"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "him",
+      "name": "Himalaya",
+      "width": 581,
+      "height": 301,
+      "longitudeStart": 71.0,
+      "latitudeStart": 23.0,
+      "step": 0.05,
+      "gridFile": "him.bin",
+      "sha256": "cee90493e14c436d78c6391dfc8344d8f05b3d7f160b8fd3915140952be6606c",
+      "bytes": 3497620,
+      "validNodes": 11917,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 1.4659847021102905,
+      "maximumDepthKm": 40.354408264160156,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/him_slab2_dep_02.24.18.xyz",
+          "bytes": 2716130,
+          "sha256": "762b9f20018498e424fd0564ffd7035eff8f7a0e7640b429b6490b4a4779fddc"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/him_slab2_unc_02.24.18.xyz",
+          "bytes": 2702180,
+          "sha256": "4de352683b01f347f7552729a325ead751eb4fa0a70cb2245b7b26932bf8ac29"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/him_slab2_dip_02.24.18.xyz",
+          "bytes": 2704538,
+          "sha256": "21045490d0bde4a9389831f00d0e015442a4284c78cce43d894365031a8d44b6"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/him_slab2_str_02.24.18.xyz",
+          "bytes": 2704196,
+          "sha256": "f2f11a30fc27f12c6745babd9b9938036a5c0e9624843412408060440a91c429"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/him_slab2_thk_02.24.18.xyz",
+          "bytes": 2586423,
+          "sha256": "fcb20731e1e0048ea6aa55c68b7a0bbaafd2a3b27e3080548cbab584c71c0728"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "hin",
+      "name": "Hindu Kush",
+      "width": 551,
+      "height": 451,
+      "longitudeStart": 65.0,
+      "latitudeStart": 32.0,
+      "step": 0.02,
+      "gridFile": "hin.bin",
+      "sha256": "5a575b138f6c30c8719d0b1c8fa96833a42034c320f12f9c6179b322b1b336fa",
+      "bytes": 4970020,
+      "validNodes": 11009,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 21.283052444458008,
+      "maximumDepthKm": 340.01751708984375,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/hin_slab2_dep_02.24.18.xyz",
+          "bytes": 3973850,
+          "sha256": "6edf2bc987d33eeef12d6daa7e9649a065405c5d7248df4722c70019e77e49c9"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/hin_slab2_unc_02.24.18.xyz",
+          "bytes": 3962831,
+          "sha256": "e0debc77144b1c1839f9f02c2a50cb5a398cf5123517ec6664565deeb3e39218"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/hin_slab2_dip_02.24.18.xyz",
+          "bytes": 3962854,
+          "sha256": "3c01a56f754ee89da817a7f7bb8698c0b8ebf0b6e714f1b82e03b5870cd4b507"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/hin_slab2_str_02.24.18.xyz",
+          "bytes": 3962859,
+          "sha256": "d63f835ba5ffd7f824813763fb9320a009082851a1b19684e36654cd8fc0ee93"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/hin_slab2_thk_02.24.18.xyz",
+          "bytes": 3853970,
+          "sha256": "92726470b557c1c3dc7174435c82555b4263ad27fad3d1376f6ae7061a29d9ae"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "izu",
+      "name": "Izu-Bonin",
+      "width": 281,
+      "height": 501,
+      "longitudeStart": 134.0,
+      "latitudeStart": 10.0,
+      "step": 0.05,
+      "gridFile": "izu.bin",
+      "sha256": "2e64f575303fb41b01992cde41808bf606ac80755e0e43ed193db568c4fe9abd",
+      "bytes": 2815620,
+      "validNodes": 40403,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 5.673379898071289,
+      "maximumDepthKm": 592.4595336914062,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/izu_slab2_dep_02.24.18.xyz",
+          "bytes": 2662392,
+          "sha256": "bcba836df32047a02d8bdb05fb9f1c3deff1166beadb4a76d8bfd1057a0b388a"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/izu_slab2_unc_02.24.18.xyz",
+          "bytes": 2621994,
+          "sha256": "b358f790a47eb55f541d60bf493299c13dabe03ab625b3147b5c30406e6bebec"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/izu_slab2_dip_02.24.18.xyz",
+          "bytes": 2621890,
+          "sha256": "09c293497bc62998e1dfdb109703c18d1cc0f01debaedcb4b4dfa7839712a1e5"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/izu_slab2_str_02.24.18.xyz",
+          "bytes": 2621997,
+          "sha256": "ff0c88d1f921b70ef5b2f9d05381d4e00f7596783cdca1d8f86bb8c49a6a5421"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/izu_slab2_thk_02.24.18.xyz",
+          "bytes": 2622181,
+          "sha256": "652beb84e8b05295dc0b29a726792cd121bf40b9e885c4e1e4c833a35a4d2441"
+        }
+      ],
+      "supplement": {
+        "file": "izu-supplement.bin",
+        "sha256": "6fa48724c9afb676b4493b3224d32f25a960e056c5d6360f48297d12ea6d1392",
+        "bytes": 3515256,
+        "count": 97646,
+        "source": {
+          "name": "Slab2Distribute_Mar2018/Slab2Supp/izu_slab2_sup_02.24.18.csv",
+          "bytes": 5542381,
+          "sha256": "c01978adeffc759782804e5f69550767a379b4630f1fac9cc340a4d37abfe53b"
+        }
+      }
+    },
+    {
+      "id": "ker",
+      "name": "Kermadec",
+      "width": 381,
+      "height": 601,
+      "longitudeStart": 169.0,
+      "latitudeStart": -44.0,
+      "step": 0.05,
+      "gridFile": "ker.bin",
+      "sha256": "6fdf71280d83beadef7bffe1163b6d0af67f21383d682191a129e4c61cc50e78",
+      "bytes": 4579620,
+      "validNodes": 69457,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 4.804961204528809,
+      "maximumDepthKm": 701.1603393554688,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/ker_slab2_dep_02.24.18.xyz",
+          "bytes": 4600711,
+          "sha256": "0cbb8155aa2a94a357fb6741cdea1817e569fb90ad3cdafe00f38610e081dc79"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/ker_slab2_unc_02.24.18.xyz",
+          "bytes": 4531403,
+          "sha256": "8bfe78e9d4afd8e806652f92682b4a9bcc6c269a748d41229320f10ace94d2c1"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/ker_slab2_dip_02.24.18.xyz",
+          "bytes": 4531388,
+          "sha256": "6101d83a8550eb2cd228c1fe451cec652791ad2b5b35942ea2742a3496f45694"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/ker_slab2_str_02.24.18.xyz",
+          "bytes": 4531363,
+          "sha256": "2709ea9fedff9cc829af7385d338f01cd6eae352be8e8d086e527b6cd5c0be83"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/ker_slab2_thk_02.24.18.xyz",
+          "bytes": 4531549,
+          "sha256": "10a1fd251afd24025e1e74fcb03d4cccded0cb9762c3d768c648e4d9a77f6274"
+        }
+      ],
+      "supplement": {
+        "file": "ker-supplement.bin",
+        "sha256": "a2e9a55608ae8f895f6219bcfde0cc199e0c44f015c136c87e0600499d31272a",
+        "bytes": 2935152,
+        "count": 81532,
+        "source": {
+          "name": "Slab2Distribute_Mar2018/Slab2Supp/ker_slab2_sup_02.24.18.csv",
+          "bytes": 4667478,
+          "sha256": "7847b02fbb0312f9303a58d3926e302f4761dac294874715be0bf852c5dd0128"
+        }
+      }
+    },
+    {
+      "id": "kur",
+      "name": "Kamchatka-Kuril Islands-Japan",
+      "width": 981,
+      "height": 521,
+      "longitudeStart": 121.0,
+      "latitudeStart": 35.0,
+      "step": 0.05,
+      "gridFile": "kur.bin",
+      "sha256": "72dbac61dfeefd594d99bc5dc20627e9344230aa438678e0714c8923ed5c9b04",
+      "bytes": 10222020,
+      "validNodes": 119754,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 7.4084153175354,
+      "maximumDepthKm": 664.7425537109375,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/kur_slab2_dep_02.24.18.xyz",
+          "bytes": 9375495,
+          "sha256": "5521eb753cf7eaaedf0da61cc12c5ce1181c3e324c8f0779211c8107939f0c22"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/kur_slab2_unc_02.24.18.xyz",
+          "bytes": 9256127,
+          "sha256": "0b618858c1b3f9ad8d5de052643cc9fd0cd3d5bb2252d16c6b32aaa4dd9f1f72"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/kur_slab2_dip_02.24.18.xyz",
+          "bytes": 9256129,
+          "sha256": "54d5ff7300b201eff336f4450b82a6d169055a1648ddebf35dce05f6a488d99c"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/kur_slab2_str_02.24.18.xyz",
+          "bytes": 9256248,
+          "sha256": "b77296b12612fb7318ccf58afd59b616217a2616138d352983947b41f27a583c"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/kur_slab2_thk_02.24.18.xyz",
+          "bytes": 9256085,
+          "sha256": "f0b3823634ae6ead34bd35db814037174a22cfebb3e617e1ad9fad95e09356c1"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "mak",
+      "name": "Makran",
+      "width": 361,
+      "height": 301,
+      "longitudeStart": 52.0,
+      "latitudeStart": 18.0,
+      "step": 0.05,
+      "gridFile": "mak.bin",
+      "sha256": "6d31ac089a9aa5707e9df1af17c9646ef3ac8962e692402f0abf66f47e00e53d",
+      "bytes": 2173220,
+      "validNodes": 23316,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 2.8254740238189697,
+      "maximumDepthKm": 155.7251434326172,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/mak_slab2_dep_02.24.18.xyz",
+          "bytes": 1860398,
+          "sha256": "79e615b0a1d89eccd9043c840f526e07363319e727ecb66d4aebc368a467f15c"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/mak_slab2_unc_02.24.18.xyz",
+          "bytes": 1843535,
+          "sha256": "a9b72bbba52d67b701eda6a67e03d74cf73dddfdd7d2fd9a186ebf84b94d3c00"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/mak_slab2_dip_02.24.18.xyz",
+          "bytes": 1843617,
+          "sha256": "5f3af6babe046a79ba3dab286813ae63d65ef317d669bc0ab6cf2b5d197765e6"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/mak_slab2_str_02.24.18.xyz",
+          "bytes": 1843456,
+          "sha256": "ecfc86b3bbdc7035479ec4b845426e251059f42f9e0835b496da68142b3977a3"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/mak_slab2_thk_02.24.18.xyz",
+          "bytes": 1843596,
+          "sha256": "113ad653d4138d2649adf002e8c156d5851d1679a37402ea3eb642cf54e681f1"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "man",
+      "name": "Manila Trench",
+      "width": 201,
+      "height": 501,
+      "longitudeStart": 119.0,
+      "latitudeStart": 13.0,
+      "step": 0.02,
+      "gridFile": "man.bin",
+      "sha256": "ce34ef22a2ca0045c259631b57acc3be5f8515f8d4e076313b985df14cf95cf6",
+      "bytes": 2014020,
+      "validNodes": 49063,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 2.8460605144500732,
+      "maximumDepthKm": 170.69419860839844,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/man_slab2_dep_02.24.18.xyz",
+          "bytes": 2196024,
+          "sha256": "919bd1fb00b5704a8eaec3c72952dde23dc8d291bccf00a2bdfc8f09cc9a6091"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/man_slab2_unc_02.24.18.xyz",
+          "bytes": 2146762,
+          "sha256": "1ac178deafd43ec4c364c55efe95d51d93b8420861c2d9979a1b0482548872ae"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/man_slab2_dip_02.24.18.xyz",
+          "bytes": 2146736,
+          "sha256": "e4acd084b3a999d01d7c514710716322a0b1b4821ac00ad93e4e3665a6844da8"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/man_slab2_str_02.24.18.xyz",
+          "bytes": 2147463,
+          "sha256": "426d3ecda452290e285b459ab1b411c3a45a90e83cc592d3d51e9418511372bd"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/man_slab2_thk_02.24.18.xyz",
+          "bytes": 2146953,
+          "sha256": "b6ab42b483a3b198f462ab576f036f7ff2b3467df57e51b532f535a35b3b1761"
+        }
+      ],
+      "supplement": {
+        "file": "man-supplement.bin",
+        "sha256": "9cab5d054f76848a35c936901b37ca17762968862e4e295caa268bd8c3e66538",
+        "bytes": 2382156,
+        "count": 66171,
+        "source": {
+          "name": "Slab2Distribute_Mar2018/Slab2Supp/man_slab2_sup_02.24.18.csv",
+          "bytes": 3637110,
+          "sha256": "ac6c1d3956fb5756143c83fa43f127139fc2ba53444b25d82283e3e943664a07"
+        }
+      }
+    },
+    {
+      "id": "mue",
+      "name": "Muertos Trough",
+      "width": 751,
+      "height": 551,
+      "longitudeStart": 285.0,
+      "latitudeStart": 11.0,
+      "step": 0.02,
+      "gridFile": "mue.bin",
+      "sha256": "387e6775eafb5a0f7f2cc7f2ecdf268282791a770a2a9d15d68d372ec55e5cf7",
+      "bytes": 8276020,
+      "validNodes": 14415,
+      "aboveDatumNodes": 61,
+      "minimumDepthKm": -2.6683099269866943,
+      "maximumDepthKm": 125.36228942871094,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/mue_slab2_dep_02.24.18.xyz",
+          "bytes": 6989323,
+          "sha256": "785a2715d37ff116e28b6c3bed468f6b6929c8ca1c66e09d3d3d46eef3e37db5"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/mue_slab2_unc_02.24.18.xyz",
+          "bytes": 6974937,
+          "sha256": "1c88a4603f6890b796ea40997fb82f3839f9e7083bdb223cfc2b153b10e566c8"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/mue_slab2_dip_02.24.18.xyz",
+          "bytes": 6975013,
+          "sha256": "17ecc2eb191eb051b67373604377cf40a0be454cc237323316cca7e851f7c1dc"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/mue_slab2_str_02.24.18.xyz",
+          "bytes": 6974845,
+          "sha256": "d2d328fb90cf10a1b7c59b799176b674ebc3c4210d8a8800ec6232716ac3b466"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/mue_slab2_thk_02.24.18.xyz",
+          "bytes": 6975015,
+          "sha256": "f9c3ccb4e40d40db8bec11fe617fb4e073dd937a0b98f9e5dc0e019b8c363b15"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "pam",
+      "name": "Pamir",
+      "width": 651,
+      "height": 501,
+      "longitudeStart": 67.0,
+      "latitudeStart": 33.0,
+      "step": 0.02,
+      "gridFile": "pam.bin",
+      "sha256": "561c4973be3cc950579b641412e82a72c04ec52f7724bf91bd74ca3a3f0332e3",
+      "bytes": 6523020,
+      "validNodes": 24028,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 4.061769008636475,
+      "maximumDepthKm": 235.981201171875,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/pam_slab2_dep_02.26.18.xyz",
+          "bytes": 5320271,
+          "sha256": "e452250d6b5feae4f0a5645087ec57e27e2dce43aab90a2627c1b633a744040a"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/pam_slab2_unc_02.26.18.xyz",
+          "bytes": 5296375,
+          "sha256": "b6fd8f121f56153c51045967c37b8e1d051ae3605a428a17fc0a5d10f164b16c"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/pam_slab2_dip_02.26.18.xyz",
+          "bytes": 5296280,
+          "sha256": "18898bf0b935538dd5f897413bb87a8899966d61206fcaec00950b25d9638ea7"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/pam_slab2_str_02.26.18.xyz",
+          "bytes": 5296359,
+          "sha256": "5a8ded3cc51abfea731b5313334ab79801c14106328ada2612d4f803504a010a"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/pam_slab2_thk_02.26.18.xyz",
+          "bytes": 5058684,
+          "sha256": "d50bba19b074e74c22639243898e832e23d72414e691fe8a05a0cd2a43e366e0"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "phi",
+      "name": "Philippines",
+      "width": 321,
+      "height": 461,
+      "longitudeStart": 118.0,
+      "latitudeStart": -2.0,
+      "step": 0.05,
+      "gridFile": "phi.bin",
+      "sha256": "82721bff13c9f895a7b383837eab99e099131a5dac2d646840335003ffaf334c",
+      "bytes": 2959620,
+      "validNodes": 8425,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 6.16695499420166,
+      "maximumDepthKm": 228.66558837890625,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/phi_slab2_dep_02.26.18.xyz",
+          "bytes": 2363786,
+          "sha256": "de5de76aa379e68999df9d4506a4e53ddb32174ea0b0956c62c7f5a66a8aafc9"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/phi_slab2_unc_02.26.18.xyz",
+          "bytes": 2355391,
+          "sha256": "6f6669e6c5e250232333b112c0f5b5b372fd382b1125d39883063060dfcff701"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/phi_slab2_dip_02.26.18.xyz",
+          "bytes": 2355372,
+          "sha256": "53ac4d745a1ca26e7f8dc25db6afae49c4e7661550f8b887ddf6bde5e504881b"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/phi_slab2_str_02.26.18.xyz",
+          "bytes": 2355392,
+          "sha256": "765cebdbaa9a61188973a9623009042964a015a45dff24cd920c3caddbde4afa"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/phi_slab2_thk_02.26.18.xyz",
+          "bytes": 2355405,
+          "sha256": "815d9d38d8c068f643e272d8e235e756cef3cf8a979ddf761b0f71983fd27aba"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "png",
+      "name": "New Guinea",
+      "width": 381,
+      "height": 281,
+      "longitudeStart": 128.0,
+      "latitudeStart": -9.0,
+      "step": 0.05,
+      "gridFile": "png.bin",
+      "sha256": "bb12da63895d1ee615e3408adc2f5852205ce8250aefc9c2cb7b8b8b1d5ceea4",
+      "bytes": 2141220,
+      "validNodes": 15347,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 5.444551467895508,
+      "maximumDepthKm": 173.006591796875,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/png_slab2_dep_02.26.18.xyz",
+          "bytes": 1818596,
+          "sha256": "65a96e73d1960d6f47aab645697f14ee4fb3e326d93d5d6427ee7794a360a452"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/png_slab2_unc_02.26.18.xyz",
+          "bytes": 1803237,
+          "sha256": "d27ac62dae23d8b858be7f7468f11ab88c2b0a238513c83bce31a241e5c3d75f"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/png_slab2_dip_02.26.18.xyz",
+          "bytes": 1803242,
+          "sha256": "689a1c51de081e5b22477343008686b9c2ae719bb20156d8977b7e038bb378cb"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/png_slab2_str_02.26.18.xyz",
+          "bytes": 1803292,
+          "sha256": "9aebc8da34f78bfda3c213c37d3326671d08480792c5e55f870cff43699514aa"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/png_slab2_thk_02.26.18.xyz",
+          "bytes": 1803272,
+          "sha256": "48b7fb1b77db41bbe63b9f40687549279ac218102b0509adae810dbd5cec2f7d"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "puy",
+      "name": "Puysegur",
+      "width": 751,
+      "height": 801,
+      "longitudeStart": 157.0,
+      "latitudeStart": -56.0,
+      "step": 0.02,
+      "gridFile": "puy.bin",
+      "sha256": "a1bddc8f38398263e348df0cbd9273a0731ebc93c25ecb2b035a10378adc00c1",
+      "bytes": 12031020,
+      "validNodes": 18847,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 3.033341884613037,
+      "maximumDepthKm": 165.44564819335938,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/puy_slab2_dep_02.26.18.xyz",
+          "bytes": 10740111,
+          "sha256": "9ebe4feab4ee3b80e3fe403f2d873f94e4d7f06d937d721cc9e154ecee83e3c0"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/puy_slab2_unc_02.26.18.xyz",
+          "bytes": 10721322,
+          "sha256": "b76c0941c93892f9835c9d2e3757ca0552de389a647cf0cf86792efa53c8144b"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/puy_slab2_dip_02.26.18.xyz",
+          "bytes": 10721221,
+          "sha256": "c9d277835dbc73afacd47a52c417a8422906ada593164ff8ac498a8bac235e0b"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/puy_slab2_str_02.26.18.xyz",
+          "bytes": 10721236,
+          "sha256": "1ce0cb2ef88ddfc77daad6fc0f6ec33342fd986b1a77faebb60be0b69a7632a9"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/puy_slab2_thk_02.26.18.xyz",
+          "bytes": 10721307,
+          "sha256": "0bc3338a431f969c0c49193f6f1c8851490fe1482bd6b456bf2bf9e051e83863"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "ryu",
+      "name": "Ryukyu",
+      "width": 541,
+      "height": 441,
+      "longitudeStart": 116.0,
+      "latitudeStart": 19.0,
+      "step": 0.05,
+      "gridFile": "ryu.bin",
+      "sha256": "44557670c460626ac313c8b627e7f16de2e53e55327e064f3b7f91966741f036",
+      "bytes": 4771620,
+      "validNodes": 33661,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 4.206455707550049,
+      "maximumDepthKm": 396.20526123046875,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/ryu_slab2_dep_02.26.18.xyz",
+          "bytes": 4133602,
+          "sha256": "eeb917737d650449d322487461219caeacde37bf20c65d20287ecd94661dbd89"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/ryu_slab2_unc_02.26.18.xyz",
+          "bytes": 4100092,
+          "sha256": "ff1d5dd1d37cb8fd3b023dfbc2d20cdbd57682cb218fd7c8bcefcca77c829b8c"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/ryu_slab2_dip_02.26.18.xyz",
+          "bytes": 4100053,
+          "sha256": "14546a178b8945dfb08d85e3e04ec0c097ac387ff626662c7041602f3dea81b0"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/ryu_slab2_str_02.26.18.xyz",
+          "bytes": 4099975,
+          "sha256": "4a215735d301e21c87cffaa30e466523f598cf8723606f8c905ff494142d5b35"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/ryu_slab2_thk_02.26.18.xyz",
+          "bytes": 4100127,
+          "sha256": "4f83936e882177c7a28f81c894d1db26e44612ee89f951aa4bf7a19e06537011"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "sam",
+      "name": "South America",
+      "width": 581,
+      "height": 1281,
+      "longitudeStart": 274.0,
+      "latitudeStart": -49.0,
+      "step": 0.05,
+      "gridFile": "sam.bin",
+      "sha256": "7b4ae626bf7bc6ce301a2e144f3d67d268d46b2aee5f1e172265367e07280df9",
+      "bytes": 14885220,
+      "validNodes": 206451,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 4.983691692352295,
+      "maximumDepthKm": 674.4268798828125,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sam_slab2_dep_02.23.18.xyz",
+          "bytes": 14339837,
+          "sha256": "0522c999fcd3f80422407e0f6bdb4cb1ce09bd2cf1f13d68c2b169c26762bbca"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sam_slab2_unc_02.23.18.xyz",
+          "bytes": 14133924,
+          "sha256": "e21d3d7b65f7da0be5cb6952ec901d359da514d20e02428495c579d798a971dc"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sam_slab2_dip_02.23.18.xyz",
+          "bytes": 14134592,
+          "sha256": "dcdd1c10ceaf5423a9f4ffbd7a238525f24112d66a83e2e62ce9ae7576c6411c"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sam_slab2_str_02.23.18.xyz",
+          "bytes": 14136413,
+          "sha256": "c138d970788e9c1d4efa95a25ce0b62472cc6c3f53457adfb48db5a3536d7422"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sam_slab2_thk_02.23.18.xyz",
+          "bytes": 14134504,
+          "sha256": "0d46977fb483ddc8553eac14db67f9dca51a4cb7e262f2b4e7fad6d73809f604"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "sco",
+      "name": "Scotia Sea",
+      "width": 321,
+      "height": 301,
+      "longitudeStart": 325.0,
+      "latitudeStart": -65.0,
+      "step": 0.05,
+      "gridFile": "sco.bin",
+      "sha256": "95b15c8d0d3ffdfff7038c35c43ddf68b786eeb36a7fbb05e04310724fd98735",
+      "bytes": 1932420,
+      "validNodes": 8727,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 7.216249465942383,
+      "maximumDepthKm": 303.79156494140625,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sco_slab2_dep_02.23.18.xyz",
+          "bytes": 1716788,
+          "sha256": "0220d2b1d06491cbae4defb8f75c0fecb0089c0d99b4819dc596dea10ba45a4d"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sco_slab2_unc_02.23.18.xyz",
+          "bytes": 1708090,
+          "sha256": "42de9c6ea113b7cb15c1a80b26e5f7784655d941b57501a0c0c8889439206def"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sco_slab2_dip_02.23.18.xyz",
+          "bytes": 1708097,
+          "sha256": "df9bc2824637441ce38b4d1dae75df0c6d0ee45529a80ece5f17a4fe32dddd34"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sco_slab2_str_02.23.18.xyz",
+          "bytes": 1708096,
+          "sha256": "c742781cf1037e40646ec878bc72fa7e23485c35c1749b3f9153cec3d4a9823c"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sco_slab2_thk_02.23.18.xyz",
+          "bytes": 1707834,
+          "sha256": "d02a709bbc9094a0e1d7158ebed060993cb46c4e69e327a90fd8d5e45139a853"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "sol",
+      "name": "Solomon Islands",
+      "width": 461,
+      "height": 181,
+      "longitudeStart": 141.0,
+      "latitudeStart": -12.0,
+      "step": 0.05,
+      "gridFile": "sol.bin",
+      "sha256": "bac60bf84b5fcb442d3aafa8155dd6a3eea6755824308e466898c803eea6a873",
+      "bytes": 1668820,
+      "validNodes": 18542,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 4.897528648376465,
+      "maximumDepthKm": 630.1360473632812,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sol_slab2_dep_02.23.18.xyz",
+          "bytes": 1537618,
+          "sha256": "f0b06f29716b3a14ac6d3dc0a59dffd654a2fcc461d1238e870a0752a6451e10"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sol_slab2_unc_02.23.18.xyz",
+          "bytes": 1519130,
+          "sha256": "4738def260067c4137fff3ab6d20b9ff7c45d617f2da342589d8e1b3c1bfe2bc"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sol_slab2_dip_02.23.18.xyz",
+          "bytes": 1519063,
+          "sha256": "8e3f7efd0a18859b96fbe34872f9752f64263f700f19777925b61f001dabde89"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sol_slab2_str_02.23.18.xyz",
+          "bytes": 1518986,
+          "sha256": "8544745f0efe495d1e71e7a3d1b48b467914787301ee40f3cd33d3f2da6911ab"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sol_slab2_thk_02.23.18.xyz",
+          "bytes": 1519721,
+          "sha256": "4be6648a408bd6c4bc1237bf4b794c7e8044c8fae3de8dd97edc20ffd2bc5771"
+        }
+      ],
+      "supplement": {
+        "file": "sol-supplement.bin",
+        "sha256": "9f6ea52b0d6f9f299188d30a3dd0e6398b48e447fb62fba7de54c35e83d3279a",
+        "bytes": 1739052,
+        "count": 48307,
+        "source": {
+          "name": "Slab2Distribute_Mar2018/Slab2Supp/sol_slab2_sup_02.23.18.csv",
+          "bytes": 2654872,
+          "sha256": "be9cfe470094f997d5b9678177b9f38615f827a1ccf50a0c3049773262deed12"
+        }
+      }
+    },
+    {
+      "id": "sul",
+      "name": "Sulawesi",
+      "width": 261,
+      "height": 221,
+      "longitudeStart": 115.0,
+      "latitudeStart": -4.0,
+      "step": 0.05,
+      "gridFile": "sul.bin",
+      "sha256": "6964c5e581d95a9e27c6b3e78f07e3e1016edaa58471698773e460a9923a5693",
+      "bytes": 1153620,
+      "validNodes": 4539,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 5.749218940734863,
+      "maximumDepthKm": 260.6278991699219,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sul_slab2_dep_02.23.18.xyz",
+          "bytes": 922818,
+          "sha256": "e6daa52fe778b9e98f35fb5098f5ea9a5802ca74bae3cbd9e3bbe05b9256885c"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sul_slab2_unc_02.23.18.xyz",
+          "bytes": 918355,
+          "sha256": "ddf44947d3be219b0c91cdaedf5dcf14a8a67bd501dd53846a02d83cd7b12d22"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sul_slab2_dip_02.23.18.xyz",
+          "bytes": 918390,
+          "sha256": "9399b1f4cae66f6d272167a228308643934d33ba2b7b3a795d1ef911c556defe"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sul_slab2_str_02.23.18.xyz",
+          "bytes": 918397,
+          "sha256": "e3e8cf31749a438aa318b5b316b37e85bd7262ed27b54e56eee6396653d502c5"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sul_slab2_thk_02.23.18.xyz",
+          "bytes": 918410,
+          "sha256": "ffd2065da1a19f1014fd93e948eb4a6a12e028550f5a678afad5ff758fd7383c"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "sum",
+      "name": "Sumatra-Java",
+      "width": 1041,
+      "height": 941,
+      "longitudeStart": 87.0,
+      "latitudeStart": -16.0,
+      "step": 0.05,
+      "gridFile": "sum.bin",
+      "sha256": "d6aa2cfb1ca8b1fe7538846b2ba34e0c5993133e94a038ccf0a9917382af3824",
+      "bytes": 19591620,
+      "validNodes": 115512,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 3.1468403339385986,
+      "maximumDepthKm": 673.2764282226562,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sum_slab2_dep_02.23.18.xyz",
+          "bytes": 16403399,
+          "sha256": "e5d7843eae99cecf102dc9090c650b5ecc6008f8e9c7196513b7adf89e70a997"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sum_slab2_unc_02.23.18.xyz",
+          "bytes": 16289921,
+          "sha256": "1fbf90c740717d20c5a98b4ad4ce0aef760cab14a580c854288db743f7b3d9b2"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sum_slab2_dip_02.23.18.xyz",
+          "bytes": 16290107,
+          "sha256": "d4f612a8c6d790122ffe368d04b7668846d068040c4d33f9d1d1f3307b73060c"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sum_slab2_str_02.23.18.xyz",
+          "bytes": 16290020,
+          "sha256": "b3c128aeb5d986d031e135fe28cdc200471f2372c2edfc17cd27b649e20d96f9"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/sum_slab2_thk_02.23.18.xyz",
+          "bytes": 16290257,
+          "sha256": "68bce38cb78195054e80a19a39b5bb3e584c89ab722ee2371588299e9acf2d5b"
+        }
+      ],
+      "supplement": null
+    },
+    {
+      "id": "van",
+      "name": "Vanuatu",
+      "width": 341,
+      "height": 441,
+      "longitudeStart": 161.0,
+      "latitudeStart": -28.0,
+      "step": 0.05,
+      "gridFile": "van.bin",
+      "sha256": "92bb8265d7e32b447c844edc0c8e9807a42e872e4105164fffb8931facf9b963",
+      "bytes": 3007620,
+      "validNodes": 13326,
+      "aboveDatumNodes": 0,
+      "minimumDepthKm": 4.391483783721924,
+      "maximumDepthKm": 344.7899169921875,
+      "sourceFiles": [
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/van_slab2_dep_02.23.18.xyz",
+          "bytes": 2642293,
+          "sha256": "2d3f655c7d3847894f84ac5d9b9932f4c92ee20172457bd8f9a37d05e6bdd824"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/van_slab2_unc_02.23.18.xyz",
+          "bytes": 2629011,
+          "sha256": "154bb939f639df16c5216f59765c227d1746b65980215c8fe7ae3bad326db995"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/van_slab2_dip_02.23.18.xyz",
+          "bytes": 2629075,
+          "sha256": "62e5e481096462d60b5d70cbb48ce074129e0054e7c50a44daa3c53559112acc"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/van_slab2_str_02.23.18.xyz",
+          "bytes": 2629028,
+          "sha256": "c8391fa2d8fc5b428ece0de4c5837980691e7ef483f28ea32734c42c40d455e4"
+        },
+        {
+          "name": "Slab2Distribute_Mar2018/Slab2_TXT/van_slab2_thk_02.23.18.xyz",
+          "bytes": 2629107,
+          "sha256": "b983d5b2987b8f80a62bad1c5708e2b6e5a3d3577429c18578b596b8f8206915"
+        }
+      ],
+      "supplement": null
+    }
+  ]
+}

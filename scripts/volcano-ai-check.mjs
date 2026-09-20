@@ -1,0 +1,13 @@
+import {clickGlobeControl} from './browser-controls.mjs';
+import {createRequire} from 'node:module';
+import {writeFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+import {chat} from '../server/ai.mjs';
+import {volcanoDataset,volcanoEvidence} from '../server/volcano-context.mjs';
+const root='http://127.0.0.1:4318',status=await(await fetch(root+'/api/status')).json(),{chromium}=createRequire(import.meta.url)('C:/Users/blocp/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const browser=await chromium.launch({headless:true,channel:'chrome'}),page=await browser.newPage({viewport:{width:1536,height:1024}});let local;
+try{await page.goto(root);await page.locator('.event-row').first().waitFor();await clickGlobeControl(page,'volcanoes-open');await page.locator('#volcano-search').fill('Kilauea');await page.locator('[data-volcano="GVP:332010"]').click();const response=page.waitForResponse(r=>r.url().endsWith('/api/chat'),{timeout:190000});await page.locator('#volcano-explain').click();const r=await response;local=await r.json();assert.equal(r.status(),200,JSON.stringify(local));assert.equal(local.provider,'ollama');await page.locator('#volcano-explanation').filter({hasText:local.model}).waitFor();await page.locator('#volcano-explanation').scrollIntoViewIfNeeded();await page.screenshot({path:'artifacts/volcano-local-explanation.png'});}finally{await browser.close();}
+const {data}=await volcanoDataset(),context={asOf:Date.now(),mode:'strict',volcanoEvidence:volcanoEvidence(data,{id:'GVP:332010',asOf:Date.now()}),candidates:[],selected:null},astra=await chat('Explain this exact Smithsonian volcano record, stating the supplied elevation and latest eruption year while distinguishing this dated reference from live activity and earthquake causation.',context,{...status.config,aiProvider:'codex'});assert.equal(astra.model,'gpt-6-astra');
+for(const result of [local,astra]){assert.match(result.answer,/1,?222/);assert.match(result.answer,/2026/);assert.match(result.answer,/not|doesn.t|cannot|does not/i);assert.match(result.answer,/current|live/i);assert.match(result.answer,/caus|forecast|earthquake/i);}
+const old={...context,asOf:Date.parse('2011-03-01'),volcanoEvidence:volcanoEvidence(data,{id:'GVP:332010',asOf:Date.parse('2011-03-01')})},historical=await chat('Explain the volcano',old,{aiProvider:'deterministic'});assert.match(historical.answer,/received after/);assert.equal(historical.answer.includes('1222'),false);
+writeFileSync('artifacts/volcano-ai-report.json',JSON.stringify({local,astra,historical},null,2));console.log(JSON.stringify({local:local.answer,astra:astra.answer,historical:historical.answer}));

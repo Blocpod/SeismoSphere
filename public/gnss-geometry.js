@@ -1,0 +1,6 @@
+import {unit,EARTH_KM} from './fault-geometry.js';
+export function velocityArrow(station,kmPerMm=4,capKm=500){
+ const {lat,lon,eastMyr,northMyr}=station;if(![lat,lon,eastMyr,northMyr,kmPerMm,capKm].every(Number.isFinite)||Math.abs(lat)>90||Math.abs(lon)>180||kmPerMm<=0||capKm<=0)throw new Error('Invalid geodetic arrow inputs.');
+ const speed=Math.hypot(eastMyr,northMyr),u=unit(station),a=lat*Math.PI/180,b=lon*Math.PI/180,east=[-Math.sin(b),0,-Math.cos(b)],north=[-Math.sin(a)*Math.cos(b),Math.cos(a),Math.sin(a)*Math.sin(b)],requestedKm=speed*1000*kmPerMm,lengthKm=Math.min(capKm,requestedKm);if(!speed)return {segments:[],lengthKm:0,capped:false};const tangent=u.map((_,i)=>(east[i]*eastMyr+north[i]*northMyr)/speed),angle=lengthKm/EARTH_KM,point=t=>u.map((v,i)=>(v*Math.cos(angle*t)+tangent[i]*Math.sin(angle*t))*1.006),segments=[];
+ for(let i=0;i<4;i++)segments.push(point(i/4),point((i+1)/4));const tip=point(1),base=point(.78),side=[u[1]*tangent[2]-u[2]*tangent[1],u[2]*tangent[0]-u[0]*tangent[2],u[0]*tangent[1]-u[1]*tangent[0]];for(const sign of [-1,1]){const v=base.map((x,i)=>x+side[i]*angle*.10*sign),n=Math.hypot(...v);segments.push(tip,v.map(x=>x/n*1.006));}return {segments,lengthKm,capped:requestedKm>capKm};
+}

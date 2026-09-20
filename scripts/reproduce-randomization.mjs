@@ -1,0 +1,11 @@
+import {readFileSync,writeFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+import {VERSION as ENGINE_VERSION,backtest as currentBacktest} from '../server/engine.mjs';
+import {backtest as legacyBacktest} from '../server/engine-0.2.mjs';
+import {hash} from '../server/store.mjs';
+import {randomizedCatalog,scoreCatalog,RANDOMIZATION_VERSION} from '../server/randomization.mjs';
+const [file,indexText='0',output]=process.argv.slice(2);if(!file)throw new Error('Usage: node scripts/reproduce-randomization.mjs EXPORTED_JSON [REPLICATE_INDEX] [OUTPUT_JSON]');
+const {input,snapshot,report}=JSON.parse(readFileSync(file,'utf8')),{id,...body}=snapshot,{sha256,...reportBody}=report,index=Number(indexText);
+const backtest=report.engineVersion===ENGINE_VERSION?currentBacktest:report.engineVersion==='ds-research-0.2.0'?legacyBacktest:null;if(!backtest)throw new Error('This export requires its original engine implementation: '+report.engineVersion);
+assert.equal(input.version,RANDOMIZATION_VERSION);if(input.engineVersion!==undefined)assert.equal(input.engineVersion,report.engineVersion);assert.equal(hash(input),report.id);assert.equal(hash(body),id);assert.equal(id,input.inputSnapshotId);assert.equal(hash(reportBody),sha256);assert.ok(Number.isInteger(index)&&index>=0&&index<report.replicates.length);
+const catalog=randomizedCatalog(snapshot.events,input.options,input.config,index),score=scoreCatalog(catalog,input.options,input.config,input.routes,input.boundaries,backtest),expected=report.replicates[index];assert.equal(hash(catalog),expected.catalogDigest);assert.equal(score.forecastDigest,expected.forecastDigest);assert.equal(score.extraHitsPerIssuance,expected.extraHitsPerIssuance);if(output)writeFileSync(output,JSON.stringify({index,catalog,score,trials:backtest(catalog,input.options.start,input.options.end,input.config,input.routes,input.boundaries,input.options.stepDays).trials},null,2));console.log(JSON.stringify({run:report.id,index,verified:true,catalogEvents:catalog.length,score}));

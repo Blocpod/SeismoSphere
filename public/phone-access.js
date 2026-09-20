@@ -1,0 +1,51 @@
+import qrcode from '/vendor/qrcode.mjs';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+export async function setupPhoneAccess(api){
+  const access=await api('access');
+  if(!access.local){
+    const info=document.createElement('section');info.className='phone-access';info.innerHTML=`<h3>This device</h3><p>${esc(access.session.name)} · ${esc(access.session.role==='viewer'?'View only':'Workspace control')}</p><button class="secondary" id="device-logout">Disconnect this device</button><p class="muted">Phone connections use the models and data on your PC. Device permissions are managed there.</p>`;
+    document.querySelector('#settings-form').before(info);document.querySelector('#device-logout').onclick=async()=>{await api('logout',{});location.replace('/pair.html');};
+    if(access.session.role==='viewer'){
+      document.body.classList.add('viewer-device');
+      for(const el of document.querySelectorAll('#settings-form input,#settings-form select,#settings-form button,#issue-all,#command-submit,#import-form button,#backtest-form button,#etas-form button,#neural-analogues,#refresh'))el.disabled=true;
+      const notice=document.createElement('p');notice.className='muted';notice.textContent='This device has view-only access. Globe exploration, replay and saved results are available.';info.appendChild(notice);
+    }
+    return access;
+  }
+  const panel=document.createElement('section');panel.className='phone-access';panel.innerHTML=`<span class="eyebrow">YOUR WORKSPACE, ON YOUR PHONE</span><h3>Phone access</h3><p class="muted">Pair your own devices on the same network. A paired controller can run AI, change settings and freeze forecasts.</p><div id="phone-status" class="result-text">Checking connection settings…</div><label>PC network address<select id="phone-address"></select></label><div class="phone-actions"><button class="secondary" id="phone-prepare">Prepare secure connection</button><button class="secondary" id="phone-enable">Enable phone access</button><button class="secondary" id="phone-disable">Turn off</button></div><div id="phone-connect"></div><label>New device permission<select id="phone-role"><option value="controller">Full workspace control</option><option value="viewer">View only</option></select></label><button class="primary full" id="phone-invite">Create pairing code</button><div id="phone-code" aria-live="polite"></div><div id="phone-devices"></div>`;
+  document.querySelector('#settings-form').after(panel);
+  panel.insertAdjacentHTML('beforeend','<details class="phone-trust"><summary>Certificate maintenance</summary><p id="phone-expiry"></p><p>Replace phone trust when the issuer is nearing expiry or its signing key needs replacement. First turn off phone access. Every phone will need the replacement certificate and a new pairing code.</p><button type="button" class="secondary" id="phone-rotate-prepare">Prepare replacement trust</button><div id="phone-rotation-review" aria-live="polite"></div><p id="phone-retired-trust"></p></details>');
+  const $=s=>panel.querySelector(s);let status;
+  async function refresh(){
+    status=await api('sharing/status');
+    $('#phone-address').innerHTML=status.addresses.map(a=>`<option value="${esc(a.address)}" ${a.address===status.settings.host?'selected':''}>${esc(a.address)} · ${esc(a.name)}</option>`).join('');
+    $('#phone-status').textContent=status.enabled?'Phone access is running.':status.lastError??'Phone access is off.';
+    $('#phone-prepare').disabled=status.enabled;$('#phone-enable').disabled=status.enabled||!status.certificate;$('#phone-disable').disabled=!status.enabled;$('#phone-invite').disabled=!status.enabled;
+    const c=status.certificate;
+    const date=value=>new Date(value).toLocaleDateString(),fingerprint=value=>esc(value.match(/.{1,4}/g).join(' '));
+    $('#phone-expiry').textContent=c?`Connection certificate expires ${date(c.expiresAt)}. Issuer expires ${date(c.issuerExpiresAt)}; root trust expires ${date(c.rootExpiresAt)}.${c.rotationDue?' Prepare replacement trust now; the issuer is approaching expiry.':' Connection certificates renew during startup when needed.'}`:'Prepare a secure connection first.';
+    $('#phone-rotate-prepare').disabled=status.enabled||!c||!!status.pendingRotation;
+    const pending=status.pendingRotation;
+    $('#phone-rotation-review').innerHTML=pending?`<h4>Review replacement trust</h4><p>Prepared for ${esc(pending.certificate.host)}. The current certificate remains active until you replace it.</p><p>Current fingerprint</p><p class="certificate-fingerprint">${fingerprint(pending.previousFingerprint)}</p><p>Replacement fingerprint</p><p class="certificate-fingerprint">${fingerprint(pending.certificate.rootFingerprint)}</p><p>New issuer expires ${date(pending.certificate.issuerExpiresAt)}. No certificate is installed on your devices automatically.</p><label class="check"><input id="phone-rotation-ack" type="checkbox"> I will remove the old trust certificate, install this replacement on my phones and pair them again.</label><div class="phone-actions"><button class="primary" id="phone-rotate-activate" disabled>Replace trust & require new pairing</button><button class="secondary" id="phone-rotate-cancel">Discard replacement</button></div>`:'';
+    $('#phone-retired-trust').innerHTML=status.replacedTrust?`Remove the old SeismoSphere trust certificate from each phone. Its fingerprint was <span class="certificate-fingerprint">${fingerprint(status.replacedTrust.rootFingerprint)}</span>. Enable access, compare the new fingerprint and follow the connection guide again.`:'';
+    if(pending){$('#phone-rotation-ack').onchange=e=>{$('#phone-rotate-activate').disabled=status.enabled||!e.target.checked;};$('#phone-rotate-cancel').onclick=()=>action('cancel-rotation',{});$('#phone-rotate-activate').onclick=()=>action('activate-rotation',{id:pending.id,fingerprint:pending.certificate.rootFingerprint,acknowledge:$('#phone-rotation-ack').checked});}
+    $('#phone-connect').innerHTML=c?`<details class="evidence" ${status.enabled?'open':''}><summary>Connect a phone</summary><p>1. On your phone, open <a href="${esc(status.setupUrl)}" target="_blank" rel="noreferrer">${esc(status.setupUrl)}</a>.<br>2. Match the fingerprint below and install the local certificate using that page's instructions.<br>3. Open <a href="${esc(status.url)}/pair.html" target="_blank" rel="noreferrer">the encrypted workspace</a> and enter a pairing code.</p><p class="certificate-fingerprint">${esc(c.rootFingerprint.match(/.{1,4}/g).join(' '))}</p><p>If the phone cannot reach the setup page, run <strong>Enable-Mobile-Firewall.ps1</strong> as Windows administrator on this PC. It permits only local-subnet traffic to this app's two ports.</p></details>`:'';
+    if(c&&status.enabled){const qr=qrcode(0,'M');qr.addData(status.setupUrl);qr.make();const node=document.createElement('div');node.className='phone-qr';node.innerHTML=qr.createSvgTag(5,12);node.querySelector('svg').setAttribute('aria-label','Scan to open this PC’s phone connection guide');node.querySelector('svg').setAttribute('role','img');$('#phone-connect').prepend(node);}
+    $('#phone-devices').innerHTML='<h3>Paired devices</h3>'+(status.sessions.length?status.sessions.map(s=>`<div class="device-row"><span>${esc(s.name)}<small>${esc(s.role)} · expires ${new Date(s.expiresAt).toLocaleDateString()}</small></span><button class="secondary" data-revoke="${esc(s.id)}">Revoke</button></div>`).join(''):'<p class="muted">No devices are paired.</p>');
+    for(const button of panel.querySelectorAll('[data-revoke]'))button.onclick=async()=>{await api('sharing/revoke',{id:button.dataset.revoke});await refresh();};
+  }
+  async function action(operation,body){$('#phone-status').textContent='Updating connection…';for(const el of panel.querySelectorAll('button,select,input'))el.disabled=true;let error;try{await api('sharing/'+operation,body);}catch(e){error=e.message;}finally{for(const el of panel.querySelectorAll('button,select,input'))el.disabled=false;try{await refresh();}catch(e){error??=e.message;}if(error)$('#phone-status').textContent=error;}}
+  $('#phone-rotate-prepare').onclick=()=>action('prepare-rotation',{host:$('#phone-address').value});
+  $('#phone-prepare').onclick=()=>action('prepare',{host:$('#phone-address').value});
+  $('#phone-enable').onclick=()=>action('enable',{host:$('#phone-address').value});
+  $('#phone-disable').onclick=async()=>{await action('disable',{});$('#phone-code').textContent='';};
+  $('#phone-invite').onclick=async()=>{try{const r=await api('sharing/invite',{role:$('#phone-role').value});$('#phone-code').innerHTML=`<strong>${esc(r.code)}</strong><span>Single use · expires ${new Date(r.expiresAt).toLocaleTimeString()}</span>`;}catch(e){$('#phone-status').textContent=e.message;}};
+  await refresh();
+  const lifecycle=document.createElement('section');lifecycle.className='phone-access';
+  lifecycle.innerHTML='<h3>PC startup</h3><label class="check"><input id="startup-enabled" type="checkbox"> Start SeismoSphere quietly when I sign in to Windows</label><p class="muted" id="startup-result">Checking this installation’s startup entry…</p><p class="muted">The PC must be awake for phone access and local AI. To stop the app, run Stop-SeismoSphere.ps1 in the project folder.</p>';
+  panel.after(lifecycle);
+  try{const startup=await api('system/startup');lifecycle.querySelector('input').checked=startup.enabled;lifecycle.querySelector('#startup-result').textContent=startup.conflict?'Another SeismoSphere startup entry exists; review it before changing this setting.':startup.scope;}
+  catch(e){lifecycle.querySelector('#startup-result').textContent=e.message;}
+  lifecycle.querySelector('input').onchange=async e=>{const input=e.target;input.disabled=true;try{const r=await api('system/set-startup',{enabled:input.checked});input.checked=r.enabled;lifecycle.querySelector('#startup-result').textContent=r.enabled?'This workspace will start hidden at Windows sign-in.':'Automatic startup is off.';}catch(err){input.checked=!input.checked;lifecycle.querySelector('#startup-result').textContent=err.message;}finally{input.disabled=false;}};
+  return access;
+}

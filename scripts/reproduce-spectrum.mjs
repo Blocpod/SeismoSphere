@@ -1,0 +1,10 @@
+import {readFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+import {hash} from '../server/store.mjs';
+import {instrumentSourceValid} from '../server/instruments.mjs';
+import {spectrumWindow} from '../public/spectrum-data.js';
+import {calculateSpectrum} from '../server/spectrum.mjs';
+const {record,source,response,rawSource}=JSON.parse(readFileSync(process.argv[2]??'artifacts/chromium-spectrum.json','utf8')),{id,...body}=record,{id:sourceId,...sourceBody}=source;
+assert.equal(hash(body),id);assert.equal(hash(sourceBody),sourceId);if(rawSource){for(const r of [rawSource,response]){const {id,...body}=r;assert.equal(hash(body),id);assert.equal(instrumentSourceValid(r),true);}assert.equal(source.query.waveformId,rawSource.id);assert.equal(source.query.responseId,response.id);}else assert.equal(instrumentSourceValid(source),true);assert.equal(record.query.waveformId,sourceId);
+const window=spectrumWindow(source,record.query),computed=await calculateSpectrum({values:window.values,...(source.kind==='correction'?{sampleUnits:source.summary.units}:{}),sampleRateHz:window.run.sampleRateHz,window:record.query.window,detrend:record.query.detrend,...(record.query.timeFrequency?{timeFrequency:record.query.timeFrequency}:{})});
+assert.deepEqual(computed.frequencyHz,record.frequencyHz);const powers=computed.psd??computed.psdCounts2PerHz,stored=record.psd??record.psdCounts2PerHz;assert.deepEqual(powers,stored);let relativeError=0;for(let i=0;i<record.frequencyHz.length;i++)relativeError=Math.max(relativeError,Math.abs(powers[i]-stored[i])/Math.max(1,Math.abs(stored[i])));assert.ok(relativeError<1e-10);assert.deepEqual(computed.summary,record.summary);assert.deepEqual(computed.spectrogram,record.spectrogram);console.log(JSON.stringify({id,sourceId,sourceValid:true,relativeError,allBinsExact:true,bins:record.frequencyHz.length,summary:record.summary}));

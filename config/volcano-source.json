@@ -1,0 +1,14 @@
+{
+  "name": "Global Volcanism Program, Smithsonian Institution",
+  "dataset": "Volcanoes of the World · Holocene volcanoes",
+  "version": "5.4.0",
+  "publishedAt": "2026-08-07",
+  "citation": "Global Volcanism Program, 2026. [Database] Volcanoes of the World (v. 5.4.0; 7 Aug 2026). Distributed by Smithsonian Institution, compiled by Venzke, E.",
+  "doi": "https://doi.org/10.5479/si.GVP.VOTW5-2026.5.4",
+  "homepage": "https://volcano.si.edu/",
+  "termsUrl": "https://volcano.si.edu/gvp_termsofuse.cfm",
+  "license": "Smithsonian GVP terms of use; database compilation is a US government employee work. Retain attribution and source notices; see linked terms for reuse.",
+  "source": "https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GVP-VOTW%3ASmithsonian_VOTW_Holocene_Volcanoes&outputFormat=application%2Fjson&maxFeatures=10000",
+  "normalizedSha256": "420fbb7e81377ce81bcaa878a4a7de81397853920bfbb86367fd256847fc18b6",
+  "count": 1214
+}

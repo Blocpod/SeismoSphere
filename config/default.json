@@ -1,0 +1,17 @@
+{
+  "catalogProvider": "USGS",
+  "triggerDepth": 300,
+  "minMagnitude": 4.5,
+  "lookbackDays": 10,
+  "windowDays": 10,
+  "radiusKm": 400,
+  "magnitudeTolerance": 1,
+  "magnitudeMode": "moment",
+  "deepEscalation": 0.5,
+  "maxTargets": 16,
+  "rules": {"deep": true, "midpoint": true, "silence": true, "spacing": true, "routes": true, "reflection": true, "swarm": true},
+  "aiProvider": "ollama",
+  "localModel": "qwen3.6:35b",
+  "codexModel": "gpt-6-astra",
+  "autoForecast": false
+}

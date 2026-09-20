@@ -1,0 +1,12 @@
+import {clickGlobeControl} from './browser-controls.mjs';
+import {createRequire} from 'node:module';
+import {writeFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+const {chromium}=createRequire(import.meta.url)('C:/Users/blocp/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright'),browser=await chromium.launch({headless:true,channel:'chrome'}),page=await browser.newPage({viewport:{width:1536,height:1024}});
+try{
+  await page.goto('http://127.0.0.1:4318');await page.locator('.event-row').first().waitFor();await clickGlobeControl(page,'volcanoes-open');await page.locator('#volcano-search').fill('Kilauea');await page.locator('[data-volcano="GVP:332010"]').click();
+  let release;const hold=new Promise(resolve=>release=resolve);await page.route('**/api/chat',async route=>{await hold;await route.fulfill({json:{answer:'DELAYED_REFERENCE_2026',provider:'test-only',model:'Controlled test response',grounded:false,actions:[]}});});const sent=page.waitForRequest(r=>r.url().endsWith('/api/chat'));await page.locator('#volcano-explain').click();await sent;
+  await page.getByRole('button',{name:'Close volcanoes',exact:true}).click();await page.getByRole('button',{name:'Research lab',exact:true}).click();await page.locator('#replay-date').fill('2011-03-01T00:00');await page.locator('#load-replay').click();await page.locator('#timeline-time').filter({hasText:'Mar 01'}).waitFor();const response=page.waitForResponse(r=>r.url().endsWith('/api/chat'));release();await response;await clickGlobeControl(page,'volcanoes-open');await page.waitForFunction(()=>!document.querySelector('#volcano-explain').disabled);const withheld=await page.locator('#volcano-explanation').innerText();assert.match(withheld,/cutoff excludes/);assert.equal(withheld.includes('DELAYED_REFERENCE_2026'),false);
+  await page.getByRole('button',{name:'Close volcanoes',exact:true}).click();await page.getByRole('button',{name:'Go live',exact:true}).click();await page.locator('#timeline-mode').filter({hasText:'LIVE CATALOG'}).waitFor();await clickGlobeControl(page,'volcanoes-open');assert.match(await page.locator('#volcano-explanation').innerText(),/DELAYED_REFERENCE_2026/);
+  writeFileSync('artifacts/volcano-cutoff-report.json',JSON.stringify({controlledTestResponse:true,pendingResponseHiddenAfterEarlierCutoff:true,restoredAtEligibleCutoff:true,withheld},null,2));console.log('Pending volcano explanation is withheld at an earlier cutoff and restored only when eligible.');
+}finally{await browser.close();}

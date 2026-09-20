@@ -1,0 +1,13 @@
+import {writeFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+import {faultContext} from '../server/fault-context.mjs';
+const root='http://127.0.0.1:4318',status=await(await fetch(root+'/api/status')).json();assert.equal(status.config.aiProvider,'ollama');
+const analysis=await(await fetch(root+'/api/analysis?mode=strict')).json();
+const {events}=await(await fetch(root+'/api/events?mode=strict&asOf='+analysis.asOf)).json();
+const event=events.filter(e=>e.lat>32&&e.lat<42&&e.lon>-125&&e.lon<-114).sort((a,b)=>b.mag-a.mag)[0];assert.ok(event);
+const evidence=await faultContext(event,analysis.asOf);assert.equal(evidence.available,true);assert.ok(evidence.matches.length);
+const question='For the selected earthquake, name the nearest mapped fault and give its surface-trace distance. Explain why proximity does not identify the causative fault. Use the geological reference only; do not discuss the model watches.';
+const started=Date.now(),response=await fetch(root+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:question,analysisId:analysis.analysisId,asOf:analysis.asOf,mode:'strict',eventId:event.id}),signal:AbortSignal.timeout(190000)}),result=await response.json();assert.equal(response.status,200,JSON.stringify(result));assert.equal(result.provider,'ollama');
+const nearest=evidence.matches[0],name=nearest.attributes.name||nearest.attributes.catalog_id;
+assert.ok(result.answer.toLowerCase().includes(name.toLowerCase()),JSON.stringify({name,result}));assert.match(result.answer,/causat|caus(e|al)|responsible|ruptur/i);
+const report={elapsedMs:Date.now()-started,provider:result.provider,model:result.model,eventId:event.id,eventPlace:event.place,nearest:name,distanceKm:nearest.distanceKm,answer:result.answer,geologicalEvidence:evidence};writeFileSync('artifacts/fault-ai-report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));

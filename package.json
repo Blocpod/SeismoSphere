@@ -1,0 +1,9 @@
+{
+  "name": "seismosphere-ai",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-first 3D seismic research laboratory",
+  "engines": { "node": ">=24" },
+  "scripts": { "start": "node server/index.mjs", "test": "node --test --test-concurrency=2", "setup": "node scripts/setup.mjs" }
+}

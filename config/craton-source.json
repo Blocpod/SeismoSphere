@@ -1,0 +1,48 @@
+{
+  "revision": "6cdcbf021178e9adf65e7f9c3d77c5497a976bf4",
+  "files": [
+    {
+      "name": "cratons.shp",
+      "url": "https://raw.githubusercontent.com/dhasterok/global_tectonics/6cdcbf021178e9adf65e7f9c3d77c5497a976bf4/plates%26provinces/shp/cratons.shp",
+      "bytes": 211240,
+      "sha256": "071ebcb51ca1ceef444f03059ff7c43531acd83338cd197b09f31612485b4845"
+    },
+    {
+      "name": "cratons.shx",
+      "url": "https://raw.githubusercontent.com/dhasterok/global_tectonics/6cdcbf021178e9adf65e7f9c3d77c5497a976bf4/plates%26provinces/shp/cratons.shx",
+      "bytes": 1012,
+      "sha256": "983f700efaee160d14ec09b851d27c48d5b4344af9450f3f6be97d70600401fd"
+    },
+    {
+      "name": "cratons.dbf",
+      "url": "https://raw.githubusercontent.com/dhasterok/global_tectonics/6cdcbf021178e9adf65e7f9c3d77c5497a976bf4/plates%26provinces/shp/cratons.dbf",
+      "bytes": 128418,
+      "sha256": "b51842e381de12792d450b2e5c44d013ca883d32e7d7f1033f5bf407899fed81"
+    },
+    {
+      "name": "cratons.prj",
+      "url": "https://raw.githubusercontent.com/dhasterok/global_tectonics/6cdcbf021178e9adf65e7f9c3d77c5497a976bf4/plates%26provinces/shp/cratons.prj",
+      "bytes": 145,
+      "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4"
+    },
+    {
+      "name": "cratons.qmd",
+      "url": "https://raw.githubusercontent.com/dhasterok/global_tectonics/6cdcbf021178e9adf65e7f9c3d77c5497a976bf4/plates%26provinces/shp/cratons.qmd",
+      "bytes": 652,
+      "sha256": "5f0a7fea4af2fcfe9748e64d882addcda5111099e4c49e2ee5576dddea6f87e7"
+    },
+    {
+      "name": "LICENSE",
+      "url": "https://raw.githubusercontent.com/dhasterok/global_tectonics/6cdcbf021178e9adf65e7f9c3d77c5497a976bf4/LICENSE",
+      "bytes": 35129,
+      "sha256": "605e9047a563c5c8396ffb18232aa4304ec56586aee537c45064c6fb425e44ad"
+    },
+    {
+      "name": "README.md",
+      "url": "https://raw.githubusercontent.com/dhasterok/global_tectonics/6cdcbf021178e9adf65e7f9c3d77c5497a976bf4/README.md",
+      "bytes": 2767,
+      "sha256": "62e0458320f31f58400e548a4dbb1810b58652316858091411eb76b3fc52fd70"
+    }
+  ],
+  "featuresSha256": "f974c5f3731ea5d0dc761c371239ad247a9fe697370396cdc61d78483ee80fae"
+}

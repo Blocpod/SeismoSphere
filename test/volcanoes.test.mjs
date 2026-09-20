@@ -1,0 +1,17 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {normalizeVolcanoes,nearbyVolcanoes,eruptionYear} from '../public/volcano-data.js';
+import {volcanoEvidence} from '../server/volcano-context.mjs';
+import {commandActions,chat} from '../server/ai.mjs';
+const feature=(number=210010,lon=179,lat=0)=>({type:'Feature',id:'unstable-service-id',geometry:{type:'Point',coordinates:[lon,lat]},properties:{Volcano_Number:number,Volcano_Name:'Test volcano',Longitude:lon,Latitude:lat,Elevation:-1410,Last_Eruption_Year:null,Geologic_Epoch:'Holocene'}});
+const collection=features=>({type:'FeatureCollection',crs:{properties:{name:'urn:ogc:def:crs:EPSG::4326'}},totalFeatures:features.length,numberMatched:features.length,numberReturned:features.length,features});
+test('volcano normalization verifies complete WFS inventories, coordinates and stable identities without inventing missing years',()=>{
+  const first=feature(),other=feature(210020,-179),data=collection([other,first]),volcanoes=normalizeVolcanoes(data);assert.deepEqual(volcanoes.map(v=>v.id),['GVP:210010','GVP:210020']);assert.equal(volcanoes[0].elevationM,-1410);assert.equal(volcanoes[0].lastEruptionYear,null);assert.equal(eruptionYear(null),'Not supplied');assert.equal(eruptionYear(-8300),'8300 BCE');assert.equal(eruptionYear(2026),'2026 CE');
+  first.id='another-generated-id';assert.deepEqual(normalizeVolcanoes(data),volcanoes);assert.throws(()=>normalizeVolcanoes({...data,numberMatched:3}),/Incomplete/);assert.throws(()=>normalizeVolcanoes(collection([first,first])),/Duplicate/);
+  const wrong=structuredClone(data);wrong.features[0].properties.Latitude=10;assert.throws(()=>normalizeVolcanoes(wrong),/coordinates/);wrong.features[0].properties.Latitude=0;wrong.features[0].properties.Elevation='unknown';assert.throws(()=>normalizeVolcanoes(wrong),/elevation/);wrong.features[0].properties.Elevation=null;assert.equal(normalizeVolcanoes(wrong)[1].elevationM,null);
+});
+test('volcano proximity uses catalog points across the dateline; replay excludes later reference knowledge',async()=>{
+  const volcanoes=normalizeVolcanoes(collection([feature(210010,179),feature(210020,-179),feature(210030,30)])),matches=nearbyVolcanoes(volcanoes,{lat:0,lon:180});assert.equal(matches.length,2);assert.ok(matches.every(m=>Math.abs(m.distanceKm-111.19508)<.0001));assert.equal(nearbyVolcanoes(volcanoes,{lat:0,lon:180},8,100).length,0);assert.throws(()=>nearbyVolcanoes(volcanoes,{lat:91,lon:0}),/Invalid/);
+  const data={volcanoes,provenance:{retrievedAt:new Date(300).toISOString()}},old=volcanoEvidence(data,{id:'GVP:210010',asOf:299});assert.equal(old.available,false);assert.equal(old.selected,undefined);const e=volcanoEvidence(data,{id:'GVP:210010',event:{id:'event',time:100,lat:0,lon:180,depth:600},asOf:300});assert.equal(e.matches.length,2);assert.equal(e.selected.sourceProperties,undefined);assert.equal(e.event.depth,600);assert.throws(()=>volcanoEvidence(data,{id:'missing',asOf:300}),/identity/);assert.throws(()=>volcanoEvidence(data,{event:{time:301},asOf:300}),/cutoff/);
+  const answer=await chat('Explain this volcano',{volcanoEvidence:old},{aiProvider:'deterministic'});assert.match(answer.answer,/received after/);assert.equal(answer.answer.includes('1410'),false);assert.deepEqual(commandActions('Open volcanoes'),['volcanoes']);assert.equal(commandActions('Explain this volcano',{volcanoEvidence:e}).includes('forecasts'),false);
+});
