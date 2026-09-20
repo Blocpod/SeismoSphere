@@ -2,7 +2,7 @@
 
 ### Observe the Earth. Explore the evidence. Test the hypothesis.
 
-**A local-first, interactive 3D seismic research workspace by BlockPod.** SeismoSphere brings earthquake observations, geological reference layers, configurable forecasting hypotheses and AI-assisted analysis into a cinematic liquid-glass interface.
+**A local-first, interactive 3D seismic research workspace by Blocpod.** SeismoSphere brings earthquake observations, geological reference layers, configurable forecasting hypotheses and AI-assisted analysis into a cinematic liquid-glass interface.
 
 [Explore the features](#features-at-a-glance) · [Get started](#getting-started) · [Build status](docs/BUILD-STATUS.md) · [License](LICENSE)
 
@@ -147,8 +147,8 @@ Immediate copilot controls include “Show only targets above M6”, “Trace pa
 
 ## Copyright and license
 
-**Copyright © 2026 BlockPod. All rights reserved.**
+**Copyright © 2026 Blocpod. All rights reserved.**
 
-SeismoSphere AI's original copyrightable project material is proprietary and is not offered under an open-source license. Use, modification or redistribution beyond applicable law or platform-granted rights requires written permission from BlockPod. See [LICENSE](LICENSE).
+SeismoSphere AI's original copyrightable project material is proprietary and is not offered under an open-source license. Use, modification or redistribution beyond applicable law or platform-granted rights requires written permission from Blocpod. See [LICENSE](LICENSE).
 
-Third-party software, imagery and scientific datasets retain their respective copyrights, licenses and attribution requirements. BlockPod's notice does not claim ownership of those materials, underlying facts or third-party methodologies. See [NOTICE.md](NOTICE.md) and [sources and credits](#sources-and-credits).
+Third-party software, imagery and scientific datasets retain their respective copyrights, licenses and attribution requirements. Blocpod's notice does not claim ownership of those materials, underlying facts or third-party methodologies. See [NOTICE.md](NOTICE.md) and [sources and credits](#sources-and-credits).

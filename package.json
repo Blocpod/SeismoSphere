@@ -2,7 +2,7 @@
   "name": "seismosphere-ai",
   "version": "0.1.0",
   "private": true,
-  "author": "BlockPod",
+  "author": "Blocpod",
   "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "description": "Local-first 3D seismic research laboratory",
