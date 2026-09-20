@@ -1,12 +1,47 @@
 # SeismoSphere AI
 
-A locally running 3D seismic research laboratory. The project is actively being built against the two supplied briefs; the entire six-phase vision is **not yet complete**.
+### Observe the Earth. Explore the evidence. Test the hypothesis.
+
+**A local-first, interactive 3D seismic research workspace by BlockPod.** SeismoSphere brings earthquake observations, geological reference layers, configurable forecasting hypotheses and AI-assisted analysis into a cinematic liquid-glass interface.
+
+[Explore the features](#features-at-a-glance) · [Get started](#getting-started) · [Build status](docs/BUILD-STATUS.md) · [License](LICENSE)
+
+## The workspace
+
+![SeismoSphere desktop interface showing a cinematic 3D Earth, live earthquake catalog, model watches and replay timeline](docs/images/live-earth-desktop.png)
+
+**Live Earth, in context.** Rotate the globe, inspect earthquake depths, follow configured paths and move through time. Observation markers and experimental watch regions stay visually distinct, with source information available for inspection.
+
+## Features at a glance
+
+| Capability | What you can do |
+| --- | --- |
+| **Interactive 3D Earth** | Explore detailed Earth imagery, atmosphere, plate boundaries and cinematic or scientific rendering. |
+| **Live catalog and replay** | Filter earthquake observations by region, magnitude and depth; inspect historical catalog states. |
+| **Geological inspection** | Examine slab surfaces, mapped faults, cratons, terrain and true-depth hemisphere or radial cutaways. |
+| **Configurable route engine** | Edit directed waypoints and connections, record provenance, preview paths and retain immutable route revisions. |
+| **Auditable model watches** | Inspect supporting and contradictory evidence; freeze hypotheses and compare retained outcomes with controls. |
+| **Local-first AI** | Use local Ollama models or the configured ChatGPT-authenticated Astra integration; common view commands execute without AI calls. |
+| **Research and export** | Work with statistical experiments, station recordings and source-linked figure, video and evidence exports. |
+| **Responsive access** | Use dedicated mobile navigation and touch-friendly watch panels; launch the Windows workspace from its desktop icon. |
+
+### Built for the smaller screen
+
+<img src="docs/images/model-watches-mobile.png" alt="SeismoSphere mobile interface with Earth visible above the model-watch sheet and bottom navigation" width="320">
+
+A focused watch sheet keeps the globe in view while providing magnitude filters, evidence selection and explicit forecast-freezing controls. The mobile layout has been checked in desktop browser emulation; physical-device acceptance remains in progress.
+
+*Screenshots show the running application with catalog data at capture time. Earth textures and lighting are illustrative composites, not live satellite imagery. Imagery: [Solar System Scope](https://www.solarsystemscope.com/textures/) ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)), with texture layers from the Three.js examples; plate reference: PB2002 / fraxen; earthquake observations: USGS. See [sources and credits](#sources-and-credits).*
+
+> **Research status:** Actively developed experimental software. Model-match scores are not calibrated earthquake probabilities, and configured pressure-transfer routes remain illustrative unless documented as source-traced. This is not an official warning system. See the [implementation status and remaining work](docs/BUILD-STATUS.md).
+
+## Getting started
 
 Double-click **Launch SeismoSphere.cmd**, or run `node server/index.mjs` with Node.js 24+. Open http://127.0.0.1:4318. The launcher starts the backend in a hidden window and reuses an existing instance. Port 4317 was already occupied and is left untouched.
 
 The **SeismoSphere AI** desktop icon opens a dedicated Edge/Chrome app window, starts the local backend and requests a catalog refresh. It also starts the installed Ollama service if needed. Run `Create-DesktopShortcut.ps1` to recreate this installation's icon. The main interface uses translucent liquid-glass panels, an 8K desktop Earth, atmospheric shading and responsive phone controls.
 
-Run `node scripts/setup.mjs` to restore local Three.js and Earth/plate assets. The runtime has no npm dependencies. Run `node --test` for the scientific and persistence tests.
+Run `node scripts/setup.mjs` to restore local Three.js and Earth/plate assets. The runtime has no npm dependencies. Run `npm test` for the scientific and persistence tests.
 
 ## Working capabilities
 
@@ -108,3 +143,12 @@ Saved recordings also support full StationXML response correction to displacemen
 Route editing is available in **Tools → Route network**. Enter ordered waypoints or pick them on Earth, choose direction and explicit outgoing connections, record source provenance, then save a named revision. Saved forecasts never change when the network changes. See [Route network](docs/ROUTE-NETWORK.md).
 
 Immediate copilot controls include “Show only targets above M6”, “Trace paths from Fiji”, “Find unresolved fulcrums”, “Show all watches”, “Remove plate labels”, “Use scientific view” and “Use cinematic view”. These exact view commands run locally without consuming AI usage; analytical questions still use your selected brain.
+
+
+## Copyright and license
+
+**Copyright © 2026 BlockPod. All rights reserved.**
+
+SeismoSphere AI's original copyrightable project material is proprietary and is not offered under an open-source license. Use, modification or redistribution beyond applicable law or platform-granted rights requires written permission from BlockPod. See [LICENSE](LICENSE).
+
+Third-party software, imagery and scientific datasets retain their respective copyrights, licenses and attribution requirements. BlockPod's notice does not claim ownership of those materials, underlying facts or third-party methodologies. See [NOTICE.md](NOTICE.md) and [sources and credits](#sources-and-credits).
