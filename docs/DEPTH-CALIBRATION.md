@@ -38,3 +38,5 @@ The 2026-09-28 run `a8298ff5eb189e1b1a45588958a385302bab1f0daf9b8ed13e136de3ed5c
 The objective selected 400 km. All three candidates had six DS training hits; their matched recent-rate controls differed. The selected variant later had 9/29 DS full hits versus 10/29 for unchanged 300 km. It therefore did not improve the DS full-hit count. The workspace remains at 300 km. This previously explored historical interval is not an untouched scientific test.
 
 The exported source/input/report checksums verified, and `scripts/reproduce-calibration.mjs` reproduced the report identically. Actual local Qwen 3.6 35B explained both counts correctly with no actions. The saved UI now identifies exact training/test dates, creation time, run ID and issuance counts, and restores its dates when selected.
+
+The actual subscription-backed gpt-6-astra also preserved 9/29 versus 10/29, explained that all candidates shared six training DS hits while matched-control counts differed, and returned no actions. Result retained locally in artifacts/calibration-2011-astra.json. Both providers passed this saved-run explanation check; the default remains local Ollama.
