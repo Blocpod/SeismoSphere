@@ -1,3 +1,4 @@
+import {tectonicComparison,TECTONIC_VERSION} from './tectonic-baseline.mjs';
 import {spawn} from 'node:child_process';
 import {existsSync,readFileSync} from 'node:fs';
 import path from 'node:path';
@@ -28,7 +29,10 @@ export class LearnedModel {
     this.store=store;this.active=null;this.children=new Set();
     if(store.get('learnedJob')?.status==='running')store.set('learnedJob',{...store.get('learnedJob'),status:'interrupted',message:'Training was interrupted by a server restart. Start the experiment again.'});
     this.python=process.env.SEISMO_MODEL_PYTHON??path.resolve('data/model-runtime',process.platform==='win32'?'Scripts/python.exe':'bin/python');
-    store.db.exec(`CREATE TABLE IF NOT EXISTS learned_runs(id TEXT PRIMARY KEY,created_at INTEGER,body TEXT NOT NULL);
+    store.db.exec(`CREATE TABLE IF NOT EXISTS tectonic_runs(id TEXT PRIMARY KEY,created_at INTEGER NOT NULL,body TEXT NOT NULL);
+      CREATE TRIGGER IF NOT EXISTS frozen_tectonic_update BEFORE UPDATE ON tectonic_runs BEGIN SELECT RAISE(ABORT,'Tectonic runs are immutable'); END;
+      CREATE TRIGGER IF NOT EXISTS frozen_tectonic_delete BEFORE DELETE ON tectonic_runs BEGIN SELECT RAISE(ABORT,'Tectonic runs are immutable'); END;
+      CREATE TABLE IF NOT EXISTS learned_runs(id TEXT PRIMARY KEY,created_at INTEGER,body TEXT NOT NULL);
       CREATE TRIGGER IF NOT EXISTS frozen_learned_update BEFORE UPDATE ON learned_runs BEGIN SELECT RAISE(ABORT,'Learned runs are immutable'); END;
       CREATE TRIGGER IF NOT EXISTS frozen_learned_delete BEFORE DELETE ON learned_runs BEGIN SELECT RAISE(ABORT,'Learned runs are immutable'); END;`);
   }
@@ -81,5 +85,12 @@ export class LearnedModel {
     return {report:{...report,artifact:undefined,testWindows:undefined},projection,mode};
   }
   export(id){const report=this.get(id),row=this.store.db.prepare('SELECT body FROM snapshots WHERE id=?').get(report.inputSnapshotId);return {report,snapshot:{id:report.inputSnapshotId,...JSON.parse(row.body)},integrity:{weightsValid:hash(report.artifact)===report.weightsSha256,snapshotValid:hash(JSON.parse(row.body))===report.inputSnapshotId},hashMethod:'SHA-256 of recursively key-sorted JSON, UTF-8 (server/store.mjs canonical). Python serialization hash also retained.'};}
+  tectonic(id){
+    const parent=this.get(id),boundaries=JSON.parse(readFileSync('public/assets/plates.json','utf8')),implementation=Object.fromEntries(['tectonic-baseline','geo'].map(name=>[name,readFileSync(`server/${name}.mjs`,'utf8')]));
+    const input={parentRunId:parent.id,inputSnapshotId:parent.inputSnapshotId,boundariesSha256:hash(boundaries),implementationSha256:hash(implementation),version:TECTONIC_VERSION},key=hash(input),prior=this.store.db.prepare('SELECT body FROM tectonic_runs WHERE id=?').get(key);if(prior)return JSON.parse(prior.body);
+    const row=this.store.db.prepare('SELECT body FROM snapshots WHERE id=?').get(parent.inputSnapshotId);if(!row)throw new Error('Training snapshot unavailable');const snapshot=JSON.parse(row.body);if(hash(snapshot)!==parent.inputSnapshotId)throw new Error('Training snapshot checksum mismatch');
+    const report=tectonicComparison(parent,snapshot.events,boundaries),bundle={id:key,createdAt:Date.now(),input,report,reportSha256:hash(report),boundaries,implementation,testWindows:parent.testWindows.map(w=>({cutoff:w.cutoff,end:w.end,observed:w.observed,graph:w.graph}))};
+    this.store.db.prepare('INSERT INTO tectonic_runs VALUES(?,?,?)').run(key,bundle.createdAt,JSON.stringify(bundle));return bundle;
+  }
   close(){for(const child of this.children)child.kill();}
 }

@@ -20,6 +20,9 @@ test('learned reports preserve immutable model/snapshot exports and cutoff-safe 
     store.db.prepare('INSERT INTO learned_runs VALUES(?,?,?)').run(report.id,4000,JSON.stringify(report));
     assert.throws(()=>store.db.exec("UPDATE learned_runs SET body='{}'"),/immutable/);
     assert.throws(()=>store.db.exec('DELETE FROM learned_runs'),/immutable/);
+    store.db.prepare('INSERT INTO tectonic_runs VALUES(?,?,?)').run('tectonic-fixture',4000,'{}');
+    assert.throws(()=>store.db.exec("UPDATE tectonic_runs SET body='changed'"),/immutable/);
+    assert.throws(()=>store.db.exec('DELETE FROM tectonic_runs'),/immutable/);
     assert.deepEqual(manager.export('frozen').integrity,{weightsValid:true,snapshotValid:true});
     assert.equal(manager.list().runs[0].artifact,undefined);
     for(let i=0;i<12;i++)store.db.prepare('INSERT INTO learned_runs VALUES(?,?,?)').run('history-'+i,5000+i,JSON.stringify({...report,id:'history-'+i,createdAt:5000+i}));
