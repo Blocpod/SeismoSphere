@@ -17,10 +17,10 @@ test('null controls are seeded and preserve target envelopes',()=>{const now=50*
 test('analogue windows cannot look beyond cutoff and configurations reject invalid numbers',()=>{const src=event('s',100*DAY),old=event('o',50*DAY);const a=analogues(src,[old,event('future',110*DAY)],100*DAY);assert.equal(a[0].subsequentCount,0);assert.throws(()=>validateConfig({...config,radiusKm:NaN}));assert.throws(()=>validateConfig({...config,windowDays:100}));});
 
 test('analogue magnitude uses the even-sample median and retains cutoff evidence and fallback',()=>{
- const now=400*DAY,src=event('current',now-DAY,0,-10,5,350),peer=event('peer',now-DAY,0,10,4.9,350);
- const history=[6,6.2,6.4,6.8,7,7.2].flatMap((mag,i)=>[event('old'+i,(20+i*40)*DAY,0,-10,5,350),event('outcome'+i,(21+i*40)*DAY,0,-10,mag,10)]);
+ const now=400*DAY,src=event('current',now-DAY,0,-10,5,350),peer=event('peer',now-DAY,0,10,4.9,200);
+ const history=[6,6.2,6.4,6.8,7,7.2].flatMap((mag,i)=>[event('old'+i,(20+i*40)*DAY,0,-10,5,350),event('old-peer'+i,(20+i*40)*DAY,0,10,4.9,200),event('outcome'+i,(22+i*40)*DAY,0,-10,mag,10)]);
  const run=events=>generate(events,now,{...config,magnitudeMode:'analogue'},routes).candidates[0];
  const f=run([...history,src,peer]);assert.equal(f.magnitude.central,6.6);assert.equal(f.magnitude.analogueEvidence.samples.length,6);assert.equal(f.magnitude.analogueEvidence.asOf,now);assert.ok(f.magnitude.analogueEvidence.samples.every(a=>a.sourceTime+10*DAY<now));
  assert.deepEqual(run([...history,src,peer,event('future',now+DAY,0,-10,9)]),f);
- const fallback=run([src,peer,...history.slice(0,8)]);assert.equal(fallback.magnitude.central,5);assert.match(fallback.magnitude.explanation,/fallback/);assert.equal(fallback.magnitude.analogueEvidence.samples.length,4);
+ const fallback=run([src,peer,...history.slice(0,12)]);assert.equal(fallback.magnitude.central,5);assert.match(fallback.magnitude.explanation,/fallback/);assert.equal(fallback.magnitude.analogueEvidence.samples.length,4);
 });

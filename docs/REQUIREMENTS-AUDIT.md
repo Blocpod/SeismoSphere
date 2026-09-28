@@ -80,3 +80,12 @@ The recent turns made verified progress; there is no repeated external blocker a
 4. Close delivery/device checks using supported mechanisms when available. Physical devices and unestablished scientific calibration must remain honestly identified.
 
 The last broad suite passed 211 tests before subsequent targeted changes. Later focused checks are recorded per commit in BUILD-STATUS; this audit does not turn that older suite result into a claim about every later revision.
+
+
+## Mode D update — 2026-09-28
+
+Engine `ds-research-0.6.0` now uses `server/configuration-analogues.mjs` for Mode D: an explicit relative configuration graph with magnitude-ranked neighboring nodes, depth, relative age and all pair distances. Historical analysis cutoffs preserve the query source age, and only complete subsequent windows enter outcome evidence. Selection does not inspect outcomes. Frozen magnitude evidence retains query/match graphs, differences, bounded search counts, every qualifying outcome and empty windows. The watch inspector exposes that evidence.
+
+This closes the source-only-selection implementation gap above. The search is a deterministic, uncalibrated heuristic bounded to 400 source candidates and 100 matches, seven peers within 3,500 km and ten days. It does not match route topology or transfer outcome locations into forecast targets; neural graph research remains a separate method. The central magnitude is the median of largest qualifying source-local follow-ups, with an explicit insufficient-evidence fallback. Positive predictive skill is not established by this implementation.
+
+Validation: 217 tests passed (`artifacts/configuration-analogue-suite.log`), including geometry decoys, translation invariance, cutoff isolation, outcome-independent ranking, catalog exclusions, empty windows, median and fallback. Direct execution with 70,868 actual catalog events produced 16 drafts in approximately 9.5 seconds; sampled current configurations correctly reported insufficient geometry matches (`artifacts/configuration-analogue-live.json`). Shared all-model evaluation and remaining acceptance items above remain open.

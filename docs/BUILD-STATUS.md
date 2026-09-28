@@ -538,3 +538,7 @@ Source magnitude/depth similarity is now ranked and capped at 100 before outcome
 ### Lithosphere interior command
 'Take me inside the lithosphere' now loads verified LITHO1.0 geometry, enables mantle-lid and asthenosphere boundaries, and opens the existing true-depth oblique cutaway around the selected event/watch or configured section anchor. 'Open lithosphere layers' retains the controls-only behavior. Added a direct cutaway button to the layer dialog. Missing assets leave the view unmodified and report the error. This is a sourced cutaway inspection, not a first-person camera inside the mantle. Fourteen geometry/command tests passed; the running mobile command displays both published layer bands at depth 1x with scientific labels. Evidence: artifacts/lithosphere-interior-phone.png.
 
+
+
+### 2026-09-28 — Configuration geometry for magnitude Mode D
+Engine 0.6.0 now matches relative sequence graphs before reading completed outcome windows; frozen evidence and the watch inspector retain the actual graph and outcome samples. The source-only research search is preserved. 217 tests passed. Actual 70,868-event run and live UI evidence are saved in artifacts/configuration-analogue-live.json and artifacts/magnitude-configuration-evidence.png. The live app was restarted, Mode D inspected, then the original moment setting restored; automatic issuing remained disabled. Americas surface view restored. The full goal remains active; shared evaluation and acceptance items remain in REQUIREMENTS-AUDIT.md.
