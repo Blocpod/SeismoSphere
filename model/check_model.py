@@ -58,6 +58,20 @@ assert np.array_equal(before, features(catalog(events + [{**events[0], "time": c
 a = predict({"report": report, "events": events, "cutoff": cutoff})
 b = predict({"report": report, "events": future, "cutoff": cutoff})
 assert a == b
+ensemble_a = predict({"report": report, "events": events, "cutoff": cutoff, "model": "ensemble"})
+ensemble_b = predict({"report": report, "events": future, "cutoff": cutoff, "model": "ensemble"})
+assert ensemble_a == ensemble_b
+assert ensemble_a["model"] == "ensemble"
+expected = sum(w * np.array(ensemble_a["componentCells"][name]) for name, w in ensemble_a["ensembleWeights"].items())
+assert np.allclose(expected, ensemble_a["cells"])
+assert math.isclose(sum(ensemble_a["cells"]), ensemble_a["totalExpectedCount"], rel_tol=1e-9)
+assert np.array_equal(ensemble_a["componentCells"]["graph"], a["cells"])
+try:
+    predict({"report": report, "events": events, "cutoff": cutoff, "model": "invalid"})
+    raise AssertionError("Accepted an unknown model")
+except ValueError:
+    pass
+
 assert all(math.isfinite(v) and v > 0 for v in a["cells"])
 assert math.isclose(sum(a["cells"]), a["totalExpectedCount"], rel_tol=1e-6)
 try:

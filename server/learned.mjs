@@ -11,8 +11,16 @@ export function learnedContext(report,projection,asOf,mode){
   if(projection.cutoff!==asOf)throw new Error('Learned map cutoff does not match analysis');
   const scores=Object.fromEntries(Object.entries(report.scores).filter(([,s])=>s.lastEnd<=asOf));
   const comparisons=Object.fromEntries(Object.entries(scores).filter(([,s])=>s.models).map(([name,s])=>{const g=s.models.graph,n=s.models.noNeighbors;return [name,{logLikelihoodBetter:g.logLikelihood===n.logLikelihood?'tie':g.logLikelihood>n.logLikelihood?'graph':'noNeighbors',meanAbsoluteErrorBetter:g.meanAbsoluteError===n.meanAbsoluteError?'tie':g.meanAbsoluteError<n.meanAbsoluteError?'graph':'noNeighbors'}];}));
+  const sourceSentences=[];
+  if(Number.isFinite(projection.totalExpectedCount)){
+    const ensemble=projection.model==='ensemble';
+    sourceSentences.push(`The selected ${ensemble?'weighted ensemble':'cell graph'} estimates ${projection.totalExpectedCount.toFixed(2)} M≥5 catalog events worldwide over the seven days starting ${new Date(projection.cutoff).toISOString()}.`);
+    if(ensemble){const labels={graph:'cell graph',noNeighbors:'no-neighbor model',trainingMean:'training mean',recentRate:'recent rate'};sourceSentences.push('Frozen ensemble weights: '+Object.entries(projection.ensembleWeights).map(([name,value])=>`${labels[name]??name} ${(value*100).toFixed(0)}%`).join(', ')+'.');}
+    sourceSentences.push('Selection used 2017–2019 validation outcomes, not test outcomes; the previously explored historical test is not a fresh confirmatory evaluation.');
+    sourceSentences.push('Expected counts are model averages, not guaranteed events, calibrated probabilities, exact epicenters or measured stress transfer.');
+  }
   return {id:report.id,version:report.version,createdAt:report.createdAt,catalogMode:report.catalogMode,options:report.options,grid:report.grid,features:report.features,weightsSha256:report.weightsSha256,projection,
-    scores,comparisons,limitations:report.limitations,
+    sourceSentences,scores,comparisons,ensemble:report.ensemble?{components:report.ensemble.components,weights:report.ensemble.weights,selection:report.ensemble.selection,step:report.ensemble.step}:null,limitations:report.limitations,
     policy:'Only completed evaluation intervals appear here. This checkpoint was selected using validation, not test outcomes.'};
 }
 export class LearnedModel {
@@ -57,7 +65,8 @@ export class LearnedModel {
       this.store.db.prepare('INSERT INTO learned_runs VALUES(?,?,?)').run(id,report.createdAt,JSON.stringify(report));this.store.set('learnedJob',{status:'completed',id,endedAt:Date.now()});return report;
     }catch(error){this.store.set('learnedJob',{status:'failed',id,endedAt:Date.now(),message:error.message});throw error;}finally{this.active=null;}
   }
-  async predict(id,cutoff,mode='catalog-replay'){
+  async predict(id,cutoff,mode='catalog-replay',model='graph'){
+    if(!['graph','ensemble'].includes(model))throw new Error('Choose graph or ensemble');
     const report=this.get(id);
     if(!Number.isFinite(cutoff)||cutoff>Date.now()||cutoff<report.options.validationEnd)throw new Error('Choose a valid cutoff after checkpoint selection (2020-01-01)');
     if(report.sourceSha256!==hash(readFileSync('model/seismic_gnn.py','utf8')))throw new Error('This checkpoint uses a different model implementation. Restore its source version or train a new run.');
@@ -66,7 +75,7 @@ export class LearnedModel {
     if(this.children.size)throw new Error('The local learned model is busy');
     if(!coverageComplete(this.store.get('coverage',[]),{provider:'USGS',start:cutoff-28*DAY,end:cutoff,minMagnitude:5}))throw new Error('Import all 28 conditioning days at M5 before generating this map');
     const events=this.store.events({provider:'USGS',start:cutoff-28*DAY,asOf:cutoff,strict:mode==='strict'}).filter(e=>e.mag>=5&&e.type==='earthquake');
-    const projection=await this.run({action:'predict',report,events,cutoff});
+    const projection=await this.run({action:'predict',report,events,cutoff,model});
     projection.inputSnapshotId=this.store.snapshot(events,cutoff,`learned-inference-${mode}`);
     return {report:{...report,artifact:undefined,testWindows:undefined},projection,mode};
   }

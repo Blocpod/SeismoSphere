@@ -277,7 +277,7 @@ const handler=async(req,res)=>{
       if(p==='/api/waveform-picks')return send(res,200,phases.annotate(b));
       if(p==='/api/waveform-spectrum')return send(res,200,await instruments.spectrum(b));
       if(p==='/api/learned-train')return send(res,200,await learned.train());
-      if(p==='/api/learned-predict')return send(res,200,await learned.predict(b.id,Date.parse(b.cutoff),b.mode??'catalog-replay'));
+      if(p==='/api/learned-predict')return send(res,200,await learned.predict(b.id,Date.parse(b.cutoff),b.mode??'catalog-replay',b.model??'graph'));
       if(p==='/api/import-control')return send(res,200,importJobs.control(String(b.id??''),b.action));
       if(p==='/api/system/set-startup'){if(typeof b.enabled!=='boolean')throw new Error('A boolean startup preference is required');return send(res,200,await startupSetting(b.enabled?'Enable':'Disable'));}
       if(p==='/api/system/shutdown'){send(res,200,{stopping:true});setTimeout(shutdown,100);return;}
@@ -411,7 +411,7 @@ const handler=async(req,res)=>{
             context.statisticalModel=statisticalContext(report,context.asOf,Number(b.horizonDays??7));context.candidates=[];context.selected=null;
           }
           if(b.learnedRunId){
-            const {report,projection}=await learned.predict(b.learnedRunId,context.asOf,context.mode==='strict'?'strict':'catalog-replay');
+            const {report,projection}=await learned.predict(b.learnedRunId,context.asOf,context.mode==='strict'?'strict':'catalog-replay',b.learnedModel??'graph');
             context.learnedModel=learnedContext(report,projection,context.asOf,context.mode);context.candidates=[];context.selected=null;
           }
           if(b.randomizationRunId){

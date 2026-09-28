@@ -10,7 +10,7 @@ import numpy as np
 import torch
 from torch import nn
 
-VERSION = "equal-area-weekly-gnn-0.2.0"
+VERSION = "equal-area-weekly-gnn-0.2.1"
 DAY = 86400000
 ROWS, COLS = 6, 12
 NODES = ROWS * COLS
@@ -174,7 +174,7 @@ def train(payload):
     standardized = ((x - mean) / scale).astype(np.float32)
     base = ((y[mask].sum(axis=0) + .5) / (mask.sum() + 1)).astype(np.float32)
     model, graph_pred, graph_fit = fit(standardized, y, splits, base, o["seed"])
-    _, local_pred, local_fit = fit(standardized, y, splits, base, o["seed"], graph=False)
+    local_model, local_pred, local_fit = fit(standardized, y, splits, base, o["seed"], graph=False)
     # Fixed, predeclared comparator: four recent weeks plus one training-average pseudo-week.
     recent = (np.expm1(x[:, :, 2]) + base) / 5
     predictions = {"graph": graph_pred, "noNeighbors": local_pred,
@@ -190,7 +190,7 @@ def train(payload):
         scores[split] = {"windows": int(sel.sum()), "firstCutoff": int(cutoffs[sel][0]),
                          "lastEnd": int(cutoffs[sel][-1] + 7 * DAY), "models": values}
     weights = {key: value.tolist() for key, value in model.state_dict().items()}
-    artifact = {"weights": weights, "mean": mean.tolist(), "scale": scale.tolist(), "base": base.tolist(), "ensemble": ensemble}
+    artifact = {"weights": weights, "mean": mean.tolist(), "scale": scale.tolist(), "base": base.tolist(), "ensemble": ensemble, "localWeights": {key: value.tolist() for key, value in local_model.state_dict().items()}}
     model_hash = hashlib.sha256(json.dumps(artifact, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
     report = {"version": VERSION, "options": o, "features": FEATURES,
               "grid": {"rows": ROWS, "columns": COLS, "cells": NODES, "areaKm2": 4 * math.pi * 6371.0088 ** 2 / NODES,
@@ -216,6 +216,11 @@ def train(payload):
 def predict(payload):
     report, cutoff = payload["report"], payload["cutoff"]
     o, a = report["options"], report["artifact"]
+    selected = payload.get("model", "graph")
+    if selected not in ["graph", "ensemble"]:
+        raise ValueError("Choose graph or ensemble")
+    if selected == "ensemble" and ("localWeights" not in a or "ensemble" not in a):
+        raise ValueError("Train a checkpoint with ensemble inference weights first")
     if cutoff < o["validationEnd"]:
         raise ValueError("Inference cutoff precedes model checkpoint selection")
     model = CountGraph()
@@ -225,7 +230,19 @@ def predict(payload):
     with torch.no_grad():
         expected = model(torch.tensor((x - np.array(a["mean"])) / np.array(a["scale"]), dtype=torch.float32),
                          torch.log(torch.tensor(a["base"]))).exp().numpy()
-    return {"cutoff": cutoff, "end": cutoff + 7 * DAY, "days": 7, "cells": expected.tolist(),
+    details = {}
+    if selected == "ensemble":
+        local = CountGraph(False)
+        local.load_state_dict({key: torch.tensor(value, dtype=torch.float32) for key, value in a["localWeights"].items()})
+        local.eval()
+        with torch.no_grad():
+            local_counts = local(torch.tensor((x - np.array(a["mean"])) / np.array(a["scale"]), dtype=torch.float32), torch.log(torch.tensor(a["base"]))).exp().numpy()
+        base = np.array(a["base"], dtype=np.float32)
+        components = {"graph": expected, "noNeighbors": local_counts, "trainingMean": base, "recentRate": (np.expm1(x[:, 2]) + base) / 5}
+        weights = a["ensemble"]["weights"]
+        expected = sum(w * components[name].astype(np.float64) for w, name in zip(weights, a["ensemble"]["components"]))
+        details = {"ensembleWeights": dict(zip(a["ensemble"]["components"], weights)), "componentCells": {name: values.tolist() for name, values in components.items()}}
+    return {"model": selected, **details, "cutoff": cutoff, "end": cutoff + 7 * DAY, "days": 7, "cells": expected.tolist(),
             "totalExpectedCount": float(expected.sum()), "units": "Expected M>=5 catalog events per equal-area cell in seven days"}
 
 
