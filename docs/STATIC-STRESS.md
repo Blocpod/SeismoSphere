@@ -20,7 +20,7 @@ Source inventory, exact rupture file, parsed patches and source reception time a
 
 The actual local API calculated 441 points for the archived 2015 Illapel model on a 20 km grid spanning ±200 km, at depth 10 km. Explicit assumptions: Poisson 0.25, shear modulus 32 GPa, effective friction 0.4, receiver strike/dip/rake 19/19/90 degrees. All values were finite, none were masked, and both result/implementation hashes passed. Saved result: `6f4df72da088c20000eac139d9da14764b1d8134aa1c65a6ffa15dd8c7c83357`. Local export: `artifacts/illapel-static-stress.json`. This receiver orientation is a test assumption, not identification of real future rupture surfaces.
 
-Geographic projection validation, independent Coulomb3 application-level comparison, saved-run comparison and matched forecast evaluation remain unfinished. The independent rectangular-kernel comparison below now covers local geometry, units and traction projection.
+Geographic projection validation, independent Coulomb3 application-level comparison and matched forecast evaluation remain unfinished. Saved-run comparison is available as described below. The independent rectangular-kernel comparison below now covers local geometry, units and traction projection.
 
 ## Primary references
 
@@ -67,3 +67,11 @@ The optional final argument adds a real exported source/options pair; omit it to
 Verified 97 cases / 1,305 samples: four strikes, three dips (including vertical), four slip directions, surface and 6 km depth, plus all 441 points of the 450-patch Illapel model at 10 km. All six tensor components and resolved shear/unclamping/Coulomb values satisfy `abs(error) <= 0.0001 Pa + 1e-7 * abs(reference)`. Maximum absolute differences were 0.001257 Pa for tensor components and 0.001609 Pa for resolved values. These maxima occur within the combined relative/absolute tolerance; they are not claims of geological accuracy.
 
 Reference binary SHA-256: `ad5e1b5f214003c23607dda8cd553a5dec9c653f93046f3926af95aa76e9dc47`. Compared export SHA-256: `dbef44e3faee58e34eb5632628d0c3b577d6b4591924d64756ff461fb4defc29`. The script prints the actual hashes on each run and fails on numerical disagreement. This establishes agreement of these local-coordinate static calculations with another analytical implementation. It does not validate geographic projection, real fault/receiver assumptions, the full Coulomb3 application workflow, or earthquake forecasting skill.
+
+## Compare saved assumptions
+
+With a result open, choose **Compare against saved calculation**. The plot and sample inspector show **current minus baseline**, using the existing symmetric MPa scale. Baseline receiver, elastic assumptions and solver version are displayed alongside a link to its complete export. Choose **Show current calculation only** to restore absolute values. Both original records remain unchanged.
+
+Comparison requires the same archived source and identical sample locations/depth. Original storage order may differ; coordinate/value pairs are reordered before subtraction. A sample masked in either run remains masked. Different grids are rejected without interpolation. Five integrity flags, strict cutoff availability and late-response guards apply to the baseline as well as the current result.
+
+Four focused grid/persistence tests passed. In the running UI, the two original Illapel runs compared to zero despite different storage order. A new run with friction 0.6 (`1a90407536fdba3832335c8ead3694010c3faa99ba8b98b0d93f361050fca58b`) compared against the 0.4 baseline: at east 20 / north 0 / depth 10 km, Coulomb difference +0.0662449 MPa and zero shear/unclamping differences. Switching back restored −0.316004 MPa absolute Coulomb stress. This is parameter sensitivity, not improved forecasting accuracy. Screenshot: `artifacts/stress-comparison.png`.

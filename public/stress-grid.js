@@ -10,3 +10,18 @@ export function stressGrid(record){
   const order=ys.flatMap(y=>xs.map(x=>cells.get(`${x},${y}`)));if(order.some(i=>i===undefined))throw new Error('Saved grid has missing samples');
   return {grid:{n,depth,east:(xs[0]+xs.at(-1))/2,north:(ys[0]+ys.at(-1))/2,extent:width/2},report:{...report,points:order.map(i=>points[i]),values:order.map(i=>values[i])}};
 }
+
+// A difference is meaningful only for the same source and exact sample locations.
+export function stressDifference(current,baseline){
+  if(current.sourceId!==baseline.sourceId)throw new Error('Compare calculations from the same archived source');
+  const a=stressGrid(current).report,b=stressGrid(baseline).report;
+  if(a.points.length!==b.points.length||a.points.some((p,i)=>['xKm','yKm','depthKm'].some(k=>p[k]!==b.points[i][k])))throw new Error('Comparison requires identical sampling locations and depth');
+  const values=a.values.map((v,i)=>{
+    const other=b.values[i];if(!v||!other)return null;
+    const delta={};for(const key of ['coulombPa','shearPa','unclampingPa']){
+      if(!Number.isFinite(v[key])||!Number.isFinite(other[key]))throw new Error('Comparison contains invalid stress values');
+      delta[key]=v[key]-other[key];
+    }return delta;
+  });
+  return {...a,values,excludedCount:values.filter(v=>!v).length};
+}
