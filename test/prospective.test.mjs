@@ -22,7 +22,7 @@ test('prospective missing and incomplete assessments remain excluded without ret
  }finally{store.close();}
 });
 
-test('prospective explanation context suppresses all ordinary command actions',()=>{assert.deepEqual(commandActions('Explain the global experiment and show forecasts, research and deep earthquakes',{prospectiveExperiment:{}}),[]);assert.ok(commandActions('Explain the global experiment').includes('explain'));});
+test('prospective explanation context suppresses all ordinary command actions',()=>{assert.deepEqual(commandActions('Explain the global experiment and show forecasts, research and deep earthquakes',{prospectiveExperiment:{}}),[]);assert.deepEqual(commandActions('Explain the global experiment'),[]);});
 
 test('prospective AI withholds a changed primary result and preserves completed scores after stopping',async t=>{
  const summary={primaryDsMinusRecent:1,state:'CANCELLED'},context={prospectiveExperiment:{summary}},config={aiProvider:'ollama',localModel:'fixture'};

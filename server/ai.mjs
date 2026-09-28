@@ -11,6 +11,14 @@ export async function providers(){
   return {ollama:local,codex};
 }
 export function commandActions(message,context={}){
+ const text=String(message).trim();
+ // A negated/mixed request is explanation-only; never guess which clause to execute.
+ if(/\b(?:do not|don't|don’t|never|without|avoid|stop)\b/i.test(text))return [];
+ const actions=parsedCommandActions(text,context);
+ const question=/^(?:please\s+)?(?:explain|describe|why|what|how|whether|is|are|does|should|could you explain|can you explain|tell me)\b/i.test(text);
+ return question?[]:actions;
+}
+function parsedCommandActions(message,context={}){
   const s=message.toLowerCase(),a=[];
   if(context.countExperiment||context.learnedModel||context.detectionEvidence||context.stressEvidence||context.calibrationEvidence||context.phaseEvidence||context.prospectiveExperiment||context.waveformEvidence?.correction||context.waveformEvidence?.spectrum||context.spatialQuestion||context.resolutionReviewEvidence||context.weeklyVolcanoEvidence)return [];
   if(/\b(?:show|open|explore|inspect)\b.{0,50}\b(?:terrain|bathymetry|seafloor|relief)\b/.test(s))return ['relief'];

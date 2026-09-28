@@ -20,3 +20,17 @@ test('lithosphere commands open source controls and preserve questions and negat
  assert.ok(responseSchema.properties.actions.items.enum.includes('lithosphere'));
  const result=await chat('Show the lithosphere',{},{aiProvider:'deterministic'});assert.deepEqual(result.actions,['lithosphere']);assert.match(result.answer,/static model references/);
 });
+
+test('explanations and negated instructions never trigger incidental globe changes',async()=>{
+ const {commandActions}=await import('../server/ai.mjs');
+ for(const question of ['Explain the deep Fiji earthquake and its mantle path','Why are the global surface markers missing?','What happens when I show terrain?','How do I show slab surfaces?'])assert.deepEqual(commandActions(question),[],question);
+ for(const message of ["Don't show terrain",'Do not move the Pacific view','Explain Fiji without changing the view','Never show all forecasts','Show paths but do not rotate'])assert.deepEqual(commandActions(message),[],message);
+ assert.ok(commandActions('Show deep earthquakes').includes('deep'));assert.deepEqual(commandActions('Show terrain'),['relief']);assert.ok(commandActions('Show Pacific view').includes('pacific'));
+});
+
+test('AI-proposed navigation is discarded for an explanatory question',async t=>{
+ const {chat}=await import('../server/ai.mjs');
+ t.mock.method(globalThis,'fetch',async()=>({ok:true,json:async()=>({message:{content:JSON.stringify({answer:'This is an explanation.',actions:['pacific','surface','explain']})}})}));
+ const result=await chat('Explain the Fiji surface event',{candidates:[],asOf:0},{aiProvider:'ollama',localModel:'test'});
+ assert.deepEqual(result.actions,[]);assert.deepEqual(result.proposedActions,['pacific','surface','explain']);assert.equal(result.discardedActions,3);assert.equal(result.answer,'This is an explanation.');
+});
