@@ -17,6 +17,18 @@ test('swarm assessment respects frozen identity, time, provider and individual m
  assert.equal(JSON.stringify({watch,events,swarm,network}),input);
  assert.deepEqual(assessSwarm(swarm,events,[watch],{...network,routes:[]},100).movement,[]);
 });
+test('smaller swarm members qualify collectively and moment estimates use every member',()=>{
+ const now=100*DAY,config=JSON.parse(readFileSync(new URL('../config/default.json',import.meta.url)));
+ config.rules={...config.rules,deep:false,midpoint:false,spacing:false};
+ const network={version:'small',captureKm:50,maxHops:1,routes:[{id:'r',name:'r',points:[{lat:0,lon:.1},{lat:0,lon:5}]}]};
+ const events=Array.from({length:40},(_,i)=>({id:'small'+i,lat:0,lon:.1,depth:10,mag:3.5,magType:i===39?'ml':'mw',type:'earthquake',provider:'USGS',time:now-DAY-i}));
+ const result=generate(events,now,config,network),f=result.candidates[0];
+ assert.equal(result.stats.significantEvents,0);assert.equal(result.candidates.length,1);assert.equal(f.sources.length,30);assert.equal(f.swarmContext.eligibility.eventIds.length,40);
+ assert.equal(f.magnitude.central,4.57);assert.match(f.magnitude.explanation,/Full swarm/);assert.ok(f.objections.some(x=>x.includes('non-Mw')));
+ assert.equal(generate(events,now,{...config,magnitudeMode:'adjacent'},network).candidates[0].magnitude.central,3.5);
+ assert.equal(generate(events.slice(0,5),now,config,network).candidates.length,0);
+ assert.equal(generate(events,now,{...config,rules:{...config.rules,swarm:false}},network).candidates.length,0);
+});
 test('centroid progression changes generated targets and identifies only distinct shared-anchor branches',()=>{
  const p=lon=>({lat:0,lon}),route=(id,lons)=>({id,name:id,points:lons.map(p),provenance:{status:'illustrative'}});
  const network={version:'v1',captureKm:20,maxHops:1,routes:[route('main',[.1,1.1,4]),route('branch',[1.1,-4]),route('duplicate',[1.1,4])]};
