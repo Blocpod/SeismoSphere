@@ -502,3 +502,7 @@ Live phone acceptance found one DS backtest and three ETAS fits; DS showed 28/94
 ### Analogue magnitude median and retained evidence
 Corrected even-sized outcome samples to use the arithmetic mean of the two central values (engine ds-research-0.4.1). Analogue-mode forecasts now retain source IDs/times, qualifying follow-up maxima/counts, cutoff, radius, window, minimum sample count and conditional-selection limitations in magnitude evidence. This remains source magnitude/depth matching, not full sequence geometry matching. Core tests: 9 passed, including even-sample median, four-sample fallback and future-event exclusion. Running API verified after restart.
 
+
+### Swarm target and route assessments
+Research swarm summaries now compare retained members with DS frozen watch envelopes already issued by the analysis cutoff. Individual matching event IDs, maximum magnitude, summed-moment equivalent and frozen magnitude range are inspectable. Original sources/aliases, other providers, future/deleted/non-earthquake reports are excluded. Centroid movement is compared against captured ordered waypoints with route provenance. These descriptive assessments never alter frozen watches or coverage-aware resolutions. Target shifting and endpoint splitting remain unfinished. Eleven focused tests passed; running API and mobile research panel verified (artifacts/swarm-assessment-phone.png).
+

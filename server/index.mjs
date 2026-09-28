@@ -1,3 +1,4 @@
+import {assessSwarm} from './swarm-assessment.mjs';
 import {boundaryReference} from './boundary-context.mjs';
 import {runProspectiveChecks} from './prospective-checks.mjs';
 import {CountSchedules} from './count-schedules.mjs';
@@ -99,9 +100,12 @@ const randomizations=new RandomizationJobs(store,{onChange:job=>broadcast({type:
 function analysisAt(asOf=Date.now(),mode='catalog-replay'){
   const strict=mode==='strict';
   const events=researchEvents({asOf,strict});
-  const key=hash({asOf:Math.floor(asOf/60000),mode,config,routeVersion:routes.version,last:feed.fetchedAt,count:events.length});
+  const frozenWatches=store.ledger();
+  const key=hash({asOf:Math.floor(asOf/60000),mode,config,routeVersion:routes.version,last:feed.fetchedAt,count:events.length,ledgerCount:frozenWatches.length});
   if(cache?.key===key)return cache.value;
-  const value=generate(events,asOf,config,routes,boundaries);value.analysisId=hash({key,asOf,config,routeVersion:routes.version});
+  const value=generate(events,asOf,config,routes,boundaries);
+  for(const swarm of value.swarms)swarm.assessment=assessSwarm(swarm,events,frozenWatches,routes,asOf);
+  value.analysisId=hash({key,asOf,config,routeVersion:routes.version});
   drafts.set(value.analysisId,{analysis:value,events,config:structuredClone(config),routes:structuredClone(routes),mode});
   while(drafts.size>16)drafts.delete(drafts.keys().next().value);
   cache={key,value};return value;
