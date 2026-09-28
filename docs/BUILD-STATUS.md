@@ -309,3 +309,6 @@ Detection reproduction: a standalone local checker now validates export input/re
 
 
 Detection copilot checkpoint: saved event-coverage reviews now use isolated, cutoff-checked local/Astra explanations with mandatory counts/matching/denominator sentences and no command actions. Six focused context/routing/stale-response checks and all 132 regression tests pass. Actual Qwen and Astra calls preserved the guarded evidence after explicit empty-forecast clarification; local UI and two HTTP rejection cases pass. Free prose remains AI-labeled and can be imprecise, as documented in DETECTION-REVIEWS.md. Screenshot: artifacts/detection-copilot-ui.png.
+
+
+Uncovered-event Earth inspection: review event rows now open their exact retained location/depth in historical X-ray and disclose saved-source versus current background-catalog provenance. Return navigation preserves the original review. Seven focused tests and actual USGS:usp000hyh8 timestamp/coordinate/M4.8/27.7-km comparison pass with no browser errors. Screenshot: artifacts/uncovered-event-earth.png.

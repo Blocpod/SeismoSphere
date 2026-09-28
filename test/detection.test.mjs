@@ -1,3 +1,4 @@
+import {uncoveredEvent} from '../public/experiment-history.js';
 import {reproduceDetection} from '../scripts/reproduce-detection.mjs';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
@@ -56,4 +57,12 @@ test('saved review selection rejects late results and mismatched experiment cont
   assert.equal(shown,change==='none'?1:0,change);assert.equal(form.elements.minMagnitude.value,change==='none'?'5':'4.5');
   if(change==='wrong-link')assert.match(status.textContent,/another experiment/);if(change==='late-error')assert.doesNotMatch(status.textContent,/late failure/);
  }
+});
+
+test('uncovered-event navigation selects the retained revision and rejects invalid locations',()=>{
+ const e={id:'saved',time:10,lat:-33,lon:-72,depth:55,mag:5},review={report:{engines:[{engine:'DS',missedEventIds:['saved']},{engine:'Null',missedEventIds:[]}]},input:{events:[e]}};
+ assert.equal(uncoveredEvent(review,'DS','saved'),e);
+ assert.throws(()=>uncoveredEvent(review,'Null','saved'),/not uncovered/);
+ assert.throws(()=>uncoveredEvent(review,'DS','missing'),/not uncovered/);
+ for(const [key,value]of [['depth',NaN],['depth',-1],['lat',91],['lon',181],['mag',null]]){const broken=structuredClone(review);broken.input.events[0][key]=value;assert.throws(()=>uncoveredEvent(broken,'DS','saved'),/3D location/);}
 });
