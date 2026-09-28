@@ -1,5 +1,5 @@
 import {CountSchedules} from './count-schedules.mjs';
-import {prospectiveCountLeaderboard} from './count-leaderboard.mjs';
+import {prospectiveCountLeaderboard,countScheduleContext} from './count-leaderboard.mjs';
 import {CountForecasts} from './count-forecasts.mjs';
 import {learnedUncertainty} from './learned-uncertainty.mjs';
 import {detectionContext} from './detection-context.mjs';
@@ -394,6 +394,7 @@ const handler=async(req,res)=>{
         aiBusy=true;
         try{
           let asOf=Number(b.asOf??Date.now());if(!Number.isFinite(asOf)||asOf>Date.now()+60000)throw new Error('Invalid analysis time');
+          if(b.countPlanId&&Object.keys(b).some(k=>!['countPlanId','message','asOf','mode'].includes(k)))throw new Error('Choose the count experiment alone to explain');
           if(b.randomizationRunId&&['analysisId','forecastId','learnedRunId','statisticalRunId','diagnosticRunId','instrumentRecordId','mechanismRecordId','volcanoId','cratonId','gnssRecordId'].some(k=>b[k]))throw new Error('Choose the randomization run alone to explain.');
           if(b.cratonId&&['analysisId','forecastId','learnedRunId','statisticalRunId','diagnosticRunId','instrumentRecordId','mechanismRecordId','volcanoId','gnssRecordId'].some(k=>b[k]))throw new Error('Choose the craton reference alone to explain.');
           if(Boolean(b.gnssRecordId)!==Boolean(b.gnssStationId))throw new Error('Choose both a saved GNSS solution and its station.');
@@ -409,7 +410,7 @@ const handler=async(req,res)=>{
           const frozen=b.forecastId?store.ledger().find(f=>f.id===b.forecastId):null;
           if(b.forecastId&&!frozen)throw new Error('Frozen forecast not found');
           let context;
-          if(b.spatialQuestion){const spatial=spatialQuestion(b,drafts.get(b.analysisId));context=spatial.context;b.message=spatial.message;}else if(b.detectionReviewId||b.stressRecordId||b.calibrationId||b.protocolId||b.resolutionReviewId||b.weeklyVolcanoId||b.volcanoStatusId||b.slabPoint||b.reliefPoint||b.gnssRecordId||b.cratonId||b.randomizationRunId||b.diagnosticRunId||b.instrumentRecordId||b.mechanismRecordId||b.volcanoId){context={asOf,mode:b.mode??'catalog-replay'};}else if(frozen){
+          if(b.spatialQuestion){const spatial=spatialQuestion(b,drafts.get(b.analysisId));context=spatial.context;b.message=spatial.message;}else if(b.countPlanId||b.detectionReviewId||b.stressRecordId||b.calibrationId||b.protocolId||b.resolutionReviewId||b.weeklyVolcanoId||b.volcanoStatusId||b.slabPoint||b.reliefPoint||b.gnssRecordId||b.cratonId||b.randomizationRunId||b.diagnosticRunId||b.instrumentRecordId||b.mechanismRecordId||b.volcanoId){context={asOf,mode:b.mode??'catalog-replay'};}else if(frozen){
             asOf=frozen.asOf;
             context={asOf,mode:frozen.mode,selected:frozen,candidates:[frozen],routeStatus:frozen.routeConfig.status,limitations:['Explain the frozen reasoning; do not use later earthquake knowledge.']};
             delete context.selected.resolution;
@@ -464,6 +465,7 @@ const handler=async(req,res)=>{
           if(b.detectionReviewId){if(Object.keys(b).some(k=>!['detectionReviewId','message','asOf','mode'].includes(k)))throw new Error('Choose the detection review alone to explain');context={asOf,mode:b.mode??'catalog-replay',detectionEvidence:detectionContext(detectionReviews,b.detectionReviewId,asOf,b.mode??'catalog-replay'),candidates:[],selected:null};}
           if(b.stressRecordId){if(Object.keys(b).some(k=>!['stressRecordId','stressBaselineId','stressSample','message','asOf','mode'].includes(k)))throw new Error('Choose the stress calculation alone to explain');context={asOf,mode:b.mode??'catalog-replay',stressEvidence:stressContext(ruptureInputs,b.stressRecordId,b.stressBaselineId,b.stressSample,asOf,b.mode??'catalog-replay'),candidates:[],selected:null};}
           if(b.calibrationId){if(Object.keys(b).some(k=>!['calibrationId','message','asOf','mode'].includes(k)))throw new Error('Choose the calibration alone to explain');context={asOf,mode:b.mode??'catalog-replay',calibrationEvidence:calibrationContext(store,b.calibrationId,asOf),candidates:[],selected:null};}
+          if(b.countPlanId){if(Object.keys(b).some(k=>!['countPlanId','message','asOf','mode'].includes(k)))throw new Error('Choose the count experiment alone to explain');const plan=countSchedules.get(b.countPlanId);context={asOf,mode:b.mode??'catalog-replay',countExperiment:countScheduleContext(plan,countForecasts.list().filter(f=>f.planId===plan.id),asOf),candidates:[],selected:null};}
           if(b.protocolId){if(Object.keys(b).some(k=>!['protocolId','message','asOf','mode'].includes(k)))throw new Error('Choose the prospective protocol alone to explain');context={asOf,mode:b.mode??'catalog-replay',prospectiveExperiment:prospectiveContext(prospective.view(b.protocolId),asOf),candidates:[],selected:null};}
           const result=await chat(b.message,context,b.spatialQuestion&&b.brain?{...config,aiProvider:b.brain==='astra'?'codex':'ollama'}:config);
           if(b.spatialQuestion)result.notice='Explanation of the selected retained analysis snapshot. Spatial model watches are unissued drafts; no UI actions are applied.';

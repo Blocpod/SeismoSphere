@@ -17,3 +17,14 @@ export function prospectiveCountLeaderboard(records){
   delete c.models;delete c.windows;return {...c,overlappingWindows:overlap,interpretation:'Same completed windows for all six models. Event totals count event-window occurrences, not unique earthquakes. Manual selection, overlapping windows and aftershocks limit interpretation; no independence, significance or calibrated probability claim.'};
  });
 }
+export function countScheduleContext(plan,records,asOf){
+ if(!Number.isFinite(asOf)||plan.registeredAt>asOf||plan.slots.some(s=>s.recordedAt>asOf)||records.some(r=>r.issuedAt>asOf||r.assessment?.recordedAt>asOf||r.planId!==plan.id))throw new Error('Count experiment evidence is unavailable at this cutoff');
+ const cohorts=prospectiveCountLeaderboard(records),scored=cohorts.reduce((n,c)=>n+c.scored,0),pending=cohorts.reduce((n,c)=>n+c.pending,0),excluded=cohorts.reduce((n,c)=>n+Object.values(c.excluded).reduce((a,b)=>a+b,0),0),slots=plan.slots.filter(s=>s.ordinal>=0),issued=slots.filter(s=>s.status==='ISSUED').length;
+ if(issued!==records.length||new Set(records.map(r=>r.id)).size!==records.length||slots.some(s=>s.forecastId&&!records.some(r=>r.id===s.forecastId)))throw new Error('Count experiment forecast links are incomplete');
+ const sourceSentences=[`This registered count schedule planned ${plan.spec.issuances} issuances; ${issued} were issued and ${slots.length-issued} slots were skipped or cancelled.`,`There are ${scored} scored windows, ${pending} pending assessments and ${excluded} excluded assessments.`];
+ if(!scored)sourceSentences.push('There are no completed count assessments, so no measured model ranking is available.');
+ else for(const c of cohorts.filter(c=>c.scored)){const first=c.ranking[0];sourceSentences.push(`Within cohort ${c.id.slice(0,12)}, ${first.name} has the highest aggregate log likelihood (${first.logLikelihood.toFixed(2)}) across ${c.scored} shared scored windows.`);}
+ sourceSentences.push('All model comparisons use the same completed windows within a frozen cohort. Missing slots remain disclosed; overlapping windows and operational exclusions can bias interpretation.');
+ sourceSentences.push('Expected counts are not calibrated probabilities, and this descriptive ranking does not establish significance or reliable earthquake prediction.');
+ return {id:plan.id,name:plan.spec.name,registeredAt:plan.registeredAt,stopped:plan.stopped,schedule:{start:plan.spec.start,issuances:plan.spec.issuances,stepDays:plan.spec.stepDays},sourceSentences,cohorts,slots:slots.map(s=>({ordinal:s.ordinal,scheduledAt:s.scheduledAt,status:s.status})),policy:plan.spec.policy};
+}
