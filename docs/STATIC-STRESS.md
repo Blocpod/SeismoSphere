@@ -20,7 +20,7 @@ Source inventory, exact rupture file, parsed patches and source reception time a
 
 The actual local API calculated 441 points for the archived 2015 Illapel model on a 20 km grid spanning ±200 km, at depth 10 km. Explicit assumptions: Poisson 0.25, shear modulus 32 GPa, effective friction 0.4, receiver strike/dip/rake 19/19/90 degrees. All values were finite, none were masked, and both result/implementation hashes passed. Saved result: `6f4df72da088c20000eac139d9da14764b1d8134aa1c65a6ffa15dd8c7c83357`. Local export: `artifacts/illapel-static-stress.json`. This receiver orientation is a test assumption, not identification of real future rupture surfaces.
 
-Geographic projection validation, independent end-to-end Coulomb comparison, saved-run comparison and matched forecast evaluation remain unfinished.
+Geographic projection validation, independent Coulomb3 application-level comparison, saved-run comparison and matched forecast evaluation remain unfinished. The independent rectangular-kernel comparison below now covers local geometry, units and traction projection.
 
 ## Primary references
 
@@ -53,3 +53,17 @@ After opening an archived input, use **Saved stress calculations**. It lists ret
 Stored point order is not assumed: regular square grids are reordered north-to-south, west-to-east for display while preserving coordinate/value pairs and the immutable original report. Irregular, duplicate, missing or mixed-depth grids are rejected by the plot (their original JSON remains exportable).
 
 Three focused grid/persistence tests pass. Following a real server restart, the UI reopened result `6f4df72da088c20000eac139d9da14764b1d8134aa1c65a6ffa15dd8c7c83357`, originally stored in a different point order. The restored east 20 / north 0 / depth 10 km sample matched −0.382249 MPa Coulomb change and its saved shear/normal terms. History remained at two records, confirming that browsing did not create another run. Screenshot: `artifacts/stress-history.png`.
+
+## Independent rectangular-fault comparison
+
+`scripts/stress-independent-check.py` compares the production triangular-patch adapter with the separate [OkadaPy 0.0.1](https://pypi.org/project/okada/0.0.1/) rectangular-dislocation implementation. OkadaPy is an optional external validation tool, not an application dependency or bundled component. Install it separately with `data/model-runtime/Scripts/python.exe -m pip install --no-deps --only-binary=:all: --target data/stress-reference okada==0.0.1` on this Windows/Python 3.12 installation, then run:
+
+```powershell
+.\data\model-runtime\Scripts\python.exe scripts/stress-independent-check.py data/stress-reference/okada/core/src/libokada.cp312-win_amd64.pyd artifacts/illapel-static-stress.json
+```
+
+The optional final argument adds a real exported source/options pair; omit it to run the synthetic matrix alone. The adapter calls the external native library directly, avoiding its plotting dependencies. It converts rake/net slip to right-lateral/reverse components, derives Young's modulus from the explicit shear modulus and Poisson ratio, and reorders the reference tensor. Receiver traction is independently projected without calling the production projection helper.
+
+Verified 97 cases / 1,305 samples: four strikes, three dips (including vertical), four slip directions, surface and 6 km depth, plus all 441 points of the 450-patch Illapel model at 10 km. All six tensor components and resolved shear/unclamping/Coulomb values satisfy `abs(error) <= 0.0001 Pa + 1e-7 * abs(reference)`. Maximum absolute differences were 0.001257 Pa for tensor components and 0.001609 Pa for resolved values. These maxima occur within the combined relative/absolute tolerance; they are not claims of geological accuracy.
+
+Reference binary SHA-256: `ad5e1b5f214003c23607dda8cd553a5dec9c653f93046f3926af95aa76e9dc47`. Compared export SHA-256: `dbef44e3faee58e34eb5632628d0c3b577d6b4591924d64756ff461fb4defc29`. The script prints the actual hashes on each run and fails on numerical disagreement. This establishes agreement of these local-coordinate static calculations with another analytical implementation. It does not validate geographic projection, real fault/receiver assumptions, the full Coulomb3 application workflow, or earthquake forecasting skill.
