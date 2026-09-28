@@ -10,5 +10,12 @@ try {
  assert.match(await page.locator('#feed-status').innerText(),/LIVE DATA/);assert.ok(await page.locator('.event-row').count()>0);
  await page.route('**/api/refresh',r=>r.fulfill({json:{status:'stale',error:'Controlled offline test'}}));
  await page.reload();await page.locator('#feed-status').filter({hasText:'SYNC FAILED'}).waitFor({timeout:60000});assert.ok(await page.locator('.event-row').count()>0);assert.deepEqual(errors,[]);
- console.log(JSON.stringify({launchRefresh:true,fetchedAt:new Date(feed.fetchedAt),events:feed.count,offlineSavedCatalog:true,errors}));
+ let release,entered,requests=0;const gate=new Promise(resolve=>release=resolve),handled=new Promise(resolve=>entered=resolve);
+ await page.unroute('**/api/refresh');await page.route('**/api/refresh',async r=>{requests++;entered();await gate;await r.fulfill({json:feed});});
+ const reconnect=page.waitForRequest(r=>r.url()===root+'/api/refresh');
+ await page.evaluate(()=>{window.dispatchEvent(new Event('online'));window.dispatchEvent(new Event('online'));document.dispatchEvent(new Event('visibilitychange'));});await reconnect;await handled;
+ assert.equal(requests,1);release();await page.waitForFunction(()=>!document.querySelector('#refresh').disabled);
+ assert.match(await page.locator('#feed-status').innerText(),/LIVE DATA/);
+ assert.deepEqual(errors,[]);
+ console.log(JSON.stringify({launchRefresh:true,fetchedAt:new Date(feed.fetchedAt),events:feed.count,offlineSavedCatalog:true,reconnectRefresh:true,overlappingRequests:requests,errors}));
 } finally {await browser.close();}

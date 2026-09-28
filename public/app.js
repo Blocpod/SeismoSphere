@@ -118,11 +118,13 @@ $('#event-list').onclick=e=>{const b=e.target.closest('[data-event]');if(b)selec
 $('#forecast-list').onclick=e=>{const b=e.target.closest('[data-forecast]');if(b)selectForecast(state.analysis.candidates.find(x=>x.key===b.dataset.forecast));};
 $('#event-filters').onclick=e=>{if(!e.target.dataset.filter)return;state.filter=e.target.dataset.filter;filterUI();renderEvents();};
 $('#event-search').oninput=e=>{state.search=e.target.value.toLowerCase();renderEvents();};$('#event-window').onchange=e=>{state.hours=Number(e.target.value);renderEvents();};
+let catalogSyncing=false,lastCatalogSync=0;
 async function refreshCatalogOnOpen(){
- if(deviceRole==='viewer')return;
- try{$('#refresh').disabled=true;$('#feed-status').textContent='SYNCING CATALOG';const feed=await api('refresh',{});await load();if(feed.status!=='live')throw new Error(feed.error??'Catalog refresh failed; showing saved data.');}
+ if(deviceRole==='viewer'||catalogSyncing)return;
+ catalogSyncing=true;
+ try{$('#refresh').disabled=true;$('#feed-status').textContent='SYNCING CATALOG';const feed=await api('refresh',{});await load();if(feed.status!=='live')throw new Error(feed.error??'Catalog refresh failed; showing saved data.');lastCatalogSync=Date.now();}
  catch(e){$('#feed-status').textContent='CACHED · SYNC FAILED';toast('Showing saved earthquake data. '+e.message,true);}
- finally{$('#refresh').disabled=false;}
+ finally{catalogSyncing=false;$('#refresh').disabled=false;}
 }
 $('#refresh').onclick=refreshCatalogOnOpen;
 $('#issue-all').onclick=()=>issue(state.watchFilter?filterWatches(state.analysis.candidates,state.watchFilter).map(f=>f.key):null);$('#settings-open').onclick=openSettings;
@@ -188,3 +190,7 @@ setupRandomizationLab({api,toast});
 try{deviceRole=(await setupPhoneAccess(api)).session.role;}catch(e){console.warn('Phone setup:',e.message);}
 resolutionHistory=setupResolutionHistory({api,getState:()=>state,toast,reloadLedger:loadLedger,canWrite:()=>deviceRole!=='viewer'});
 await load();refreshCatalogOnOpen();loadLedger().catch(()=>{});setInterval(()=>{if(state.live)load();},60000);
+
+// Resume only the live workspace; historical cutoffs remain under user control.
+window.addEventListener('online',()=>{if(state.live)refreshCatalogOnOpen();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&state.live&&Date.now()-lastCatalogSync>60000)refreshCatalogOnOpen();});
