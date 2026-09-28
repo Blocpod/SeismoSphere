@@ -94,3 +94,4 @@ dialog .dialog-heading{position:sticky;top:-28px;z-index:3;background:#0e181f;pa
 
 .forecast-route ol{padding-left:22px;line-height:1.7;font-size:12px;overflow-wrap:anywhere}.forecast-route li{margin:8px 0}.forecast-route h4{font-size:12px;margin:16px 0 8px}.forecast-route>a,.forecast-route li>a{display:inline-flex;align-items:center;min-height:44px}
 .figure-downloads a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:12px 18px;border-radius:8px;text-decoration:none;font:inherit}
+.crust-context{margin-top:18px;border-top:1px solid var(--line);padding-top:12px}.crust-context summary{min-height:44px;padding:12px 0;cursor:pointer}.crust-context details{border-top:1px solid var(--line)}.crust-context p{font-size:12px;line-height:1.6}.crust-context a{display:block;padding:12px 0;min-height:44px;overflow-wrap:anywhere}
