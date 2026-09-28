@@ -1,0 +1,38 @@
+{
+  "model": "LITHO1.0 v1",
+  "citation": "Pasyanos et al. (2014), DOI:10.1002/2013JB010626",
+  "homepage": "https://igppweb.ucsd.edu/~gabi/litho1.0.html",
+  "source": {
+    "url": "https://igppweb.ucsd.edu/~gabi/litho1/litho1.0.tar.gz",
+    "sha256": "04f1f01a0bdb24d6aa0ec5d38707024a556aa06b0de9da12d442dd281bd92e36"
+  },
+  "sourceHeaderRowCountMismatches": 1,
+  "nodeCount": 40962,
+  "stride": 39,
+  "coordinates": [
+    "source latitude (used by access_litho)",
+    "source glatitude",
+    "longitude"
+  ],
+  "layers": [
+    "LID-TOP",
+    "LID-BOTTOM",
+    "ASTHENO-TOP",
+    "ASTHENO-BOTTOM"
+  ],
+  "properties": [
+    "depth_m",
+    "density_kg_m3",
+    "Vp_m_s",
+    "Vs_m_s",
+    "Qkappa",
+    "Qmu",
+    "Vp2_m_s",
+    "Vs2_m_s",
+    "eta"
+  ],
+  "file": "nodes.f32",
+  "bytes": 6390072,
+  "sha256": "087e3ea12dd61a66acd1a3cd950ce3ac26fd1ce526acac291a97c2c2c215aa95",
+  "policy": "Original tessellation nodes only, no interpolation. Static model reference, not local observations or a pressure-transfer map."
+}
