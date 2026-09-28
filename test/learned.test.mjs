@@ -44,3 +44,14 @@ const python=process.env.SEISMO_MODEL_PYTHON??path.resolve('data/model-runtime',
 test('trained cell graph is deterministic and future outcomes cannot alter fitted weights',{skip:!existsSync(python),timeout:180000},async()=>{
   const {stdout}=await promisify(execFile)(python,['model/check_model.py'],{windowsHide:true,timeout:175000});assert.match(stdout,/PASS:/);
 });
+
+test('tectonic map uses frozen training cells and exposes distinct AI provenance',async()=>{
+ const manager=Object.create(LearnedModel.prototype),parent={id:'parent',options:{validationEnd:2000},grid:{rows:6,columns:12}};
+ manager.get=()=>parent;manager.tectonic=()=>({id:'comparison',createdAt:4000,input:{inputSnapshotId:'training',boundariesSha256:'geometry'},reportSha256:'report',report:{version:'tectonic',fit:{cells:Array(72).fill(.5),weeklyRate:36,alpha:.8},source:{citation:'PB2002'},limitations:['Static geometry']}});
+ const a=await manager.predict('parent',5000,'catalog-replay','tectonic'),b=await manager.predict('parent',6000,'catalog-replay','tectonic');
+ assert.deepEqual(a.projection.cells,b.projection.cells);assert.equal(a.projection.totalExpectedCount,36);assert.equal(a.projection.comparisonId,'comparison');
+ assert.equal(a.report.version,'tectonic');assert.equal(a.report.createdAt,4000);
+ const context=learnedContext(a.report,a.projection,5000,'catalog-replay');assert.match(context.sourceSentences.join(' '),/80% plate-boundary length.*does not respond to recent earthquakes/);assert.equal(context.ensemble,undefined);
+ await assert.rejects(manager.predict('parent',3000,'strict','tectonic'),/unavailable/);await assert.rejects(manager.predict('parent',5000,'bad','tectonic'),/Invalid/);
+ assert.throws(()=>learnedContext(a.report,a.projection,6000,'catalog-replay'),/cutoff/);
+});

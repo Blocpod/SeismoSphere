@@ -10,6 +10,7 @@ export function learnedContext(report,projection,asOf,mode){
   if(asOf<report.options.validationEnd)throw new Error('The learned checkpoint was selected after this cutoff');
   if(mode==='strict'&&report.createdAt>asOf)throw new Error('This model did not exist at the strict observation cutoff');
   if(projection.cutoff!==asOf)throw new Error('Learned map cutoff does not match analysis');
+  if(projection.model==='tectonic')return {id:report.id,version:report.version,projection,limitations:report.limitations,sourceSentences:[`The selected PB2002 tectonic baseline estimates ${projection.totalExpectedCount.toFixed(2)} M≥5 catalog events worldwide over the seven days starting ${new Date(projection.cutoff).toISOString()}.`,`The frozen spatial mixture is ${(projection.boundaryWeight*100).toFixed(0)}% plate-boundary length and ${((1-projection.boundaryWeight)*100).toFixed(0)}% uniform background, fitted using training events only.`,`This static baseline does not respond to recent earthquakes and does not encode Dutchsinse pressure routes.`,`Expected counts are model averages, not guaranteed events, calibrated probabilities, exact epicenters or measured stress transfer.`],policy:'Explain only this static training-fitted baseline; no neural checkpoint or ensemble weights apply.'};
   const scores=Object.fromEntries(Object.entries(report.scores).filter(([,s])=>s.lastEnd<=asOf));
   const comparisons=Object.fromEntries(Object.entries(scores).filter(([,s])=>s.models).map(([name,s])=>{const g=s.models.graph,n=s.models.noNeighbors;return [name,{logLikelihoodBetter:g.logLikelihood===n.logLikelihood?'tie':g.logLikelihood>n.logLikelihood?'graph':'noNeighbors',meanAbsoluteErrorBetter:g.meanAbsoluteError===n.meanAbsoluteError?'tie':g.meanAbsoluteError<n.meanAbsoluteError?'graph':'noNeighbors'}];}));
   const sourceSentences=[];
@@ -71,9 +72,16 @@ export class LearnedModel {
     }catch(error){this.store.set('learnedJob',{status:'failed',id,endedAt:Date.now(),message:error.message});throw error;}finally{this.active=null;}
   }
   async predict(id,cutoff,mode='catalog-replay',model='graph'){
-    if(!['graph','ensemble'].includes(model))throw new Error('Choose graph or ensemble');
+    if(!['graph','ensemble','tectonic'].includes(model))throw new Error('Choose graph, ensemble or tectonic');
     const report=this.get(id);
     if(!Number.isFinite(cutoff)||cutoff>Date.now()||cutoff<report.options.validationEnd)throw new Error('Choose a valid cutoff after checkpoint selection (2020-01-01)');
+    if(model==='tectonic'){
+      if(!['strict','catalog-replay'].includes(mode))throw new Error('Invalid observation mode');
+      const bundle=this.tectonic(id),t=bundle.report;
+      if(mode==='strict'&&bundle.createdAt>cutoff)throw new Error('The tectonic comparison was unavailable at this strict observation cutoff');
+      const projection={model,comparisonId:bundle.id,reportSha256:bundle.reportSha256,boundariesSha256:bundle.input.boundariesSha256,source:t.source,boundaryWeight:t.fit.alpha,cutoff,end:cutoff+7*DAY,days:7,cells:t.fit.cells,totalExpectedCount:t.fit.weeklyRate,inputSnapshotId:bundle.input.inputSnapshotId,units:'Expected M>=5 catalog events per equal-area cell in seven days'};
+      return {report:{id:report.id,createdAt:bundle.createdAt,version:t.version,options:report.options,grid:report.grid,inputSnapshotId:bundle.input.inputSnapshotId,limitations:t.limitations},projection,mode};
+    }
     if(report.sourceSha256!==hash(readFileSync('model/seismic_gnn.py','utf8')))throw new Error('This checkpoint uses a different model implementation. Restore its source version or train a new run.');
     if(!['strict','catalog-replay'].includes(mode))throw new Error('Invalid observation mode');
     if(mode==='strict'&&report.createdAt>cutoff)throw new Error('The learned model was unavailable at this strict observation cutoff');

@@ -197,7 +197,7 @@ if(earth)new Geodesy(earth,{api,getState:()=>state,toast});
 if(earth)new SlabSurfaces(earth,{api,getState:()=>state,toast});
 if(earth)new FocusAnnotation(earth,{getState:()=>state,selectEvent});
 setupSpatialLab({api,showEarth:(report,days)=>showModelEarth(report.fit.options.end,'catalog-replay',()=>earth.spatialLayer.show(report,days))});
-setupLearnedLab({api,showEarth:({report,projection,mode})=>{if(state.status.config.catalogProvider!=='USGS')throw new Error('Select USGS in Settings to match the learned model catalog');return showModelEarth(projection.cutoff,mode,()=>earth.spatialLayer.showLearned(report,projection,mode));}});
+setupLearnedLab({api,showEarth:({report,projection,mode})=>{if(!state.status)throw new Error('Earth is still loading. Try opening the count map again when the catalog appears.');if(state.status.config.catalogProvider!=='USGS')throw new Error('Select USGS in Settings to match the learned model catalog');return showModelEarth(projection.cutoff,mode,()=>earth.spatialLayer.showLearned(report,projection,mode));}});
 setupFlight({earth,getForecast:()=>state.selectedForecast??state.analysis?.candidates[0],toast});
 sound=setupSonification({earth,getState:()=>state,toast});
 setupRecording({earth,getState:()=>state,toast});
