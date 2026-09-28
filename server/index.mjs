@@ -1,3 +1,4 @@
+import {runProspectiveChecks} from './prospective-checks.mjs';
 import {CountSchedules} from './count-schedules.mjs';
 import {prospectiveCountLeaderboard,countScheduleContext} from './count-leaderboard.mjs';
 import {CountForecasts} from './count-forecasts.mjs';
@@ -487,10 +488,9 @@ const server=http.createServer(handler);
 server.listen(port,'127.0.0.1',()=>{console.log(`SeismoSphere running at http://127.0.0.1:${port}`);if(!process.env.SEISMO_TEST_MODE){importJobs.kick();refresh();weeklyVolcanoes.refresh().then(()=>broadcast({type:'weekly-volcanoes'})).catch(e=>{console.error(e.message);broadcast({type:'weekly-volcanoes'});});volcanoStatus.refresh().then(()=>broadcast({type:'volcano-status'})).catch(e=>{console.error(e.message);broadcast({type:'volcano-status'});});if(access.settings.enabled)access.start(handler).catch(e=>{access.lastError=e.message;console.error('Phone access: '+e.message);});}});
 const interval=setInterval(()=>{if(!process.env.SEISMO_TEST_MODE){refresh();weeklyVolcanoes.refresh().then(()=>broadcast({type:'weekly-volcanoes'})).catch(e=>{console.error(e.message);broadcast({type:'weekly-volcanoes'});});volcanoStatus.refresh().then(()=>broadcast({type:'volcano-status'})).catch(e=>{console.error(e.message);broadcast({type:'volcano-status'});});}},5*60000);interval.unref();
 async function checkProspective(){
- const schedules=await countSchedules.tick(feed),assessments=countForecasts.tick(feed),protocols=prospective.tick(feed);
- const changes=schedules.changes+assessments.changes+protocols.changes;
- if(changes)broadcast({type:'protocol'});
- return {changes,schedules,assessments,protocols};
+ const result=await runProspectiveChecks({schedules:countSchedules,assessments:countForecasts,protocols:prospective},feed,()=>broadcast({type:'protocol'}));
+ for(const name of ['schedules','assessments','protocols'])if(result[name].error)console.error(`Prospective ${name}: ${result[name].error}`);
+ return result;
 }
 const protocolInterval=setInterval(async()=>{if(!process.env.SEISMO_TEST_MODE)try{await checkProspective();}catch(e){console.error('Prospective schedule: '+e.message);}},30000);protocolInterval.unref();
 let closing=false;
