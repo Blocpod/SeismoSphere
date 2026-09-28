@@ -6,6 +6,7 @@ import * as THREE from '../public/vendor/three.module.js';
 // Exercise the real geometry builder without constructing a browser/WebGL renderer.
 const source=readFileSync(new URL('../public/globe.js',import.meta.url),'utf8')
   .replace("'three'",JSON.stringify(new URL('../public/vendor/three.module.js',import.meta.url).href))
+  .replace("'./forecast-pulse.js'",JSON.stringify(new URL('../public/forecast-pulse.js',import.meta.url).href))
   .replace("import {OrbitControls} from '/vendor/OrbitControls.js';",'');
 const {Earth}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 test('small earthquakes retain outlined surface markers on both hemispheres',()=>{
