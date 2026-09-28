@@ -41,3 +41,9 @@ The complete suite passed 64 tests. Focused tests preserve missing identifiers, 
 `scripts/volcano-activity-ai-check.mjs` uses the actual UI and local Qwen plus ChatGPT-authenticated Astra. Both retain WATCH/ORANGE for the saved Kilauea notice and UNASSIGNED/UNASSIGNED for Folsoms Bluff. Their source dates are separate from retrieval dates. Invalid HTTP contexts are rejected. This verification does not make AI explanations independently authoritative.
 
 No waveform analysis, magma geometry, causal earthquake association or forecast-engine factor is inferred from these statuses. Continuous observatory telemetry, physical-phone acceptance and the rest of the full project brief remain open.
+
+## Globe activity animation
+
+USGS status and Smithsonian weekly-report layers now load and show automatically. Fresh elevated USGS ground or aviation status receives a four-second expanding attention ring using the supplied aviation color; weekly-report markers use teal without a severity scale. Separate animation controls preserve static triangles. Pulses stop for stale/failed checks, old or undated weekly publications, historical/future cutoffs, scientific mode and reduced-motion presentation. These are symbolic source-status animations, not simulated lava flows, ash heights, eruption rates or ground motion. Alert status alone cannot establish an eruption is occurring; see https://www.usgs.gov/programs/VHP/alert-level-system.
+
+Figure evidence records animation policy and source freshness. Changing animation settings also changes recording context. Five focused policy/source tests and desktop/phone browser checks passed, covering actual fresh USGS data, motion, toggles, reduced motion, stale static markers and the retained old weekly publication. Source values and dates remain unchanged.
