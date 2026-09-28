@@ -21,7 +21,7 @@ import {promisify} from 'node:util';
 import {Store,hash} from './store.mjs';
 import {liveCatalog,deletedCatalog} from './catalog.mjs';
 import {ImportJobs,coverageComplete} from './import-jobs.mjs';
-import {generate,baselines,scoreForecast,leaderboard,validateConfig,backtest,analogues} from './engine.mjs';
+import {VERSION as DS_ENGINE_VERSION,generate,baselines,scoreForecast,leaderboard,validateConfig,backtest,analogues} from './engine.mjs';
 import {providers,chat,responseSchema,commandEventView} from './ai.mjs';
 import {neuralAnalogues} from './neural.mjs';
 import {faultContext} from './fault-context.mjs';
@@ -262,6 +262,7 @@ const handler=async(req,res)=>{
         const options={start:Date.parse(b.start),end:Date.parse(b.end),historyDays:Number(b.historyDays??5),minMagnitude:Number(b.minMagnitude??4.5),provider:config.catalogProvider,...(spatial?{south:Number(b.south),north:Number(b.north),west:Number(b.west),east:Number(b.east)}:{lat:Number(b.lat),lon:Number(b.lon),radiusKm:Number(b.radiusKm??1000)})};
         const holdoutEnd=b.holdoutEnd?Date.parse(b.holdoutEnd):null;
         if(!Number.isFinite(options.start)||!Number.isFinite(options.end)||options.end>Date.now()||holdoutEnd!==null&&(!Number.isFinite(holdoutEnd)||holdoutEnd<=options.end||holdoutEnd>Date.now()))throw new Error('Choose valid elapsed training and holdout dates');
+        if(b.region!==undefined&&!['global','rectangle'].includes(b.region))throw new Error('Unknown backtest region');
         const coverage=store.get('coverage',[]);
         if(!coverageComplete(coverage,{provider:options.provider,start:options.start-options.historyDays*DAY,end:holdoutEnd??options.end,minMagnitude:options.minMagnitude,bounds:spatial?validateBounds(options):circleBounds(options.lat,options.lon,options.radiusKm)}))throw new Error('Import the full conditioning, training and holdout interval and region at this magnitude threshold first');
         const events=store.events({asOf:holdoutEnd??options.end,provider:options.provider,start:options.start-options.historyDays*DAY});
@@ -299,14 +300,14 @@ const handler=async(req,res)=>{
         return send(res,202,randomizations.create(researchEvents({asOf:options.end}),options,config,routes,boundaries,coverage.filter(c=>c.provider===config.catalogProvider&&c.end>=begin&&c.start<=options.end)));
       }
       if(p==='/api/backtest'){
-        const start=Date.parse(b.start),end=Date.parse(b.end),stepDays=Number(b.stepDays??5);
+        const start=Date.parse(b.start),end=Date.parse(b.end),stepDays=Number(b.stepDays??5),targetBounds=b.region==='rectangle'?validateBounds(b):null;
         if(!Number.isFinite(start)||!Number.isFinite(end)||!Number.isFinite(stepDays))throw new Error('Invalid backtest dates or step');
         const coverage=store.get('coverage',[]);
         if(!coverageComplete(coverage,{provider:config.catalogProvider,start:start-config.lookbackDays*DAY,end,minMagnitude:Number(Math.max(0,config.minMagnitude-config.magnitudeTolerance-(config.magnitudeMode==='analogue'?1:0)).toFixed(2))-.5}))throw new Error(`Import complete ${config.catalogProvider} training and outcome coverage including the partial-hit magnitude range before backtesting`);
         const events=researchEvents({asOf:end});
-        const experimentId=hash({start,end,stepDays,config,routes,events});
+        const experimentId=hash({engineVersion:DS_ENGINE_VERSION,start,end,stepDays,...(targetBounds?{targetBounds}:{}),config,routes,events});
         const previous=store.experiment(experimentId);if(previous)return send(res,200,{...previous,reused:true});
-        const result=backtest(events,start,end,config,routes,boundaries,stepDays);
+        const result=backtest(events,start,end,config,routes,boundaries,stepDays,targetBounds);
         const forecastIds=[],snapshotIds=new Map();
         for(const trial of result.trials){
           if(!snapshotIds.has(trial.asOf))snapshotIds.set(trial.asOf,store.snapshot(events.filter(e=>e.time<=trial.asOf),trial.asOf,'hindcast'));
@@ -315,7 +316,7 @@ const handler=async(req,res)=>{
           if(resolution)store.resolve(f.id,resolution);forecastIds.push(f.id);
         }
         const {trials,...summary}=result;
-        const report={...summary,experimentId,forecastIds,config,routeVersion:routes.version,createdAt:Date.now()};
+        const report={...summary,engineVersion:DS_ENGINE_VERSION,experimentId,forecastIds,config,routeVersion:routes.version,createdAt:Date.now()};
         store.saveExperiment(experimentId,report);store.set('lastBacktest',report);resolveExpired();broadcast({type:'ledger',count:forecastIds.length});
         return send(res,200,report);
       }

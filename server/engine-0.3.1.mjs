@@ -1,7 +1,7 @@
 import {routeWalks,oriented} from './routes.mjs';
-import {insideBounds,validateBounds,longitudeWidth,distance,midpoint,pathMidpoint,equivalentMagnitude,moment,DAY,clamp,seeded,destination} from './geo.mjs';
+import {distance,midpoint,pathMidpoint,equivalentMagnitude,moment,DAY,clamp,seeded,destination} from './geo.mjs';
 import {hash} from './store.mjs';
-export const VERSION='ds-research-0.4.0';
+export const VERSION='ds-research-0.3.1';
 export function validateConfig(c){
   if(c.catalogProvider!==undefined&&!['USGS','EMSC'].includes(c.catalogProvider))throw new Error('Choose one research catalog: USGS or EMSC');
   const limits={triggerDepth:[0,700],minMagnitude:[0,9],lookbackDays:[1,90],windowDays:[7,10],radiusKm:[50,1000],magnitudeTolerance:[0.1,2],deepEscalation:[0,2],maxTargets:[1,40]};
@@ -28,8 +28,7 @@ export function analogues(source,all,asOf,radius=400,windowDays=10){
     return {source:e,similarity:Math.round(100*(1-clamp(Math.abs(e.mag-source.mag)/2+Math.abs(e.depth-source.depth)/400,0,1))),subsequentCount:future.length,largest:future.length?Math.max(...future.map(f=>f.mag)):null};
   }).sort((a,b)=>b.similarity-a.similarity).slice(0,100);
 }
-export function generate(all,asOf,config,routeConfig,boundaryPoints=[],targetBounds=null){
-  if(targetBounds)targetBounds=validateBounds(targetBounds);
+export function generate(all,asOf,config,routeConfig,boundaryPoints=[]){
   const visible=all.filter(e=>e.time<=asOf&&e.type==='earthquake'&&e.status!=='deleted'&&(!e.provider||e.provider===(config.catalogProvider??'USGS')));
   const recent=visible.filter(e=>e.time>=asOf-config.lookbackDays*DAY);
   const significant=recent.filter(e=>e.mag>=config.minMagnitude).sort((a,b)=>b.mag-a.mag||a.id.localeCompare(b.id)).slice(0,180);
@@ -88,21 +87,18 @@ export function generate(all,asOf,config,routeConfig,boundaryPoints=[],targetBou
     }
     if(config.rules.swarm!==false)for(const swarm of swarms(recent).slice(0,8)){const ids=new Set(swarm.eventIds),sources=recent.filter(e=>ids.has(e.id)).sort((a,b)=>b.mag-a.mag||a.id.localeCompare(b.id)).slice(0,30);if(sources[0]?.mag<config.minMagnitude)continue;for(const w of routeWalks(routeConfig,swarm.center,{reflection:false}))add(w.center,sources,'swarm-redistribution',w.path,w.route,w.routeIds);}
   }
-  const ranked=candidates.filter(c=>insideBounds(c.center,targetBounds)).sort((a,b)=>b.modelMatch-a.modelMatch||a.key.localeCompare(b.key));const result=[];
+  const ranked=candidates.sort((a,b)=>b.modelMatch-a.modelMatch||a.key.localeCompare(b.key));const result=[];
   for(const c of ranked){if(result.every(r=>distance(r.center,c.center)>config.radiusKm*0.65))result.push(c);if(result.length>=config.maxTargets)break;}
   result.forEach(c=>c.catalogProvider=config.catalogProvider??'USGS');
-  return {asOf,...(targetBounds?{targetBounds}:{}),engineVersion:VERSION,config,routeVersion:routeConfig.version,routeStatus:routeConfig.status,candidates:result,deepEvents:deep,stats:{catalogEvents:visible.length,recentEvents:recent.length,significantEvents:significant.length,deepTriggers:deep.length,evaluatedCandidates:candidates.length},swarms:swarms(recent),limitations:['Pair search uses the strongest 180 events per window.','Geodesic geometry does not establish physical pressure transfer.','Only the selected provider supplies model input; unassociated reports from other catalogs are excluded.','Route anchoring uses explicit waypoints, not automatic geological routing; at most 24 deep sources and 64 walks per source are tested.', 'Swarm redistribution uses descriptive two-degree bins, at most eight clusters and 30 strongest sources; it is not a fitted swarm detector.', 'DS scores remain separate from temporal/spatial ETAS, the learned cell-graph count model and GEM/Slab2 reference views. Entered craton-edge routes remain hypotheses; event-graph discovery and calibrated model combination remain separate.']};
+  return {asOf,engineVersion:VERSION,config,routeVersion:routeConfig.version,routeStatus:routeConfig.status,candidates:result,deepEvents:deep,stats:{catalogEvents:visible.length,recentEvents:recent.length,significantEvents:significant.length,deepTriggers:deep.length,evaluatedCandidates:candidates.length},swarms:swarms(recent),limitations:['Pair search uses the strongest 180 events per window.','Geodesic geometry does not establish physical pressure transfer.','Only the selected provider supplies model input; unassociated reports from other catalogs are excluded.','Route anchoring uses explicit waypoints, not automatic geological routing; at most 24 deep sources and 64 walks per source are tested.', 'Swarm redistribution uses descriptive two-degree bins, at most eight clusters and 30 strongest sources; it is not a fitted swarm detector.', 'DS scores remain separate from temporal/spatial ETAS, the learned cell-graph count model and GEM/Slab2 reference views. Entered craton-edge routes remain hypotheses; event-graph discovery and calibrated model combination remain separate.']};
 }
 export function baselines(analysis,all,seed=42){
   const rng=seeded(seed);const recent=all.filter(e=>e.time<=analysis.asOf&&e.time>=analysis.asOf-analysis.config.lookbackDays*DAY&&e.mag>=analysis.config.minMagnitude&&e.status!=='deleted'&&e.type==='earthquake'&&(!e.provider||e.provider===(analysis.config.catalogProvider??'USGS')));
-  const regional=recent.filter(e=>insideBounds(e,analysis.targetBounds));
-  if(analysis.targetBounds&&!regional.length&&analysis.candidates.length)throw new Error('No regional recent-activity sources for matched controls');
-  const choices=regional.length?regional:[{lat:0,lon:0}];
+  const choices=recent.length?recent:[{lat:0,lon:0}];
   return analysis.candidates.flatMap((c,i)=>{
     const common={...c,factors:[],objections:['Baseline hypothesis, uncalibrated'],modelMatch:null,sourceEvents:[],sources:[],path:[]};
     const base=choices[Math.floor(rng()*choices.length)];
-    const bounds=analysis.targetBounds;
-    const nullCenter=bounds?{lat:Math.asin(Math.sin(bounds.south*Math.PI/180)+rng()*(Math.sin(bounds.north*Math.PI/180)-Math.sin(bounds.south*Math.PI/180)))*180/Math.PI,lon:((bounds.west+rng()*longitudeWidth(bounds)+540)%360)-180}:{lat:Math.asin(2*rng()-1)*180/Math.PI,lon:360*rng()-180};
+    const nullCenter={lat:Math.asin(2*rng()-1)*180/Math.PI,lon:360*rng()-180};
     return [{...common,key:`null-${c.key}`,engine:'Null',region:'Uniform-area null control',center:nullCenter,kind:'uniform-null'}, {...common,key:`rate-${c.key}`,engine:'Recent-rate',region:'Recent-activity empirical control',center:{lat:base.lat,lon:base.lon},sources:base.id?[base.id]:[],kind:'empirical-rate'}];
   });
 }
@@ -120,14 +116,13 @@ export function scoreForecast(f,events,asOf,coverage=true){
 export function leaderboard(ledger){
   return ['DS','Recent-rate','Null'].map(engine=>{const all=ledger.filter(f=>f.engine===engine&&f.mode==='prospective');const resolved=all.filter(f=>f.resolution&&f.resolution.status!=='AMBIGUOUS');const hits=resolved.filter(f=>f.resolution.status==='HIT');return {engine,issued:all.length,resolved:resolved.length,hits:hits.length,partial:resolved.filter(f=>f.resolution.status==='PARTIAL HIT').length,misses:resolved.filter(f=>f.resolution.status==='MISS').length,precision:resolved.length?hits.length/resolved.length:null,meanSpatialErrorKm:hits.length?hits.reduce((s,f)=>s+f.resolution.spatialErrorKm,0)/hits.length:null};});
 }
-export function backtest(all,start,end,config,routes,boundaries,stepDays=5,targetBounds=null){
-  if(targetBounds)targetBounds=validateBounds(targetBounds);
+export function backtest(all,start,end,config,routes,boundaries,stepDays=5){
   if(end-start>90*DAY||start>=end||stepDays<1)throw new Error('Backtest must span 1–90 days');
   const trials=[];
   for(let t=start;t+config.windowDays*DAY<=end;t+=stepDays*DAY){
-    const training=all.filter(e=>e.time<=t);const analysis=generate(training,t,config,routes,boundaries,targetBounds);
+    const training=all.filter(e=>e.time<=t);const analysis=generate(training,t,config,routes,boundaries);
     for(const c of [...analysis.candidates,...baselines(analysis,training)])trials.push({...c,mode:'hindcast',resolution:scoreForecast(c,all,end,true)});
   }
   const summary=['DS','Recent-rate','Null'].map(engine=>{const a=trials.filter(t=>t.engine===engine);return {engine,forecasts:a.length,hits:a.filter(t=>t.resolution?.status==='HIT').length,precision:a.length?a.filter(t=>t.resolution?.status==='HIT').length/a.length:null};});
-  return {start,end,stepDays,...(targetBounds?{targetBounds,regionPolicy:'DS centers selected within this rectangle before ranking; globally conditioned sources. Controls use regional recent events and uniform spherical area within the same rectangle. Full target circles are scored, including outside the rectangle.'}:{}),summary,trials,method:'Event-time hindcast of the currently imported revised catalog. Future events are withheld from every generation step. Does not reconstruct historical publication availability.',limitations:['Overlapping windows and targets create dependent trials.','Scores are descriptive; no prospective skill or probability calibration is implied.']};
+  return {start,end,stepDays,summary,trials,method:'Event-time hindcast of the currently imported revised catalog. Future events are withheld from every generation step. Does not reconstruct historical publication availability.',limitations:['Overlapping windows and targets create dependent trials.','Scores are descriptive; no prospective skill or probability calibration is implied.']};
 }
