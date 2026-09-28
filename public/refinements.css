@@ -82,3 +82,5 @@ dialog .dialog-heading{position:sticky;top:-28px;z-index:3;background:#0e181f;pa
 }
 .learned-history{display:grid;gap:8px;margin:18px 0;font-size:13px;color:#b1c3d2}
 .learned-history select{width:100%;min-width:0;min-height:44px}
+
+.live-event-notice{position:absolute;z-index:12;top:72px;left:50%;transform:translateX(-50%);width:min(420px,calc(100% - 32px));padding:16px}.live-event-notice p{font-size:13px;line-height:1.6;margin:0 0 12px;overflow-wrap:anywhere}.live-event-notice button{min-height:44px;margin-right:8px}#live-event-notices{width:22px;height:22px;flex-shrink:0}
