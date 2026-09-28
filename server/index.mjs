@@ -266,7 +266,7 @@ const handler=async(req,res)=>{
         if(p==='/api/protocol-register')broadcast({type:'protocol'});return send(res,200,result);
       }
       if(p==='/api/protocol-stop'){const result=prospective.stop(b.id);broadcast({type:'protocol'});return send(res,200,result);}
-      if(p==='/api/protocol-check'){const countResult=countForecasts.tick(feed),result=prospective.tick(feed);if(result.changes||countResult.changes)broadcast({type:'protocol'});return send(res,200,result);}
+      if(p==='/api/protocol-check')return send(res,200,await checkProspective());
       if(p==='/api/completeness'){
         if(fittingETAS)return send(res,409,{error:'A statistical analysis is already running'});
         const options=completenessOptions({...b,provider:b.provider??config.catalogProvider});
@@ -486,7 +486,13 @@ const handler=async(req,res)=>{
 const server=http.createServer(handler);
 server.listen(port,'127.0.0.1',()=>{console.log(`SeismoSphere running at http://127.0.0.1:${port}`);if(!process.env.SEISMO_TEST_MODE){importJobs.kick();refresh();weeklyVolcanoes.refresh().then(()=>broadcast({type:'weekly-volcanoes'})).catch(e=>{console.error(e.message);broadcast({type:'weekly-volcanoes'});});volcanoStatus.refresh().then(()=>broadcast({type:'volcano-status'})).catch(e=>{console.error(e.message);broadcast({type:'volcano-status'});});if(access.settings.enabled)access.start(handler).catch(e=>{access.lastError=e.message;console.error('Phone access: '+e.message);});}});
 const interval=setInterval(()=>{if(!process.env.SEISMO_TEST_MODE){refresh();weeklyVolcanoes.refresh().then(()=>broadcast({type:'weekly-volcanoes'})).catch(e=>{console.error(e.message);broadcast({type:'weekly-volcanoes'});});volcanoStatus.refresh().then(()=>broadcast({type:'volcano-status'})).catch(e=>{console.error(e.message);broadcast({type:'volcano-status'});});}},5*60000);interval.unref();
-const protocolInterval=setInterval(async()=>{if(!process.env.SEISMO_TEST_MODE)try{await countSchedules.tick(feed);const countResult=countForecasts.tick(feed),result=prospective.tick(feed);if(result.changes||countResult.changes)broadcast({type:'protocol'});}catch(e){console.error('Prospective schedule: '+e.message);}},30000);protocolInterval.unref();
+async function checkProspective(){
+ const schedules=await countSchedules.tick(feed),assessments=countForecasts.tick(feed),protocols=prospective.tick(feed);
+ const changes=schedules.changes+assessments.changes+protocols.changes;
+ if(changes)broadcast({type:'protocol'});
+ return {changes,schedules,assessments,protocols};
+}
+const protocolInterval=setInterval(async()=>{if(!process.env.SEISMO_TEST_MODE)try{await checkProspective();}catch(e){console.error('Prospective schedule: '+e.message);}},30000);protocolInterval.unref();
 let closing=false;
 function shutdown(){if(closing)return;closing=true;clearInterval(interval);clearInterval(protocolInterval);clearTimeout(reviewTimer);learned.close();speech.close();const importsStopped=Promise.all([seedlink.close(),closeResponseWorkers(),importJobs.shutdown(),randomizations.shutdown(),gnss.shutdown(),volcanoStatus.shutdown(),weeklyVolcanoes.shutdown()]);access.close();for(const client of clients)client.end();server.close(async()=>{await importsStopped;store.close();process.exit(0);});server.closeAllConnections();setTimeout(()=>process.exit(0),3000).unref();}
 process.on('SIGINT',shutdown);process.on('SIGTERM',shutdown);
