@@ -105,7 +105,8 @@ export class Geology {
     const points=new THREE.Points(geometry,new THREE.PointsMaterial({size:.018,map:earth.glow,vertexColors:true,transparent:true,depthWrite:false,depthTest:false,blending:THREE.AdditiveBlending}));
     points.userData.events=events;points.userData.section=true;earth.eventGroup.add(points);this.updateCaption();earth.sonification?.checkContext();
   }
-  drawSlabs(){
+  drawSlabs(fade=false){
+    this.slabFade=null;
     if(this.curvedPath){this.earth.clear(this.slabGroup);this.slabGroup.visible=false;this.drawCurvedSection?.();return;}
     this.earth.clear(this.slabGroup);this.sectionSlabs=[];this.slabGroup.visible=this.slabsEnabled;if(!this.slabsEnabled||!this.features)return;
     const positions=[],colors=[],scale=this.section?1:this.earth.depthScale;
@@ -125,5 +126,12 @@ export class Geology {
     }
     const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
     this.slabGroup.add(new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:this.section?.95:.6,depthTest:!this.section,depthWrite:false})));
+    if(fade&&!this.earth.reduced&&!this.earth.scientific){const material=this.slabGroup.children[0].material;this.slabFade={material,opacity:material.opacity,start:performance.now()};material.opacity=0;}
+  }
+  advanceSlabFade(now=performance.now()){
+    const fade=this.slabFade;if(!fade)return;
+    const t=this.earth.reduced||this.earth.scientific?1:Math.max(0,Math.min(1,(now-fade.start)/700));
+    fade.material.opacity=fade.opacity*t*t*(3-2*t);
+    if(t===1)this.slabFade=null;
   }
 }

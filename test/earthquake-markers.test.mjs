@@ -69,6 +69,11 @@ test('section selection follows the real curved projection and ignores hidden or
  const {curvedSection}=await import('../public/curved-section.js');
  const geologySource=readFileSync(new URL('../public/geology.js',import.meta.url),'utf8').replace("'three'",JSON.stringify(new URL('../public/vendor/three.module.js',import.meta.url).href)).replace("import {setupSectionTools} from './section-tools.js';",'').replace("'./section-geometry.js'",JSON.stringify(new URL('../public/section-geometry.js',import.meta.url).href)).replace("'./curved-section.js'",JSON.stringify(new URL('../public/curved-section.js',import.meta.url).href));
  const {Geology}=await import('data:text/javascript;base64,'+Buffer.from(geologySource).toString('base64'));
+ const fadeEarth={depthScale:1,clear:Earth.prototype.clear},fadeGeology=Object.assign(Object.create(Geology.prototype),{earth:fadeEarth,slabGroup:new THREE.Group(),slabsEnabled:true,features:[{properties:{depth:400},geometry:{type:'LineString',coordinates:[[170,0],[171,1]]}}]});
+ fadeGeology.drawSlabs(true);const fade=fadeGeology.slabFade;assert.equal(fade.material.opacity,0);fadeGeology.advanceSlabFade(fade.start+350);assert.ok(Math.abs(fade.material.opacity-.3)<1e-12);
+ fadeEarth.reduced=true;fadeGeology.advanceSlabFade(fade.start+351);assert.equal(fade.material.opacity,.6);assert.equal(fadeGeology.slabFade,null);
+ fadeGeology.drawSlabs(true);assert.equal(fadeGeology.slabFade,null);fadeEarth.reduced=false;fadeEarth.scientific=true;fadeGeology.drawSlabs(true);assert.equal(fadeGeology.slabFade,null);
+ fadeEarth.scientific=false;fadeGeology.drawSlabs(true);fadeGeology.slabsEnabled=false;fadeGeology.drawSlabs();assert.equal(fadeGeology.slabFade,null);assert.equal(fadeGeology.slabGroup.visible,false);
  const geology=Object.assign(Object.create(Geology.prototype),{curvedPath:curvedSection([{lat:0,lon:170},{lat:0,lon:-170},{lat:20,lon:-170}],100)});
  const event={id:'projected',lat:.5,lon:179,depth:300,mag:4.5,time:0};const projected=geology.projectEvent(event);assert.ok(Math.abs(projected.point.length()-(1-300/6371.0088))<1e-12);assert.ok(Math.abs(projected.point.y)<1e-10);assert.ok(Math.abs(projected.surface.length()-1)<1e-12);
  assert.equal(geology.projectEvent({...event,lat:40}),null);

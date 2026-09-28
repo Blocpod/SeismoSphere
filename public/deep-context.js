@@ -11,7 +11,7 @@ export async function showDeepContext(event,{earth,getState,selectForecast}){
  const current=()=>root.isConnected&&!document.querySelector('#selection').hidden&&getState().selectedEvent?.id===event.id&&getState().asOf===cutoff;
  try{
   await earth.geology.load();if(!current()){if(root.isConnected)status.textContent="The selected observation or time changed. Reopen the event to load its context.";return;}
-  earth.geology.slabsEnabled=true;earth.geology.drawSlabs();earth.geology.updateCaption();
+  earth.geology.slabsEnabled=true;earth.geology.drawSlabs(true);earth.geology.updateCaption();
   status.textContent='Published Slab2 contours enabled. Use Layers to change their visibility. Contours are a static reference, including during historical replay.';
  }catch(error){if(current())status.textContent='Slab reference unavailable: '+error.message;}
 }
