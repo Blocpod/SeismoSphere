@@ -22,3 +22,5 @@ for(const [file,url] of [['public/vendor/qrcode.mjs','https://cdn.jsdelivr.net/n
 await import('./setup-crust.mjs');
 
 await import('./setup-lithosphere.mjs');
+
+await import('./setup-boundary-types.mjs');

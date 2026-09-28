@@ -27,7 +27,7 @@ test('both analogue searches reject invalid sources and exclude foreign or non-e
 test('sequence graph v2 encodes prior midpoint support and equal-window activity without outcome leakage',()=>{
  const source={id:'source',time:100*DAY,lat:0,lon:0,mag:6,depth:400},e=(id,lon,time,depth)=>({...source,id,lon,time:time*DAY,depth,mag:5});
  const events=[e('west',-5,92,10),e('east',5,99,10),e('early',-1,93,10),e('late',1,99,20)],graph=fingerprint(source,events);
- assert.equal(graph.version,'relative-sequence-graph-3');assert.equal(graph.activity.earlyPerDay,.2);assert.equal(graph.activity.latePerDay,.2);assert.equal(graph.activity.depthChangeKm,10);
+ assert.equal(graph.version,'relative-sequence-graph-4');assert.equal(graph.activity.earlyPerDay,.2);assert.equal(graph.activity.latePerDay,.2);assert.equal(graph.activity.depthChangeKm,10);
  const pair=graph.midpointStructure.find(m=>m.endpoints.map(i=>graph.nodeIds[i]).sort().join(',')==='east,west');assert.ok(pair.supportIds.includes('source'));assert.ok(pair.supportIds.includes('early'));assert.ok(pair.supportIds.includes('late'));
  assert.deepEqual(fingerprint(source,[...events,e('outcome',0,101,30)]),graph);
  assert.equal(fingerprint(source,[]).activity.depthChangeKm,null);

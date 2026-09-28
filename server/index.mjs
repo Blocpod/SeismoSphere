@@ -1,3 +1,4 @@
+import {boundaryReference} from './boundary-context.mjs';
 import {runProspectiveChecks} from './prospective-checks.mjs';
 import {CountSchedules} from './count-schedules.mjs';
 import {prospectiveCountLeaderboard,countScheduleContext} from './count-leaderboard.mjs';
@@ -391,7 +392,7 @@ const handler=async(req,res)=>{
         const asOf=Number(b.asOf??Date.now());if(!Number.isFinite(asOf)||asOf>Date.now()+60000)throw new Error('Invalid cutoff');
         const events=researchEvents({asOf,strict:b.mode==='strict'}),source=events.find(e=>e.id===b.eventId);
         if(!source)throw new Error('Select a catalog event at the current cutoff first');
-        return send(res,200,await neuralAnalogues(source,events,asOf,store,{...config,network:routeHistory.at(asOf)}));
+        return send(res,200,await neuralAnalogues(source,events,asOf,store,{...config,network:routeHistory.at(asOf),boundaries:boundaryReference()}));
       }
       if(p==='/api/chat'){
         if(aiBusy)return send(res,409,{error:'The AI is answering another question'});if(typeof b.message!=='string'||b.message.length>6000)throw new Error('Question must be at most 6000 characters');
