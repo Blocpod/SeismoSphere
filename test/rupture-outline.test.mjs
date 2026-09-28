@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ruptureCorners,stressPosition,stressLegend} from '../public/stress-geometry.js';
+import {ruptureCorners,ruptureDescription,stressPosition,stressLegend} from '../public/stress-geometry.js';
 test('rupture outlines retain the solver top edge, right-hand dip and true depths',()=>{
  for(const angle of [0,37,143,270])for(const dip of [19,45,90]){
   const a=angle*Math.PI/180,p={xStartKm:12,yStartKm:-8,xEndKm:12+20*Math.sin(a),yEndKm:-8+20*Math.cos(a),topKm:5,bottomKm:15,dipDeg:dip},c=ruptureCorners(p),width=10/Math.sin(dip*Math.PI/180);
@@ -11,4 +11,10 @@ test('rupture outlines retain the solver top edge, right-hand dip and true depth
  }
  assert.throws(()=>ruptureCorners({xStartKm:0,yStartKm:0,xEndKm:0,yEndKm:0,topKm:0,bottomKm:10,dipDeg:45}));
  const e={result:{options:{receiver:{strike:19,dip:19,rake:90}},report:{points:[{depthKm:10}]}},limitMPa:1,depthScale:1,rupturePatches:true};assert.match(stressLegend(e)[1],/amber outlines: source patches/);
+});
+
+test('source inspection names exact published parameters separately from receiver stress',()=>{
+ const patch={number:7,xStartKm:0,yStartKm:0,xEndKm:0,yEndKm:20,topKm:5,bottomKm:15,dipDeg:30,slipM:2.75,rakeDeg:90};
+ const text=ruptureDescription(patch,2,450);assert.match(text,/Source patch 3\/450 \(source number 7\)/);assert.match(text,/slip 2.75 m/);assert.match(text,/length 20.000 km \/ down-dip width 20.000 km/);assert.match(text,/not measured stress or receiver assumptions/);
+ const evidence={result:{options:{receiver:{strike:19,dip:19,rake:90}},report:{points:[{depthKm:10}]}},limitMPa:1,depthScale:1,rupturePatches:true,selectedRupturePatch:{index:2,...patch}};assert.match(stressLegend(evidence)[1],/white: patch 3/);
 });

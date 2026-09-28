@@ -12,11 +12,15 @@ export function stressColor(value,limit){
 export function stressLegend(evidence){
   const r=evidence.result.options.receiver,depth=evidence.result.report.points[0].depthKm;
   return [`STATIC STRESS · ${evidence.baseline?'CURRENT − BASELINE':'COULOMB CHANGE'} · blue −${evidence.limitMPa} / orange +${evidence.limitMPa} MPa`,
-    `${depth} km samples · receiver ${r.strike}/${r.dip}/${r.rake}° · ${evidence.depthScale}× depth · NOT A FORECAST${evidence.rupturePatches?' · amber outlines: source patches':''}`];
+    `${depth} km samples · receiver ${r.strike}/${r.dip}/${r.rake}° · ${evidence.depthScale}× depth · NOT A FORECAST${evidence.rupturePatches?` · amber outlines: source patches${evidence.selectedRupturePatch?' · white: patch '+(evidence.selectedRupturePatch.index+1):''}`:''}`];
 }
 export function ruptureCorners(p){
   const {xStartKm:x,yStartKm:y,xEndKm:xx,yEndKm:yy,topKm:top,bottomKm:bottom,dipDeg:dip}=p,length=Math.hypot(xx-x,yy-y);
   if(![x,y,xx,yy,top,bottom,dip].every(Number.isFinite)||!length||top<0||bottom<=top||dip<=0||dip>90)throw new Error('Invalid rupture patch geometry');
   const horizontal=(bottom-top)/Math.tan(dip*Math.PI/180),dx=horizontal*(yy-y)/length,dy=-horizontal*(xx-x)/length;
   return [{xKm:x,yKm:y,depthKm:top},{xKm:xx,yKm:yy,depthKm:top},{xKm:xx+dx,yKm:yy+dy,depthKm:bottom},{xKm:x+dx,yKm:y+dy,depthKm:bottom}];
+}
+export function ruptureDescription(p,index,count){
+  ruptureCorners(p);const length=Math.hypot(p.xEndKm-p.xStartKm,p.yEndKm-p.yStartKm),width=(p.bottomKm-p.topKm)/Math.sin(p.dipDeg*Math.PI/180);
+  return `Source patch ${index+1}/${count} (source number ${p.number}) · slip ${p.slipM} m · rake ${p.rakeDeg}° · dip ${p.dipDeg}° · top ${p.topKm} km / bottom ${p.bottomKm} km · length ${length.toFixed(3)} km / down-dip width ${width.toFixed(3)} km. Published inversion parameters, not measured stress or receiver assumptions.`;
 }
