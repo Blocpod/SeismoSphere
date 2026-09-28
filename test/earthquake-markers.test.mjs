@@ -140,3 +140,19 @@ test('provider non-earthquake types keep distinct markers and no earthquake halo
   earth.clear(earth.eventGroup);
  }finally{delete globalThis.document;}
 });
+
+
+test('section marker builder preserves projected positions, type and selection order',()=>{
+ const earth=Object.assign(Object.create(Earth.prototype),{asOf:86400000,container:{clientHeight:900},renderer:{getPixelRatio:()=>1},camera:{fov:35},glow:new THREE.Texture()});
+ const events=[{id:'blast',type:'quarry blast',depth:-.5,mag:1,time:0},{id:'quake',type:'earthquake',depth:400,mag:5,time:86400000}],positions=[1,2,3,-1,-2,-3];
+ const points=earth.eventPoints(events,positions);
+ assert.deepEqual([...points.geometry.attributes.position.array],positions);
+ assert.deepEqual([...points.geometry.attributes.eventKind.array],[1,0]);
+ assert.equal(points.userData.events,events);assert.equal(points.material.depthTest,false);
+ assert.ok(points.geometry.attributes.pointSize.getX(1)>points.geometry.attributes.pointSize.getX(0));
+ assert.ok(points.geometry.attributes.alpha.getX(1)>points.geometry.attributes.alpha.getX(0));
+ points.geometry.dispose();points.material.dispose();
+ earth.scientific=true;earth.disc=new THREE.Texture();const scientific=earth.eventPoints(events,positions);
+ assert.equal(scientific.material.uniforms.sprite.value,earth.disc);assert.equal(scientific.material.blending,THREE.NormalBlending);
+ scientific.geometry.dispose();scientific.material.dispose();
+});
