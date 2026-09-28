@@ -122,3 +122,21 @@ test('catalog and timeline changes refresh section evidence after projecting the
   earth.clear(earth.eventGroup);
  }finally{delete globalThis.document;}
 });
+
+
+test('provider non-earthquake types keep distinct markers and no earthquake halo',()=>{
+ globalThis.document={querySelector:()=>null};
+ try{
+  const earth=Object.assign(Object.create(Earth.prototype),{eventGroup:new THREE.Group(),depthScale:1,container:{clientHeight:900},renderer:{getPixelRatio:()=>1},camera:{fov:35},glow:new THREE.Texture(),syncPresentation(){}});
+  const events=['earthquake','explosion','quarry blast','unknown'].map((type,i)=>({id:String(i),type,lat:0,lon:i*30,depth:5,mag:6-i*.1,time:0}));
+  for(const xray of [false,true])for(const scientific of [false,true]){
+   earth.xray=xray;earth.scientific=scientific;earth.setEvents(events,0);
+   assert.deepEqual([...earth.points.geometry.attributes.eventKind.array],[0,1,1,1]);
+   assert.equal(earth.eventGroup.children.filter(p=>p.isLine).length,1);
+   const points=earth.eventGroup.children.find(p=>p.userData.projection)??earth.points;
+   assert.deepEqual([...points.geometry.attributes.eventKind.array],[0,1,1,1]);
+   assert.equal(points.geometry.attributes.position.count,4);
+  }
+  earth.clear(earth.eventGroup);
+ }finally{delete globalThis.document;}
+});
