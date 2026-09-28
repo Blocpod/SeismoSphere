@@ -2,7 +2,7 @@ import {workspaceCommand} from '../public/workspace-commands.js';
 import {spawn} from 'node:child_process';
 import {mkdirSync} from 'node:fs';
 import path from 'node:path';
-const ACTIONS=['deep','all','paths','forecasts','xray','surface','pacific','global','ledger','research','explain','counterevidence','faults','stations','scientific','cinematic','volcanoes','cratons','gnss','relief','slabSurfaces','lithosphere','volcanoActivity','weeklyVolcanoes','hemisphere','wedge'];
+const ACTIONS=['modelComparison','deep','all','paths','forecasts','xray','surface','pacific','global','ledger','research','explain','counterevidence','faults','stations','scientific','cinematic','volcanoes','cratons','gnss','relief','slabSurfaces','lithosphere','volcanoActivity','weeklyVolcanoes','hemisphere','wedge'];
 export const responseSchema={type:'object',properties:{answer:{type:'string'},actions:{type:'array',items:{type:'string',enum:ACTIONS}}},required:['answer','actions'],additionalProperties:false};
 // An explicitly named frozen record takes precedence over incidental UI selections.
 export function forecastExplanationRequest(request){
@@ -28,6 +28,7 @@ export function commandActions(message,context={}){
 }
 function parsedCommandActions(message,context={}){
   const s=message.toLowerCase(),a=[];
+  if(workspaceCommand(message)?.action==='modelComparison')return ['modelComparison'];
   if(context.countExperiment||context.learnedModel||context.detectionEvidence||context.stressEvidence||context.calibrationEvidence||context.phaseEvidence||context.prospectiveExperiment||context.waveformEvidence?.correction||context.waveformEvidence?.spectrum||context.spatialQuestion||context.resolutionReviewEvidence||context.weeklyVolcanoEvidence)return [];
   if(/\b(?:show|open|explore|inspect)\b.{0,50}\b(?:terrain|bathymetry|seafloor|relief)\b/.test(s))return ['relief'];
   if(context.weeklyVolcanoEvidence||context.volcanoStatusEvidence)return [];

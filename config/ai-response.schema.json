@@ -9,6 +9,7 @@
       "items": {
         "type": "string",
         "enum": [
+          "modelComparison",
           "deep",
           "all",
           "paths",
