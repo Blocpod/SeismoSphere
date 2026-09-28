@@ -15,3 +15,9 @@ Each review retains its experiment summary, exact forecast bodies and hashes, ca
 The existing 2011-02-15 through 2011-03-25 global experiment, reviewed at M ≥ 4.5, contains 2,367 eligible catalog earthquakes. DS covers 160 and misses 2,207 (71 empty forecasts of 94); recent-rate covers 1,051 and misses 1,316 (41/94 empty); null covers 12 and misses 2,355 (82/94 empty). A separate Python haversine/matching calculation reproduces all covered/missed sets and empty counts. This is a software check, not independent validation of the catalog or scientific model.
 
 Focused tests cover dateline regions, overlapping alerts, gaps, boundaries, source aliases, duplicate identity rejection, deleted/provider-excluded events, missing denominators, retrieval coverage, immutability and revision separation. The complete regression suite passes 129 tests. Actual desktop UI creation, immutable reuse and exported evidence were inspected. No forecasts were issued; the existing 282-record ledger and its head hash are unchanged.
+
+## Offline reproduction
+
+Run `node scripts/reproduce-detection.mjs PATH_TO_EXPORTED_JSON` from the project. The checker verifies the input/result hashes, exact local numerical evaluator and geographic code, experiment domain and forecast membership, then reproduces the full report including all matched and missed event IDs. Storage/history-only changes do not invalidate the numerical implementation check. Embedded code is never executed. Altered reports, experiment scope, forecast sets and evaluator source are rejected even when their content hashes have been recomputed.
+
+The actual retained 2,367-event 2011 review reproduces identically. This check establishes internal numerical reproducibility; it does not authenticate upstream catalog retrieval, forecast issuance or timestamps. Use the full ledger evidence to check the forecast chain.

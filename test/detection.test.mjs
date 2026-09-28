@@ -1,3 +1,4 @@
+import {reproduceDetection} from '../scripts/reproduce-detection.mjs';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -23,7 +24,17 @@ test('saved detection reviews preserve evidence, reuse exact inputs and never re
  const service=new DetectionReviews(store),events=[event('a'),event('missed',5000,171)];store.ingest(events,11000);store.set('coverage',[{provider:'USGS',start:0,end:20000,minMagnitude:4}]);
  const snapshotId=store.snapshot([],1000,'hindcast'),[f]=store.issue([forecast('ignored')],{snapshotId,mode:'hindcast',experimentId:'exp',issuedAt:20000});
  store.saveExperiment('exp',{experimentId:'exp',start:1000,end:10000,forecastIds:[f.id],config:{catalogProvider:'USGS'},targetBounds:options.bounds});
- const before=store.verify(),review=service.run('exp',4.5);assert.equal(review.report.engines[0].eventRecall,.5);assert.equal(service.run('exp',4.5).reused,true);assert.notEqual(service.run('exp',5).id,review.id);assert.deepEqual(store.verify(),before);assert.deepEqual(service.get(review.id),review);
+ const before=store.verify(),review=service.run('exp',4.5);assert.equal(review.report.engines[0].eventRecall,.5);assert.equal(service.run('exp',4.5).reused,true);
+ assert.equal(reproduceDetection(review).identical,true);
+ for(const change of ['result','scope','forecast','source']){
+  const altered=structuredClone(review);
+  if(change==='result'){altered.report.engines[0].coveredEvents++;altered.reportHash=hash(altered.report);}
+  if(change==='scope')altered.input.options.start++;
+  if(change==='forecast')altered.input.forecasts=[];
+  if(change==='source')altered.input.implementation.sourceFiles['server/detection.mjs']='throw new Error("Do not execute exported code");\n'+altered.input.implementation.sourceFiles['server/detection.mjs'];
+  altered.id=hash(altered.input);assert.throws(()=>reproduceDetection(altered),change);
+ }
+assert.notEqual(service.run('exp',5).id,review.id);assert.deepEqual(store.verify(),before);assert.deepEqual(service.get(review.id),review);
  assert.throws(()=>store.db.prepare('DELETE FROM detection_reviews WHERE id=?').run(review.id),/immutable/);
  assert.throws(()=>service.run('exp',3),/coverage/);
  store.ingest([event('missed',5000,171,{status:'deleted',updated:12000})],12000);const revised=service.run('exp',4.5);assert.notEqual(revised.id,review.id);assert.equal(revised.report.engines[0].eventRecall,1);assert.equal(service.get(review.id).report.engines[0].eventRecall,.5);
