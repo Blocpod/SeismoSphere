@@ -156,3 +156,10 @@ test('section marker builder preserves projected positions, type and selection o
  assert.equal(scientific.material.uniforms.sprite.value,earth.disc);assert.equal(scientific.material.blending,THREE.NormalBlending);
  scientific.geometry.dispose();scientific.material.dispose();
 });
+
+
+test('resizing updates event shader scales outside the main event group',()=>{
+ const scene=new THREE.Scene(),nested=new THREE.Group(),uniform={value:1};nested.add(new THREE.Points(new THREE.BufferGeometry(),new THREE.ShaderMaterial({uniforms:{pixelScale:uniform}})));scene.add(nested);
+ const earth=Object.assign(Object.create(Earth.prototype),{scene,container:{clientWidth:800,clientHeight:600},renderer:{setSize(){},getPixelRatio:()=>2},camera:new THREE.PerspectiveCamera(35,1,.1,100),controls:{}});earth.camera.position.z=4;
+ earth.resize();assert.ok(Math.abs(uniform.value-1200/(2*Math.tan(35*Math.PI/360)))<1e-9);
+});
