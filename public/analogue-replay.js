@@ -1,4 +1,7 @@
 const DAY=86400000;
+export function replaySearchStillCurrent(start,state){
+ return state.selectedEvent?.id===start.eventId&&state.live===start.live&&state.mode===start.mode&&(start.live||state.asOf===start.asOf);
+}
 export function analogueFrame(report,index,day=0){
  if(!Number.isInteger(index)||index<0||index>=report.matches.length)throw new Error('Choose a returned analogue.');
  const source=report.matches[index].source,windowDays=report.windowDays;
