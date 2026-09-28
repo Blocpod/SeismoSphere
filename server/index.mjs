@@ -1,4 +1,4 @@
-import {commonComparison} from './common-comparison.mjs';
+import {commonComparison,addComparisonModels} from './common-comparison.mjs';
 import {assessSwarm} from './swarm-assessment.mjs';
 import {boundaryReference} from './boundary-context.mjs';
 import {runProspectiveChecks} from './prospective-checks.mjs';
@@ -275,8 +275,16 @@ const handler=async(req,res)=>{
         const etas=JSON.parse(row.body),o=etas.fit.options,end=o.end+7*DAY;
         if(b.mode==='strict'||!Number.isFinite(b.asOf)||end>Math.min(b.asOf,Date.now()))throw new Error('Use revised-catalog mode with a cutoff after the complete comparison window');
         if(!coverageComplete(store.get('coverage',[]),{provider:o.provider,start:o.end,end,minMagnitude:o.minMagnitude,bounds:validateBounds(o)}))throw new Error('Import complete seven-day outcome coverage for this region and magnitude floor');
-        const events=researchEvents({asOf:end,provider:o.provider}),report=commonComparison({etas,events,config,routes,boundaries});
-        report.inputSnapshotId=store.snapshot(events,end,'paired-spatial-rank-revised-catalog');report.createdAt=Date.now();report.routes=structuredClone(routes);report.boundaries=boundaries;report.etasFit=etas.fit;report.implementation=Object.fromEntries(['common-comparison','spatial-etas','etas','engine','configuration-analogues','catalog','swarm-assessment','routes','geo','store'].map(n=>[n,readFileSync('server/'+n+'.mjs','utf8')]));report.id=hash(report);store.db.prepare('INSERT INTO common_comparisons VALUES(?,?)').run(report.id,JSON.stringify(report));
+        const events=researchEvents({asOf:end,provider:o.provider});
+        let report=commonComparison({etas,events,config,routes,boundaries}),inference=null,tectonic=null,calibrated=null;
+        if(b.learnedId){
+          if(o.provider!=='USGS'||o.minMagnitude!==5)throw new Error('Select a USGS M5 spatial ETAS fit to include learned count models');
+          inference=await learned.predict(b.learnedId,o.end,'catalog-replay','ensemble');tectonic=learned.tectonic(b.learnedId);
+          inference.checkpoint=learned.get(b.learnedId).artifact;
+        }
+        if(b.calibrationId){const variant=calibrationVariant(store,b.calibrationId);if(variant.config.catalogProvider!==o.provider||variant.calibration.intervals.trainEnd>o.end)throw new Error('Select a calibration trained before this cutoff on the same catalog');calibrated={...variant,analysis:generate(events.filter(e=>e.time<=o.end),o.end,{...variant.config,windowDays:7},variant.routes,variant.boundaries)};}
+        report=addComparisonModels(report,{learned:inference,tectonic,calibrated});
+        report.inputSnapshotId=store.snapshot(events,end,'paired-spatial-rank-revised-catalog');report.createdAt=Date.now();report.routes=structuredClone(routes);report.boundaries=boundaries;report.etasFit=etas.fit;report.implementation=Object.fromEntries(['common-comparison','tectonic-baseline','learned','calibration','spatial-etas','etas','engine','configuration-analogues','catalog','swarm-assessment','routes','geo','store'].map(n=>[n,readFileSync('server/'+n+'.mjs','utf8')]));if(inference)report.learnedSource=readFileSync('model/seismic_gnn.py','utf8');report.id=hash(report);store.db.prepare('INSERT INTO common_comparisons VALUES(?,?)').run(report.id,JSON.stringify(report));
         return send(res,200,report);
       }
       if(p==='/api/routes-preview')return send(res,200,{network:validateRoutes(b.network)});
