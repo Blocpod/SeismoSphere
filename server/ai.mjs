@@ -2,7 +2,7 @@ import {workspaceCommand} from '../public/workspace-commands.js';
 import {spawn} from 'node:child_process';
 import {mkdirSync} from 'node:fs';
 import path from 'node:path';
-const ACTIONS=['modelComparison','deep','all','paths','forecasts','xray','surface','pacific','global','ledger','research','explain','counterevidence','faults','stations','scientific','cinematic','volcanoes','cratons','gnss','relief','slabSurfaces','lithosphere','volcanoActivity','weeklyVolcanoes','hemisphere','wedge'];
+const ACTIONS=['modelComparison','deep','all','paths','forecasts','xray','surface','pacific','global','ledger','research','explain','counterevidence','faults','stations','scientific','cinematic','volcanoes','cratons','gnss','relief','slabSurfaces','lithosphere','lithosphereInterior','volcanoActivity','weeklyVolcanoes','hemisphere','wedge'];
 export const responseSchema={type:'object',properties:{answer:{type:'string'},actions:{type:'array',items:{type:'string',enum:ACTIONS}}},required:['answer','actions'],additionalProperties:false};
 // An explicitly named frozen record takes precedence over incidental UI selections.
 export function forecastExplanationRequest(request){
@@ -37,7 +37,7 @@ function parsedCommandActions(message,context={}){
   if(context.crustEvidence||context.slabEvidence)return [];
   if(/\b(?:show|open|explore|inspect)\b.{0,50}\b(?:slab surfaces?|subduction geometry)\b/.test(s))return ['slabSurfaces'];
   if(context.reliefEvidence)return [];
-  if(workspaceCommand(message)?.action==='lithosphere')return ['lithosphere'];
+  if(['lithosphere','lithosphereInterior'].includes(workspaceCommand(message)?.action))return [workspaceCommand(message).action];
   const cutaway=/^(?:please\s+)?(?:(do not|don't|never)\s+)?(?:show|use|open|switch\s+to|restore)\s+(?:the\s+)?(hemisphere|radial\s+wedge)\s+(?:cutaway|view)[.!]?$/.exec(s.trim());if(cutaway)return cutaway[1]?[]:[cutaway[2]==='hemisphere'?'hemisphere':'wedge'];
   const view=/^(?:please\s+)?(?:(?:switch|change)\s+to|show|use|enable|restore)\s+(?:the\s+)?(scientific|cinematic)\s+(?:view|mode)[.!]?$/.exec(s.trim());
   if(view)return [view[1]];

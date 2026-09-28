@@ -12,7 +12,7 @@ test('workspace commands are explicit, bounded and never interpret explanations 
 
 test('lithosphere commands open source controls and preserve questions and negation',async()=>{
  const {commandActions,chat,responseSchema}=await import('../server/ai.mjs');
- for(const message of ['Show the lithosphere','Open asthenosphere layers','Please inspect lithospheric mantle controls.','Take me inside the lithosphere']){
+ for(const message of ['Show the lithosphere','Open asthenosphere layers','Please inspect lithospheric mantle controls.']){
   assert.deepEqual(workspaceCommand(message),{type:'action',action:'lithosphere'});assert.deepEqual(commandActions(message),['lithosphere']);
  }
  for(const message of ['Explain the lithosphere','Do not show the lithosphere','Show the lithosphere and issue a forecast'])assert.equal(workspaceCommand(message),null);
@@ -79,4 +79,11 @@ test('frozen controls exclude inherited DS metadata and later outcomes without c
  t.mock.method(globalThis,'fetch',async(_url,options)=>{sent=JSON.parse(options.body);return {ok:true,json:async()=>({message:{content:JSON.stringify({answer:evidence.sourceSentence,actions:[]})}})};});
  await chat('Explain forecast DSP-control',{selected,candidates:[selected],frozenForecastEvidence:evidence},{aiProvider:'ollama',localModel:'test'});
  const prompt=sent.messages[1].content;assert.ok(!prompt.includes('unrelated'));assert.ok(!prompt.includes('illustrative'));assert.ok(!prompt.includes('HIT'));assert.ok(!prompt.includes('DRAFT'));assert.match(prompt,/ISSUED/);assert.match(prompt,/2011-03-22T00:00:00.000Z/);assert.ok(!prompt.includes('1300752000000'));assert.match(prompt,/inherited from a DS candidate/);assert.deepEqual(selected,before);
+});
+
+test('entering the lithosphere requests the actual interior while opening layers keeps the controls',async()=>{
+ const {commandActions}=await import('../server/ai.mjs');
+ assert.deepEqual(workspaceCommand('Take me inside the lithosphere'),{type:'action',action:'lithosphereInterior'});
+ assert.deepEqual(commandActions('Take me inside the lithosphere'),['lithosphereInterior']);
+ assert.deepEqual(commandActions('Do not take me inside the lithosphere'),[]);
 });

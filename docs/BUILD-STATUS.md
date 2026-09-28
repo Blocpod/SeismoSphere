@@ -534,3 +534,7 @@ Neural search rejects zero/non-finite/overflowing vectors and incompatible dimen
 ### Source analogue search avoids discarded outcome scans
 Source magnitude/depth similarity is now ranked and capped at 100 before outcome scans. Selection never depends on outcomes; stable ties and returned values are preserved. Fifteen focused tests passed, including explicit comparison with the previous algorithm and proof that discarded candidates do not trigger geometry scans. Same real USGS:us6000txpi request and cutoff returned deeply identical JSON: 2422.8 ms before, 551.9 ms after (one HTTP observation each, not a statistical benchmark). Evidence: artifacts/analogue-search-performance.json. Updated backend is running.
 
+
+### Lithosphere interior command
+'Take me inside the lithosphere' now loads verified LITHO1.0 geometry, enables mantle-lid and asthenosphere boundaries, and opens the existing true-depth oblique cutaway around the selected event/watch or configured section anchor. 'Open lithosphere layers' retains the controls-only behavior. Added a direct cutaway button to the layer dialog. Missing assets leave the view unmodified and report the error. This is a sourced cutaway inspection, not a first-person camera inside the mantle. Fourteen geometry/command tests passed; the running mobile command displays both published layer bands at depth 1x with scientific labels. Evidence: artifacts/lithosphere-interior-phone.png.
+

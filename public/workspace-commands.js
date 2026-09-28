@@ -4,7 +4,7 @@ export function workspaceCommand(text){
  if(/^replay this configuration through every historical analogue$/i.test(s))return {type:'analogueReplay'};
  if(/^compare (?:the )?(?:yuri|dutchsinse|ds)(?: model)? (?:against|with|to) (?:the )?etas(?: model)?$/i.test(s))return {type:'action',action:'modelComparison'};
  if(/^show (?:all|unfiltered) (?:earthquakes|events)$/i.test(s))return {type:'action',action:'all'};
- if(/^take me inside (?:the )?lithosphere$/i.test(s))return {type:'action',action:'lithosphere'};
+ if(/^take me inside (?:the )?lithosphere$/i.test(s))return {type:'action',action:'lithosphereInterior'};
  if(/^(?:show|open|inspect) (?:the )?(?:lithosphere|asthenosphere|lithospheric mantle)(?: layers?| controls?)?$/i.test(s))return {type:'action',action:'lithosphere'};
  if((m=s.match(/^(?:use|show|switch to|enable) (?:the )?(scientific|cinematic)(?: view| rendering| mode)?$/i)))return {type:'action',action:m[1].toLowerCase()};
  if((m=s.match(/^(?:use|show|switch to|enable) (?:the )?(hemisphere|wedge)(?: cutaway| view)?$/i)))return {type:'action',action:m[1].toLowerCase()};

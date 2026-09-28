@@ -47,9 +47,17 @@ export class Lithosphere {
    if(this.downloadUrl)URL.revokeObjectURL(this.downloadUrl);this.downloadUrl=URL.createObjectURL(new Blob([JSON.stringify({sample,provenance:this.metadata},null,2)],{type:'application/json'}));const link=document.createElement('a');link.className='secondary';link.href=this.downloadUrl;link.download='litho1-source-node.json';link.textContent='Download node + provenance';this.detail.append(link);
   }catch(error){this.detail.textContent=error.message;}finally{button.disabled=false;}};
   document.body.append(this.dialog);this.status=this.dialog.querySelector('[role="status"]');this.dialog.querySelector('.icon-btn').onclick=()=>this.dialog.close();button.onclick=()=>{this.dialog.showModal();this.load().catch(error=>this.status.textContent=error.message);};
+  const interior=document.createElement('button');interior.className='secondary';interior.textContent='Open lithosphere cutaway';this.dialog.insertBefore(interior,form);interior.onclick=async()=>{interior.disabled=true;try{await this.inspectInterior(earth.selected??earth.geology?.anchor);}catch(error){this.status.textContent=error.message;}finally{interior.disabled=false;}};
   this.dialog.querySelectorAll('[data-litho]').forEach(input=>input.onchange=()=>{this.enabled[Number(input.dataset.litho)]=input.checked;if(input.checked&&!earth.geology?.section)earth.setXray(true);this.sync();earth.geology?.updateCaption();});
   this.opacity=.2;this.dialog.querySelector('#lithosphere-opacity').oninput=e=>{this.opacity=Number(e.target.value);this.sync();};
   this.caption=document.createElement('div');this.caption.className='geology-caption';this.caption.hidden=true;document.querySelector('#workspace').append(this.caption);
+ }
+ async inspectInterior(anchor){
+  if(!this.earth.geology)throw new Error('The geological cutaway is unavailable.');
+  await this.load();
+  this.enabled=[true,true];this.dialog.querySelectorAll('[data-litho]').forEach(input=>input.checked=true);
+  this.earth.geology.cutawayMode='wedge';this.earth.geology.setSection(true,anchor);
+  this.sync();this.earth.geology.updateCaption();this.dialog.close();
  }
  async load(){
   if(this.metadata)return;if(this.loading)return this.loading;
