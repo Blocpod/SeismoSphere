@@ -7,7 +7,7 @@ export class RadialSpacing{
   this.caption=document.createElement('button');this.caption.className='secondary';this.caption.hidden=true;this.caption.style.cssText='position:absolute;top:110px;left:50%;transform:translateX(-50%);z-index:8;max-width:90%;min-height:44px';this.caption.onclick=()=>this.clear();earth.container.append(this.caption);
   document.body.append(this.dialog);this.output=this.dialog.querySelector('pre');this.form=this.dialog.querySelector('form');this.dialog.querySelector('.icon-btn').onclick=()=>this.dialog.close();this.form.onsubmit=e=>{e.preventDefault();this.calculate();};this.dialog.querySelector('[data-show]').onclick=()=>{this.dialog.close();document.querySelector('#selection').hidden=true;};this.dialog.querySelector('[data-clear]').onclick=()=>this.clear();this.exportLink=this.dialog.querySelector('[data-export]');this.matches=this.dialog.querySelector('[data-matches]');
  }
- open(source){this.source=source;this.calculate();this.dialog.showModal();}
+ open(source,options=null){this.source=source;if(options){this.form.elements.spacingKm.value=options.spacingKm;this.form.elements.ringCount.value=options.ringCount;this.form.elements.tolerance.value=options.tolerance*100;}this.calculate();this.dialog.showModal();}
  sync(){if(!this.report)return;if(this.earth.selected?.id!==this.source?.id||this.earth.xray||this.earth.geology?.section){this.clear();return;}this.calculate(true);}
  calculate(refresh=false){
   const previous=this.report;this.clear();try{const options=refresh?{spacingKm:previous.spacingKm,ringCount:previous.ringCount,tolerance:previous.tolerance}:Object.fromEntries([...new FormData(this.form)].map(([k,v])=>[k,Number(v)]));if(!refresh)options.tolerance/=100;options.asOf=this.earth.asOf;
