@@ -73,6 +73,8 @@ The stored 2011 experiment yielded DS 28/94 hits, recent-rate 55/94, and uniform
 
 ## Next implementation priorities
 
+Saved learned-run checkpoint: all retained model runs now have a native selector, compact history API and original-report loading. Polling preserves selection and outdated selection responses cannot replace a newer choice. The oldest of five real runs remains export-integrity-valid; phone layout and 139 automated tests pass, including history beyond the old ten-run list limit. Older-source inference restrictions remain in force.
+
 Mobile uncertainty acceptance: the comparison table now reflows into labeled cards below 600 pixels, retaining explicit table/row/cell semantics. Actual Chromium UI checks at 320×740 and 390×844 show all interval values without horizontal overflow (229/299-pixel table widths respectively). Model selection works at phone width; at 844×390 the 44-pixel close control remains visible. No browser errors were observed. The desktop viewport was restored. These are browser viewport checks, not physical-phone acceptance.
 
 Paired uncertainty checkpoint: saved learned-model test weeks now support circular block-bootstrap comparisons at fixed 1/4/13-week lengths, preserving cells and models within each week. Exports include hashes, seed, 2,000 replicate counts and percentile intervals. Independent Python reproduces actual ensemble-versus-graph endpoints; all 139 tests pass. Independent completeness validation, model-selection uncertainty, calibrated probabilities and prospective evaluation remain open.

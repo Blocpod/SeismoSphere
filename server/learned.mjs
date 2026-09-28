@@ -46,7 +46,8 @@ export class LearnedModel {
     });
   }
   get(id){const row=this.store.db.prepare('SELECT body FROM learned_runs WHERE id=?').get(String(id??''));if(!row)throw new Error('Saved learned run not found');return JSON.parse(row.body);}
-  list(){return {fitting:!!this.active,job:this.store.get('learnedJob',null),ready:existsSync(this.python),options:LEARNED_OPTIONS,runs:this.store.db.prepare('SELECT body FROM learned_runs ORDER BY created_at DESC LIMIT 10').all().map(r=>{const {artifact,testWindows,...report}=JSON.parse(r.body);return report;})};}
+  report(id){const {artifact,testWindows,...report}=this.get(id);return report;}
+  list(){return {history:this.store.db.prepare("SELECT id, created_at AS createdAt, json_extract(body, '$.version') AS version FROM learned_runs ORDER BY created_at DESC, id").all(),fitting:!!this.active,job:this.store.get('learnedJob',null),ready:existsSync(this.python),options:LEARNED_OPTIONS,runs:this.store.db.prepare('SELECT body FROM learned_runs ORDER BY created_at DESC LIMIT 10').all().map(r=>{const {artifact,testWindows,...report}=JSON.parse(r.body);return report;})};}
   async train(){
     if(this.active||this.children.size)throw new Error('The local learned model is busy');
     const options=LEARNED_OPTIONS;

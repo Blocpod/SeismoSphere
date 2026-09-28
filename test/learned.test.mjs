@@ -22,6 +22,12 @@ test('learned reports preserve immutable model/snapshot exports and cutoff-safe 
     assert.throws(()=>store.db.exec('DELETE FROM learned_runs'),/immutable/);
     assert.deepEqual(manager.export('frozen').integrity,{weightsValid:true,snapshotValid:true});
     assert.equal(manager.list().runs[0].artifact,undefined);
+    for(let i=0;i<12;i++)store.db.prepare('INSERT INTO learned_runs VALUES(?,?,?)').run('history-'+i,5000+i,JSON.stringify({...report,id:'history-'+i,createdAt:5000+i}));
+    assert.equal(manager.list().history.length,13);assert.equal(manager.list().runs.length,10);
+    assert.equal(manager.list().history.at(-1).id,'frozen');
+    assert.deepEqual(Object.keys(manager.list().history[0]).sort(),['createdAt','id','version']);
+    assert.equal(manager.report('frozen').id,'frozen');assert.equal(manager.report('frozen').artifact,undefined);assert.equal(manager.report('frozen').testWindows,undefined);
+    assert.throws(()=>manager.report('missing'),/not found/);
     assert.equal(learnedContext(report,{cutoff:2500},2500,'catalog-replay').scores.test,undefined);
     assert.ok(learnedContext(report,{cutoff:3500},3500,'catalog-replay').scores.test);
     assert.throws(()=>learnedContext(report,{cutoff:2500},2500,'strict'),/strict/);

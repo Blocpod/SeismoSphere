@@ -58,6 +58,8 @@ Run `node --test` for persistence, cutoff guards and the Python model self-check
 
 ## Validation-weighted count ensemble
 
+Saved-run navigation: the lab lists every retained run by UTC creation time, implementation version and ID. Selecting a run loads its original report and binds map, uncertainty and evidence-export controls to that ID. Background polling preserves the user's selection; stale selection responses are ignored. History summaries omit weights and test-window arrays, which remain available in the full export. Older implementation checkpoints remain viewable/exportable, with the existing source-version guard retained for inference. Actual selection of all-history entries, the oldest run's export hashes and 390-pixel layout have been checked; the persistence test covers more than ten runs.
+
 ### Paired uncertainty comparison
 
 The research lab compares graph versus no-neighbor, ensemble versus graph, and ensemble versus recent rate using saved test windows. `/api/learned-uncertainty?id=RUN_ID` exports derived evidence with model/test-window hashes, version, seed and interval endpoints. Model records remain unchanged.

@@ -76,3 +76,5 @@ dialog .dialog-heading{position:sticky;top:-28px;z-index:3;background:#0e181f;pa
   .uncertainty-table tbody td:last-child{grid-column:1/-1;padding-top:0}
   .uncertainty-table td::before{content:attr(data-label);display:block;margin-bottom:5px;font-size:11px;color:#b1c3d2}
 }
+.learned-history{display:grid;gap:8px;margin:18px 0;font-size:13px;color:#b1c3d2}
+.learned-history select{width:100%;min-width:0;min-height:44px}
