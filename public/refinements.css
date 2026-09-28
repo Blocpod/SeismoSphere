@@ -64,3 +64,15 @@ dialog .dialog-heading{position:sticky;top:-28px;z-index:3;background:#0e181f;pa
 
 #section-dialog input,#section-dialog select,#section-dialog button{min-height:44px}#section-dialog label.check{min-height:44px;display:flex;align-items:center;gap:10px}#section-dialog label.check input{min-height:22px;width:22px;flex-shrink:0}#section-dialog .form-grid>*{min-width:0}#section-dialog select{min-width:0;max-width:100%}
 .phone-trust{margin-top:24px;padding-top:18px;border-top:1px solid #354b55;overflow-wrap:anywhere}.phone-trust summary{min-height:44px;line-height:1.5;padding:12px 0;cursor:pointer}.phone-trust p{font-size:13px;line-height:1.7;margin:12px 0}.phone-trust button,.phone-access select,.phone-actions button{min-height:44px}.phone-trust .check{display:flex;align-items:center;gap:12px;min-height:44px;font-size:13px;line-height:1.6;margin:18px 0}.phone-trust .check input{width:22px;height:22px;flex-shrink:0}.phone-access select{min-width:0;width:100%}.phone-trust h4{margin-top:22px}.phone-trust .phone-actions button{white-space:normal;text-align:left}
+.uncertainty-table td small{display:block;margin-top:5px}
+@media(max-width:600px){
+  .uncertainty-table{display:block;min-width:0}
+  .uncertainty-table caption{display:block;white-space:normal}
+  .uncertainty-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  .uncertainty-table tbody{display:block}
+  .uncertainty-table tbody tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);margin-bottom:14px;border:1px solid #304654;border-radius:10px;overflow:hidden}
+  .uncertainty-table tbody th{grid-column:1/-1;text-align:left;font-size:13px;line-height:1.5}
+  .uncertainty-table tbody td{text-align:left;padding:10px;border:0;font-size:13px}
+  .uncertainty-table tbody td:last-child{grid-column:1/-1;padding-top:0}
+  .uncertainty-table td::before{content:attr(data-label);display:block;margin-bottom:5px;font-size:11px;color:#b1c3d2}
+}
