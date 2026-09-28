@@ -91,3 +91,5 @@ dialog .dialog-heading{position:sticky;top:-28px;z-index:3;background:#0e181f;pa
 
 .selection-header{position:sticky;top:-19px;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-19px -19px 14px;padding:8px 14px;background:#102636;border-bottom:1px solid #385563}.selection-header>span{font-size:10px;letter-spacing:1px;color:#b8d4df}.selection .close-selection{position:static;width:44px;min-height:44px;border:1px solid #658695;border-radius:12px}
 @media(max-width:820px),(max-width:1024px) and (max-height:600px){.selection-header{top:-24px;margin:-24px -24px 14px}}
+
+.forecast-route ol{padding-left:22px;line-height:1.7;font-size:12px;overflow-wrap:anywhere}.forecast-route li{margin:8px 0}.forecast-route h4{font-size:12px;margin:16px 0 8px}.forecast-route>a,.forecast-route li>a{display:inline-flex;align-items:center;min-height:44px}
