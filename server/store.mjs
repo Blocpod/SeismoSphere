@@ -84,7 +84,7 @@ export class Store {
       const result=[];
       for(const candidate of candidates){
         const id='DSP-'+randomUUID().slice(0,12);
-        const body={...candidate,...context,id,issuedAt:context.issuedAt??Date.now()};
+        const body={...candidate,...context,id,status:'ISSUED',issuedAt:context.issuedAt??Date.now()};
         const digest=hash(prev+canonical(body));
         this.db.prepare('INSERT INTO forecasts(id,issued_at,body,prev_hash,hash) VALUES(?,?,?,?,?)').run(id,body.issuedAt,canonical(body),prev,digest);
         prev=digest; result.push({...body,hash:digest});

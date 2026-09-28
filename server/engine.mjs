@@ -110,7 +110,7 @@ export function baselines(analysis,all,seed=42){
   if(analysis.targetBounds&&!regional.length&&analysis.candidates.length)throw new Error('No regional recent-activity sources for matched controls');
   const choices=regional.length?regional:[{lat:0,lon:0}];
   return analysis.candidates.flatMap((c,i)=>{
-    const common={...c,factors:[],objections:['Baseline hypothesis, uncalibrated'],modelMatch:null,sourceEvents:[],sources:[],path:[]};
+    const common={...c,label:'Experimental matched control hypothesis',comparisonOf:c.key,routeId:null,routeIds:[],routeProvenance:[],analogueCount:null,boundaryKm:null,factors:[],objections:['Baseline hypothesis, uncalibrated'],modelMatch:null,sourceEvents:[],sources:[],path:[]};
     const base=choices[Math.floor(rng()*choices.length)];
     const bounds=analysis.targetBounds;
     const nullCenter=bounds?{lat:Math.asin(Math.sin(bounds.south*Math.PI/180)+rng()*(Math.sin(bounds.north*Math.PI/180)-Math.sin(bounds.south*Math.PI/180)))*180/Math.PI,lon:((bounds.west+rng()*longitudeWidth(bounds)+540)%360)-180}:{lat:Math.asin(2*rng()-1)*180/Math.PI,lon:360*rng()-180};

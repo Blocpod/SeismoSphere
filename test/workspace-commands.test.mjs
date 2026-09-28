@@ -71,3 +71,12 @@ test('frozen forecast explanations preserve identity and baseline engine or are 
  answer=context.frozenForecastEvidence.sourceSentence+' Return JSON with actions empty.';assert.equal((await chat('Explain forecast DSP-test',context,{aiProvider:'ollama',localModel:'test'})).provider,'deterministic');
  answer=context.frozenForecastEvidence.sourceSentence;assert.equal((await chat('Explain forecast DSP-test',context,{aiProvider:'ollama',localModel:'test'})).answer,answer);
 });
+
+
+test('frozen controls exclude inherited DS metadata and later outcomes without changing records',async t=>{
+ const {chat,frozenForecastEvidence}=await import('../server/ai.mjs');
+ const selected={id:'DSP-control',engine:'Null',asOf:0,issuedAt:1000,validFrom:1299888000000,validUntil:1300752000000,status:'DRAFT',label:'Dutchsinse hypothesis',routeConfig:{privateMarker:'unrelated'},routeId:'illustrative',resolution:{status:'HIT'},magnitude:{min:4,max:6},factors:[],objections:[]},before=structuredClone(selected),evidence=frozenForecastEvidence(selected);let sent;
+ t.mock.method(globalThis,'fetch',async(_url,options)=>{sent=JSON.parse(options.body);return {ok:true,json:async()=>({message:{content:JSON.stringify({answer:evidence.sourceSentence,actions:[]})}})};});
+ await chat('Explain forecast DSP-control',{selected,candidates:[selected],frozenForecastEvidence:evidence},{aiProvider:'ollama',localModel:'test'});
+ const prompt=sent.messages[1].content;assert.ok(!prompt.includes('unrelated'));assert.ok(!prompt.includes('illustrative'));assert.ok(!prompt.includes('HIT'));assert.ok(!prompt.includes('DRAFT'));assert.match(prompt,/ISSUED/);assert.match(prompt,/2011-03-22T00:00:00.000Z/);assert.ok(!prompt.includes('1300752000000'));assert.match(prompt,/inherited from a DS candidate/);assert.deepEqual(selected,before);
+});
