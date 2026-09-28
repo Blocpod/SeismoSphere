@@ -1,0 +1,63 @@
+{
+  "model": "CRUST1.0",
+  "homepage": "https://igppweb.ucsd.edu/~gabi/crust1.html",
+  "citation": "Laske, Ma, Masters and Pasyanos (2013), CRUST1.0",
+  "source": {
+    "url": "https://igppweb.ucsd.edu/~gabi/crust1/crust1.0.tar.gz",
+    "sha256": "0b41b46fc3e1a76debbbcb66ab407febaeee4dc3033db7a0a24d2bb7c7adfe3e",
+    "bytes": 1155392
+  },
+  "width": 360,
+  "height": 180,
+  "latitudeStart": 89.5,
+  "latitudeStep": -1,
+  "longitudeStart": -179.5,
+  "longitudeStep": 1,
+  "valuesPerCell": 9,
+  "layers": [
+    "water",
+    "ice",
+    "upper sediments",
+    "middle sediments",
+    "lower sediments",
+    "upper crystalline crust",
+    "middle crystalline crust",
+    "lower crystalline crust",
+    "mantle below Moho"
+  ],
+  "boundaryConvention": "Original signed boundary topography in km, positive above sea level; negate for positive-down depth. Column 0 is surface, column 8 is Moho.",
+  "limitations": [
+    "One-degree cell-average reference model, not local site geometry.",
+    "No interpolation, uncertainty estimates or model-data agreement inferred."
+  ],
+  "files": {
+    "bnds": {
+      "file": "bnds.f32",
+      "units": "km",
+      "bytes": 2332800,
+      "sha256": "f0b339f5da2d159f754f929e4df5323c27806dfc6e149007e63d949294923947",
+      "sourceSha256": "77ea8ef6407643944aea4a7ba2e839ae302aa319227361572ca8af11cbe8b2cf"
+    },
+    "vp": {
+      "file": "vp.f32",
+      "units": "km/s",
+      "bytes": 2332800,
+      "sha256": "d4e98202d8b52462431a29b36ca866d1cf6e7bf607fff9455a5a70e5746342e0",
+      "sourceSha256": "3d784c285e818e554a39987c7cc06cfb076cb8e50451213448167be6978d52f3"
+    },
+    "vs": {
+      "file": "vs.f32",
+      "units": "km/s",
+      "bytes": 2332800,
+      "sha256": "67737cd988bb281da33d5e7f78fd46354956a716ea16b8142bfeb2086912cc77",
+      "sourceSha256": "7e0c5d5fa4c1215dcab44555b9f323937e54555706d1cafaf5527f0730a66d72"
+    },
+    "rho": {
+      "file": "rho.f32",
+      "units": "g/cm^3",
+      "bytes": 2332800,
+      "sha256": "5879048a0cd19e8d3b2ab1dde42c81cb560aace27b4fc1d82aface0a172ad868",
+      "sourceSha256": "12ff9b679ee8bd6d08005d894d0e0d92fb3f14e5f564d18eb4e29a843325c70f"
+    }
+  }
+}
