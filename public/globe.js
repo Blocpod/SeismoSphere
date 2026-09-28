@@ -87,7 +87,7 @@ export class Earth {
     this.drawForecastPath(this.pathGroup,f.path??[],0xffefbd,1);
   }
   captureFigure(width=2000,height=1300){
-    this.geology?.advanceSlabFade();this.stressLayer?.sync();this.relief?.sync();this.slabSurfaces?.sync();this.volcanoActivity?.sync();this.weeklyVolcanoes?.sync();
+    this.advanceDeepFocus();this.geology?.advanceSlabFade();this.stressLayer?.sync();this.relief?.sync();this.slabSurfaces?.sync();this.volcanoActivity?.sync();this.weeklyVolcanoes?.sync();
     const textures=this.scientific?[this.surfaceMaterial.map]:[this.surfaceMaterial.map,this.surfaceMaterial.normalMap,this.surfaceMaterial.specularMap,this.night,...(this.clouds.visible?[this.clouds.material.uniforms.cloudMap.value]:[])];
     if(textures.filter(Boolean).some(texture=>!texture.image?.complete||!texture.image.naturalWidth))throw new Error('Earth imagery is still loading or unavailable. Try again after the textures load.');
     const renderer=this.renderer,size=renderer.getSize(new THREE.Vector2()),ratio=renderer.getPixelRatio();
@@ -129,6 +129,14 @@ export class Earth {
     if(t===1){this.camera.position.copy(move.target);this.targetCamera=null;this.cameraMove=null;}
   }
   pickableEventObjects(){return [...this.eventGroup.children,...(this.geology?.curvedPoints?[this.geology.curvedPoints]:[])].filter(child=>child.visible&&child.userData.events);}
+  advanceDeepFocus(now=performance.now()){
+    const move=this.deepFocus;if(!move)return;
+    if(move.cursor.parent!==this.selectionGroup){this.deepFocus=null;return;}
+    const t=this.reduced||this.scientific||!this.xray?1:Math.max(0,Math.min(1,(now-move.start)/1400));
+    move.cursor.position.lerpVectors(move.surface,move.hypocenter,t*t*(3-2*t));
+    move.cursor.visible=this.xray;
+    if(t===1)this.deepFocus=null;
+  }
   selectEvent(e){
     this.selected=e;this.clear(this.selectionGroup);
     if(this.geology?.section||this.geology?.curvedPath){
@@ -137,9 +145,11 @@ export class Earth {
       const marker=new THREE.Sprite(new THREE.SpriteMaterial({map:this.glow,color:0xffffff,transparent:true,depthTest:false,depthWrite:false}));marker.position.copy(point);marker.scale.setScalar(.055);this.selectionGroup.add(marker);
       const pts=[surface,point];this.selectionGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.85,depthTest:false})));this.syncPresentation();return;
     }
-    this.selectionGroup.add(this.ring(e,120,0xffffff,1.022,.9));if(e.depth>300)this.setXray(true);this.focus(e,2.25);if(this.xray){const pts=[position(e,1.02),position(e,Math.max(.04,1-e.depth/R*this.depthScale))];this.selectionGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.7})));}
+    this.selectionGroup.add(this.ring(e,120,0xffffff,1.022,.9));if(e.depth>300)this.setXray(true);this.focus(e,2.25);if(this.xray){const pts=[position(e,1.02),position(e,Math.max(.04,1-e.depth/R*this.depthScale))];this.selectionGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.7})));
+      if(e.depth>300){const cursor=new THREE.Sprite(new THREE.SpriteMaterial({map:this.glow,color:0xffffff,transparent:true,depthTest:false,depthWrite:false}));cursor.scale.setScalar(.045);cursor.position.copy(pts[0]);cursor.userData.inspectionCursor=true;this.selectionGroup.add(cursor);this.deepFocus={cursor,surface:pts[0],hypocenter:pts[1],start:performance.now()};this.advanceDeepFocus();this.syncPresentation();}
+    }
   }
-  setXray(value){if(!value)this.geology?.clearCurvedSection?.();if(value)this.spatialLayer?.clear();if(this.geology?.section)this.geology.setSection(false);this.xray=value;this.surfaceMaterial.opacity=value?.25:1;this.surfaceMaterial.depthWrite=!value;this.clouds.visible=!value;this.interior.visible=value;this.setEvents(this.events,this.asOf);if(this.geology)this.geology.updateCaption();const button=document.querySelector('#xray-toggle');button?.classList.toggle('active',this.xray);button?.setAttribute('aria-pressed',String(this.xray));}
+  setXray(value){if(!value)this.geology?.clearCurvedSection?.();if(value)this.spatialLayer?.clear();if(this.geology?.section)this.geology.setSection(false);this.xray=value;for(const child of this.selectionGroup.children)if(child.userData.inspectionCursor)child.visible=value;this.surfaceMaterial.opacity=value?.25:1;this.surfaceMaterial.depthWrite=!value;this.clouds.visible=!value;this.interior.visible=value;this.setEvents(this.events,this.asOf);if(this.geology)this.geology.updateCaption();const button=document.querySelector('#xray-toggle');button?.classList.toggle('active',this.xray);button?.setAttribute('aria-pressed',String(this.xray));}
   setScientific(value){
     this.scientific=!!value;
     this.controls.enableDamping=!this.scientific&&!this.reduced;
@@ -163,6 +173,6 @@ export class Earth {
     }});
   }
   presentationEvidence(){return {plateLabels:this.labelsEnabled!==false,style:this.scientific?'scientific':'cinematic',surfaceMaterial:this.surfaceMaterial.type,clouds:this.clouds.visible,atmosphere:this.atmosphere.visible,halo:this.halo.visible,stars:this.stars.visible,markers:this.scientific?'solid discs with alpha compositing':'soft sprites with original blending',surfaceAppearance:this.relief?.enabled&&this.relief.colors?'ETOPO elevation colors':'Illustrative day imagery',lighting:this.scientific?'Unlit surface; no night-light, normal-map or specular shading':this.relief?.enabled||this.geology?.section?'Camera-following inspection light plus cinematic scene lighting':'Illustrative day/night composites with cinematic directional lighting',automaticCameraMotionAllowed:!this.scientific&&!this.reduced};}
-  setDepth(value){if(this.geology?.section||this.geology?.curvedPath)return;this.depthScale=value;this.mechanisms?.update();this.setEvents(this.events,this.asOf);this.geology?.drawSlabs();this.geology?.updateCaption();}
-  animate(time,frame){if(this.paused&&!this.spatialView?.active)return;this.geology?.advanceSlabFade();this.stressLayer?.sync();this.relief?.sync();this.slabSurfaces?.sync();this.volcanoActivity?.sync();this.weeklyVolcanoes?.sync();if(this.spatialView?.active){this.spatialView.render(time,frame);return;}this.advanceCamera();this.controls.update();this.renderer.render(this.scene,this.camera);this.focusAnnotation?.update();this.onRecordingFrame?.(performance.now());if(this.labelPoints){for(const {el,p} of this.labelPoints){const v=p.clone().project(this.camera),visible=this.labelsEnabled!==false&&this.plates.visible&&!this.xray&&!this.geology?.section&&p.dot(this.camera.position)>1.08&&Math.abs(v.x)<.92&&Math.abs(v.y)<.9;el.hidden=!visible;if(visible){el.style.left=`${(v.x*.5+.5)*this.container.clientWidth}px`;el.style.top=`${(-v.y*.5+.5)*this.container.clientHeight}px`;}}}const coord=document.querySelector('#coordinates');if(coord){const p=this.camera.position.clone().normalize();coord.textContent=`${(Math.asin(p.y)/RAD).toFixed(1)}° LAT / ${(Math.atan2(-p.z,p.x)/RAD).toFixed(1)}° LON`;}}
+  setDepth(value){if(this.geology?.section||this.geology?.curvedPath)return;this.depthScale=value;this.deepFocus=null;for(const child of this.selectionGroup.children)if(child.userData.inspectionCursor&&this.selected)child.position.copy(position(this.selected,Math.max(.04,1-this.selected.depth/R*value)));this.mechanisms?.update();this.setEvents(this.events,this.asOf);this.geology?.drawSlabs();this.geology?.updateCaption();}
+  animate(time,frame){if(this.paused&&!this.spatialView?.active)return;this.advanceDeepFocus();this.geology?.advanceSlabFade();this.stressLayer?.sync();this.relief?.sync();this.slabSurfaces?.sync();this.volcanoActivity?.sync();this.weeklyVolcanoes?.sync();if(this.spatialView?.active){this.spatialView.render(time,frame);return;}this.advanceCamera();this.controls.update();this.renderer.render(this.scene,this.camera);this.focusAnnotation?.update();this.onRecordingFrame?.(performance.now());if(this.labelPoints){for(const {el,p} of this.labelPoints){const v=p.clone().project(this.camera),visible=this.labelsEnabled!==false&&this.plates.visible&&!this.xray&&!this.geology?.section&&p.dot(this.camera.position)>1.08&&Math.abs(v.x)<.92&&Math.abs(v.y)<.9;el.hidden=!visible;if(visible){el.style.left=`${(v.x*.5+.5)*this.container.clientWidth}px`;el.style.top=`${(-v.y*.5+.5)*this.container.clientHeight}px`;}}}const coord=document.querySelector('#coordinates');if(coord){const p=this.camera.position.clone().normalize();coord.textContent=`${(Math.asin(p.y)/RAD).toFixed(1)}° LAT / ${(Math.atan2(-p.z,p.x)/RAD).toFixed(1)}° LON`;}}
 }

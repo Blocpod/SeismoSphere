@@ -3,7 +3,7 @@ export async function showDeepContext(event,{earth,getState,selectForecast}){
  const state=getState(),cutoff=state.asOf,root=document.createElement('section');root.className='deep-context';
  const heading=document.createElement('h3');heading.textContent='Deep-event context';
  const status=document.createElement('p');status.className='muted';status.setAttribute('role','status');status.textContent='Loading published Slab2 reference contours…';
- const note=document.createElement('p');note.className='muted';note.textContent='Slab2 is reference geometry, not proof this earthquake lies within a slab. Linked watches are experimental hypotheses, not measured pressure transfer.';
+ const note=document.createElement('p');note.className='muted';note.textContent='The white inspection cursor traces surface to hypocenter; it is not earthquake motion. Slab2 is reference geometry, not proof this earthquake lies within a slab. Linked watches are experimental hypotheses, not measured pressure transfer.';
  root.append(heading,status,note);document.querySelector('#selection').append(root);
  const related=state.analysis?.candidates.filter(f=>f.sources.includes(event.id))??[];
  const label=document.createElement('p');label.textContent=`${related.length} source-linked model watches at ${new Date(cutoff).toISOString()} (before watch-display filters).`;root.append(label);

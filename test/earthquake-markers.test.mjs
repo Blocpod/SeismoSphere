@@ -28,6 +28,17 @@ test('small earthquakes retain outlined surface markers on both hemispheres',()=
   }finally{delete globalThis.document;}
 });
 
+test('deep inspection cursor descends without moving observations and cancels with selection',()=>{
+ const earth=Object.assign(Object.create(Earth.prototype),{selectionGroup:new THREE.Group(),xray:true});
+ const cursor=new THREE.Sprite(),surface=new THREE.Vector3(1.02,0,0),hypocenter=new THREE.Vector3(.91,0,0);
+ const start=()=>{earth.selectionGroup.add(cursor);earth.deepFocus={cursor,surface,hypocenter,start:100};};
+ start();earth.advanceDeepFocus(800);assert.ok(Math.abs(cursor.position.x-.965)<1e-12);assert.equal(hypocenter.x,.91);
+ earth.advanceDeepFocus(1500);assert.equal(cursor.position.x,.91);assert.equal(earth.deepFocus,null);
+ start();earth.reduced=true;earth.advanceDeepFocus(100);assert.equal(cursor.position.x,.91);assert.equal(earth.deepFocus,null);
+ earth.reduced=false;start();earth.clear(earth.selectionGroup);earth.advanceDeepFocus(200);assert.equal(earth.deepFocus,null);
+ start();earth.xray=false;earth.advanceDeepFocus(100);assert.equal(cursor.visible,false);assert.equal(earth.deepFocus,null);
+});
+
 
 test('saved review selection is frozen in export evidence and cleared with geometry',async()=>{
   const {sceneEvidence,reviewEventLegend}=await import('../public/figure.js');
