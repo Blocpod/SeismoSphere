@@ -22,6 +22,7 @@
 | **Configurable route engine** | Edit directed waypoints and connections, record provenance, preview paths and retain immutable route revisions. |
 | **Auditable model watches** | Inspect supporting and contradictory evidence; freeze hypotheses and compare retained outcomes with controls. |
 | **Local-first AI** | Use local Ollama models or the configured ChatGPT-authenticated Astra integration; common view commands execute without AI calls. |
+| **Static stress research** | Archive published rupture inputs, calculate receiver-specific stress changes, compare saved runs and inspect verified samples on Earth. |
 | **Research and export** | Work with statistical experiments, station recordings and source-linked figure, video and evidence exports. |
 | **Responsive access** | Use dedicated mobile navigation and touch-friendly watch panels; launch the Windows workspace from its desktop icon. |
 
@@ -34,6 +35,16 @@ A focused watch sheet keeps the globe in view while providing magnitude filters,
 *Screenshots show the running application with catalog data at capture time. Earth textures and lighting are illustrative composites, not live satellite imagery. Imagery: [Solar System Scope](https://www.solarsystemscope.com/textures/) ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)), with texture layers from the Three.js examples; plate reference: PB2002 / fraxen; earthquake observations: USGS. See [sources and credits](#sources-and-credits).*
 
 > **Research status:** Actively developed experimental software. Model-match scores are not calibrated earthquake probabilities, and configured pressure-transfer routes remain illustrative unless documented as source-traced. This is not an official warning system. See the [implementation status and remaining work](docs/BUILD-STATUS.md).
+
+## From rupture source to inspectable stress
+
+![Verified Illapel static-stress samples at 10 km model depth in the Earth X-ray view](docs/images/static-stress-earth.png)
+
+Open **Layers → Static stress**, select a retained USGS source receipt, and archive its published Coulomb input. The explorer runs local calculations with explicit receiver orientation, elastic properties and friction. Saved results reopen without recomputation and can be compared at identical sample locations.
+
+Geographic placement requires a retained companion-file consistency check. Once verified, locate the samples in X-ray and click a point to inspect its exact Coulomb, shear and unclamping values. Local Qwen or subscription-backed Astra can explain the selected evidence; changing the selection withholds an outdated answer. Source JSON and geographic sample exports retain the data behind the visualization.
+
+These are static model calculations, not observed pressure, calibrated earthquake probabilities or timed forecasts. The current geographic implementation supports a checked spherical mapping; other source conventions remain unsupported. See [setup, numerical checks and limitations](docs/STATIC-STRESS.md).
 
 ## Getting started
 
