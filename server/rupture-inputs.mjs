@@ -5,6 +5,11 @@ import {retrieveSource} from './instruments.mjs';
 import {finiteFaultProducts,finiteFaultAvailability} from '../public/finite-fault.js';
 import {parseCoulombInput} from './coulomb-input.mjs';
 
+export function stressIntegrity(record,source){
+  const {id,...body}=record,{id:sourceId,...sourceBody}=source;
+  return {recordValid:hash(body)===id,implementationValid:hash(record.implementation)===record.implementationHash,sourceRecordValid:hash(sourceBody)===sourceId,sourceValid:hash(source.raw)===source.receipt.sha256,sourceLinked:record.sourceId===sourceId&&record.sourceHash===source.receipt.sha256};
+}
+
 export class RuptureInputs{
   constructor(store,mechanisms){
     this.store=store;this.mechanisms=mechanisms;this.busy=false;

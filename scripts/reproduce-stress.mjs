@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {hash} from '../server/store.mjs';
+import {stressIntegrity} from '../server/rupture-inputs.mjs';
+import {parseCoulombInput} from '../server/coulomb-input.mjs';
+import {instrumentResponse} from '../server/response.mjs';
+
+if(!process.argv[2])throw new Error('Usage: node scripts/reproduce-stress.mjs EXPORTED_JSON');
+const file=path.resolve(process.argv[2]),{record,source}=JSON.parse(readFileSync(file,'utf8'));
+assert.equal(record?.schema,'seismosphere.static-stress.v1','Unsupported stress export');
+assert.equal(source?.schema,'seismosphere.rupture-input.v1','Missing archived rupture source');
+for(const [check,valid]of Object.entries(stressIntegrity(record,source)))assert.equal(valid,true,check+' failed');
+process.chdir(fileURLToPath(new URL('..',import.meta.url)));
+assert.equal(readFileSync('model/stress.py','utf8'),record.implementation,'Reproduction requires the exact saved solver implementation; embedded code is never executed');
+assert.deepEqual(parseCoulombInput(source.raw),source.model,'Parsed model differs from the archived raw source');
+const report=await instrumentResponse({model:source.model,...record.options},'stress');
+assert.equal(hash(report),hash(record.report),'Numerical report differs; check pinned dependencies and platform floating-point behavior');
+console.log(JSON.stringify({id:record.id,identical:true,sourceVerified:true,points:report.points.length,solverVersion:report.solverVersion}));

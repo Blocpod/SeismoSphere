@@ -34,7 +34,7 @@ import {randomizationOptions,randomizationContext} from './randomization.mjs';
 import {Instruments,instrumentContext,instrumentSourceValid,rawSampleMapping} from './instruments.mjs';
 import {SeedLink} from './seedlink.mjs';
 import {Mechanisms,mechanismContext} from './mechanisms.mjs';
-import {RuptureInputs} from './rupture-inputs.mjs';
+import {RuptureInputs,stressIntegrity} from './rupture-inputs.mjs';
 import {volcanoDataset,volcanoEvidence} from './volcano-context.mjs';
 import {cratonDataset,cratonEvidence} from './cratons.mjs';
 import {GNSS,gnssEvidence} from './gnss.mjs';
@@ -183,9 +183,9 @@ const handler=async(req,res)=>{
     if(p==='/api/slab-sample'){if(!q.has('lat')||!q.has('lon')||!q.get('lat').trim()||!q.get('lon').trim())throw new Error('Provide latitude and longitude.');return send(res,200,await slabSample(q.get('id'),{lat:Number(q.get('lat')),lon:Number(q.get('lon'))},Date.now()));}
     if(p==='/api/slab-source'){const source=await slabSource(q.get('id'),q.get('field'));res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Content-Disposition':`attachment; filename="${source.name}"`});return res.end(source.bytes);}
     if(p==='/api/rupture-stress-export'){
-      const record=ruptureInputs.stress(q.get('id')),{id,...body}=record;
+      const record=ruptureInputs.stress(q.get('id')),source=ruptureInputs.get(record.sourceId);
       res.setHeader('Content-Disposition','attachment; filename="seismosphere-static-stress.json"');
-      return send(res,200,{record,source:ruptureInputs.get(record.sourceId),integrity:{recordValid:hash(body)===id,implementationValid:hash(record.implementation)===record.implementationHash}});
+      return send(res,200,{record,source,integrity:stressIntegrity(record,source)});
     }
     if(p==='/api/rupture-input-export'){
       const record=ruptureInputs.get(q.get('id')),{id,...body}=record;
