@@ -12,7 +12,7 @@ export class StressLayer{
   sync(){
     const e=this.explorer,c=e.cutoff(),source=e.source,record=e.record,projection=e.projection,limit=Number(e.node.querySelector('[data-limit]').value);
     const ready=source&&record&&projection?.sourceId===source.id&&projection.validation.supported&&projection.validation.earthRadiusKm===6371.0088&&!finiteFaultAvailability(source,source.product,c)&&Number.isFinite(limit)&&limit>0&&(c.mode!=='strict'||Math.max(record.createdAt,projection.createdAt,e.baseline?.createdAt??0)<=c.asOf);
-    e.node.querySelector('[data-globe]').disabled=!ready;e.node.querySelector('[data-locate]').disabled=!ready;const valid=ready&&e.node.querySelector('[data-globe]').checked;
+    e.node.querySelector('[data-globe]').disabled=!ready;e.node.querySelector('[data-locate]').disabled=!ready;e.node.querySelector('[data-geographic]').disabled=!ready;const valid=ready&&e.node.querySelector('[data-globe]').checked;
     this.group.visible=!!valid;if(this.caption.hidden===!!valid)this.caption.hidden=!valid;if(this.note.hidden===!!valid)this.note.hidden=!valid;if(!valid){if(this.key){this.earth.clear(this.group);this.key=null;}return;}
     const report=e.difference??e.plotReport,key=[record.id,projection.id,e.baseline?.id,limit,this.earth.depthScale].join(':');
     if(key!==this.key){

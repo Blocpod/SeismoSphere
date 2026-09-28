@@ -105,3 +105,11 @@ Four focused geometry/grid/coordinate tests pass, including dateline/polar place
 Mobile/export follow-up: at an emulated 390×844 viewport, the stress locator now allows a regional camera close-up instead of the normal mobile whole-Earth framing. The complete 441-sample grid and caption controls fit visibly, and the layer summary reports seven active layers including calculated stress. The viewport override was reset afterward. Screenshot: `artifacts/stress-globe-phone.png`.
 
 Figure and video renderers share a two-line stress legend with signed MPa scale, current-minus-baseline disclosure when applicable, sample depth, receiver orientation, depth scaling and forecast limitation. Two focused geometry/legend tests pass. An actual 2400×1800 figure capture completed with the stress legend visible in its preview (evidence prefix `e1783d14cdc0`); screenshot `artifacts/stress-figure-preview.png`. Completed browser downloads, encoded video legend acceptance and physical devices remain unverified.
+
+## Geographic sample export
+
+The verified explorer offers **Download geographic samples GeoJSON** after source-specific geographic validation. It exports every sample, including masked points with null stresses, in the displayed grid order. Values are unclipped Pa; comparison mode is explicitly current minus baseline. Result/source/projection identifiers, source hash, material/receiver options and projection validation accompany the collection.
+
+Coordinates contain longitude and latitude only. Source-model `depthKm` remains a property: it is not assumed to be ellipsoidal height (see RFC 7946, https://www.rfc-editor.org/rfc/rfc7946#section-3.1.1). Coordinates follow the companion-checked spherical mapping; no ellipsoidal datum transformation or location-accuracy claim is made. Display depth scaling and color saturation never alter this data. Full immutable source/calculation JSON remains available separately.
+
+Four focused export/grid/picking tests pass. An actual 441-feature Illapel artifact was generated from the live integrity-checked archive at `artifacts/illapel-stress-samples.geojson`; its center reproduces the model origin and exact saved stresses. Browser download completion and GIS application import remain unverified.
