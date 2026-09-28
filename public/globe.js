@@ -77,8 +77,15 @@ export class Earth {
     const beacon=new THREE.Sprite(new THREE.SpriteMaterial({map:this.glow,color:0xffb45d,blending:THREE.AdditiveBlending,transparent:true,opacity:.85,depthWrite:false}));beacon.position.copy(position(f.center,1.035));beacon.scale.setScalar(.04);this.forecastGroup.add(beacon);
     const wall=[];for(let n=0;n<96;n++){const p1=dest(f.center,n/96*360,f.radiusKm),p2=dest(f.center,(n+1)/96*360,f.radiusKm),a=position(p1,1.013),b=position(p2,1.013),c=position(p1,1.038),d=position(p2,1.038);wall.push(...a.toArray(),...b.toArray(),...c.toArray(),...b.toArray(),...d.toArray(),...c.toArray());}const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(wall,3));this.forecastGroup.add(new THREE.Mesh(wg,new THREE.MeshBasicMaterial({color:0xffb969,transparent:true,opacity:.07,side:THREE.DoubleSide,depthWrite:false})));
     const verts=[];for(let i=0;i<96;i++){const a=position(dest(f.center,i/96*360,f.radiusKm),1.012),b=position(dest(f.center,(i+1)/96*360,f.radiusKm),1.012),c=position(f.center,1.009);verts.push(...a.toArray(),...b.toArray(),...c.toArray());}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));this.forecastGroup.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xe4ae65,transparent:true,opacity:.075,side:THREE.DoubleSide,depthWrite:false})));
-    for(let i=1;i<f.path.length;i++){const a=position(f.path[i-1]),b=position(f.path[i]),angle=a.angleTo(b);if(angle>Math.PI-.01)continue;const pts=[];for(let n=0;n<=60;n++){const t=n/60;const v=a.clone().multiplyScalar(Math.sin((1-t)*angle)).addScaledVector(b,Math.sin(t*angle));if(v.length()<1e-7)continue;v.normalize().multiplyScalar(1.015+Math.sin(t*Math.PI)*Math.min(.12,angle*.1));pts.push(v);}const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0x72ddd0,transparent:true,opacity:.62,depthWrite:false}));this.pathGroup.add(line);}
+    this.drawForecastPath(this.pathGroup,f.path);
   }this.syncPresentation();}
+  drawForecastPath(group,path,color=0x72ddd0,opacity=.62){
+    for(let i=1;i<path.length;i++){const a=position(path[i-1]),b=position(path[i]),angle=a.angleTo(b);if(angle>Math.PI-.01)continue;const pts=[];for(let n=0;n<=60;n++){const t=n/60;const v=a.clone().multiplyScalar(Math.sin((1-t)*angle)).addScaledVector(b,Math.sin(t*angle));if(v.length()<1e-7)continue;v.normalize().multiplyScalar(1.015+Math.sin(t*Math.PI)*Math.min(.12,angle*.1));pts.push(v);}const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color,transparent:true,opacity,depthWrite:false}));group.add(line);}
+  }
+  highlightForecast(f){
+    this.forecastGroup.add(this.ring(f.center,f.radiusKm,0xffefbd,1.045,1));
+    this.drawForecastPath(this.pathGroup,f.path??[],0xffefbd,1);
+  }
   captureFigure(width=2000,height=1300){
     this.stressLayer?.sync();this.relief?.sync();this.slabSurfaces?.sync();this.volcanoActivity?.sync();this.weeklyVolcanoes?.sync();
     const textures=this.scientific?[this.surfaceMaterial.map]:[this.surfaceMaterial.map,this.surfaceMaterial.normalMap,this.surfaceMaterial.specularMap,this.night,...(this.clouds.visible?[this.clouds.material.uniforms.cloudMap.value]:[])];

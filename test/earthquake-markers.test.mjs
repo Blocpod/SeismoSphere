@@ -78,3 +78,12 @@ test('section selection follows the real curved projection and ignores hidden or
  const annotationSource=readFileSync(new URL('../public/focus-annotation.js',import.meta.url),'utf8').replace("'three'",JSON.stringify(new URL('../public/vendor/three.module.js',import.meta.url).href));const {FocusAnnotation}=await import('data:text/javascript;base64,'+Buffer.from(annotationSource).toString('base64'));earth.asOf=1000;const annotation=Object.assign(Object.create(FocusAnnotation.prototype),{earth,getState:()=>({selectedEvent:event})}).sample();assert.equal(annotation.anchor,'PROJECTED CURVED PROFILE');assert.ok(annotation.point.distanceTo(projected.point)<1e-12);
  earth.selectEvent({...event,lat:40});assert.equal(earth.selectionGroup.children.length,0);geology.curvedPoints=null;assert.deepEqual(earth.pickableEventObjects(),[]);
 });
+
+test('watch highlights use retained geometry and honor existing layer visibility',()=>{
+ const earth=Object.assign(Object.create(Earth.prototype),{forecastGroup:new THREE.Group(),pathGroup:new THREE.Group()});earth.forecastGroup.visible=false;earth.pathGroup.visible=false;
+ const watch={center:{lat:10,lon:179},radiusKm:400,path:[{lat:0,lon:170},{lat:10,lon:-179},{lat:20,lon:-170}]};
+ earth.highlightForecast(watch);assert.equal(earth.forecastGroup.children.length,1);assert.equal(earth.pathGroup.children.length,2);assert.equal(earth.forecastGroup.visible,false);assert.equal(earth.pathGroup.visible,false);
+ for(const group of [earth.forecastGroup,earth.pathGroup])for(const line of group.children){assert.equal(line.material.opacity,1);assert.ok([...line.geometry.attributes.position.array].every(Number.isFinite));}
+ const start=new THREE.Vector3().fromBufferAttribute(earth.pathGroup.children[0].geometry.attributes.position,0);assert.ok(Math.abs(Math.atan2(-start.z,start.x)*180/Math.PI-170)<1e-5);
+ earth.clear(earth.forecastGroup);earth.clear(earth.pathGroup);assert.equal(earth.pathGroup.children.length,0);
+});
