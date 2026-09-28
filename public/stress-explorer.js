@@ -1,0 +1,42 @@
+import {finiteFaultAvailability} from './finite-fault.js';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const input=(name,label,value,min,max,step='any')=>`<label>${label}<input name="${name}" type="number" required value="${value}" min="${min}" max="${max}" step="${step}"></label>`;
+export class StressExplorer{
+  constructor(node,{api,getState}){
+    Object.assign(this,{node,api,getState});this.serial=0;node.hidden=true;node.className='stress-explorer';
+    node.innerHTML=`<h3>Static stress explorer</h3><p data-source class="muted"></p><p class="muted">Local model coordinates, not a geographic forecast. Receiver orientation and material properties below are explicit assumptions.</p><form><fieldset><legend>Receiver fault</legend><div class="stress-fields">${input('strike','Strike (° clockwise from north)',0,0,360)}${input('dip','Dip (°)',45,.01,90)}${input('rake','Rake (°; +90 reverse)',90,-180,180)}</div></fieldset><fieldset><legend>Elastic assumptions</legend><div class="stress-fields">${input('poisson','Poisson ratio',.25,0,.49)}${input('shear','Shear modulus (GPa)',32,1,100)}${input('friction','Effective friction',.4,0,1)}</div></fieldset><fieldset><legend>Sampling plane</legend><div class="stress-fields">${input('depth','Depth (km)',10,0,1000)}${input('east','Center east (km)',0,-1500,1500)}${input('north','Center north (km)',0,-1500,1500)}${input('extent','Half-width (km)',200,1,500)}<label>Grid resolution<select name="resolution"><option value="11">11 × 11</option><option value="21" selected>21 × 21</option><option value="31">31 × 31</option></select></label></div></fieldset><button class="primary" type="submit">Calculate static stress</button></form><p data-status role="status"></p><div data-output hidden><p data-assumptions class="muted"></p><label>Color saturation limit (MPa; symmetric about zero)<input data-limit type="number" value="1" min="0.000001" max="100000" step="any"></label><div data-plot></div><p data-scale class="muted"></p><label>Inspect grid sample<input data-sample type="range" min="0" max="440" value="0" step="1"></label><p data-value role="status"></p><a data-export class="secondary" download>Download calculation + source JSON ↓</a></div><p class="muted">Positive values promote slip on the assumed receiver; negative values oppose it under this model. Neither is an earthquake probability. Homogeneous elastic half-space; no topography, dynamic stress or pore-pressure simulation. Samples within 100 m of a source patch are masked.</p>`;
+    this.form=node.querySelector('form');this.status=node.querySelector('[data-status]');this.output=node.querySelector('[data-output]');
+    this.form.onsubmit=e=>{e.preventDefault();this.calculate();};
+    this.form.oninput=()=>{this.serial++;this.record=null;this.output.hidden=true;this.status.textContent='Inputs changed. Calculate to update the result.';};
+    node.querySelector('[data-limit]').oninput=()=>this.draw();node.querySelector('[data-sample]').oninput=()=>this.draw();
+  }
+  use(source){this.serial++;this.source=source;this.record=null;this.output.hidden=true;this.status.textContent='Ready to calculate with the assumptions below.';this.node.querySelector('[data-source]').textContent=`${source.event.place} · ${source.model.patches.length} source patches · origin ${source.model.origin.lat}°, ${source.model.origin.lon}° · source revised ${new Date(source.product.updateTime).toISOString()}`;this.sync();}
+  clear(){this.serial++;this.source=null;this.record=null;this.node.hidden=true;}
+  cutoff(){const s=this.getState();return {asOf:s.live?Date.now():s.asOf,mode:s.live?'catalog-replay':s.mode,future:s.future};}
+  sync(){const c=this.cutoff(),blocked=!this.source||finiteFaultAvailability(this.source,this.source.product,c);this.node.hidden=!!blocked;if(blocked){this.serial++;this.output.hidden=true;}else if(this.record)this.output.hidden=c.mode==='strict'&&this.record.createdAt>c.asOf;}
+  async calculate(){
+    if(!this.form.reportValidity())return;
+    const cutoff=this.cutoff(),reason=finiteFaultAvailability(this.source,this.source.product,cutoff);if(reason){this.status.textContent=reason;return;}
+    const values=Object.fromEntries([...new FormData(this.form)].map(([k,v])=>[k,Number(v)])),n=values.resolution,points=[];
+    for(let row=0;row<n;row++)for(let col=0;col<n;col++)points.push({xKm:values.east-values.extent+2*values.extent*col/(n-1),yKm:values.north+values.extent-2*values.extent*row/(n-1),depthKm:values.depth});
+    const serial=++this.serial,source=this.source,button=this.form.querySelector('button');button.disabled=true;this.output.hidden=true;this.status.textContent='Calculating the elastic stress field…';
+    try{
+      const record=await this.api('rupture-stress-query',{sourceId:source.id,asOf:cutoff.asOf,mode:cutoff.mode,points,receiver:{strike:values.strike,dip:values.dip,rake:values.rake},poisson:values.poisson,shearModulusGPa:values.shear,friction:values.friction});
+      if(serial!==this.serial||source!==this.source)return;
+      this.record=record;this.grid={n,...values};this.status.textContent=`Saved ${points.length} samples · ${record.report.excludedCount} masked · ${record.report.solver} ${record.report.solverVersion}.`;
+      this.node.querySelector('[data-assumptions]').textContent=`Calculated at depth ${values.depth} km · receiver ${values.strike}/${values.dip}/${values.rake}° · shear modulus ${values.shear} GPa · Poisson ${values.poisson} · friction ${values.friction}.`;
+      this.node.querySelector('[data-export]').href='/api/rupture-stress-export?id='+encodeURIComponent(record.id);const sample=this.node.querySelector('[data-sample]');sample.max=String(points.length-1);sample.value=String(Math.floor(points.length/2));this.sync();this.draw();
+    }catch(e){if(serial===this.serial)this.status.textContent=e.message;}finally{button.disabled=false;}
+  }
+  draw(){
+    if(!this.record)return;const limit=Number(this.node.querySelector('[data-limit]').value),plot=this.node.querySelector('[data-plot]');
+    if(!Number.isFinite(limit)||limit<=0){plot.replaceChildren();return;}
+    const {report}=this.record,{n,east,north,extent}=this.grid,selected=Number(this.node.querySelector('[data-sample]').value),size=440/n;let saturated=0;
+    const cells=report.values.map((v,i)=>{let color='#29343e';if(v){const t=Math.max(-1,Math.min(1,v.coulombPa/(limit*1e6)));if(Math.abs(v.coulombPa)>limit*1e6)saturated++;const rgb=t<0?[43,130,205]:[235,133,68],f=Math.abs(t);color=`rgb(${rgb.map(c=>Math.round(221+(c-221)*f)).join(',')})`;}return `<rect data-index="${i}" x="${70+i%n*size}" y="${30+Math.floor(i/n)*size}" width="${size+.1}" height="${size+.1}" fill="${color}"/>`;}).join('');
+    plot.innerHTML=`<svg viewBox="0 0 560 530" role="img" aria-label="Calculated Coulomb stress change in MPa. Blue negative, orange positive, pale zero, dark masked. East right, north up. Use the sample slider to inspect exact values."><rect width="560" height="530" fill="#0a1923"/>${cells}<rect x="${70+selected%n*size}" y="${30+Math.floor(selected/n)*size}" width="${size}" height="${size}" fill="none" stroke="white" stroke-width="2" pointer-events="none"/><g fill="#cddfe5" font-family="system-ui" font-size="13"><text x="70" y="494">${esc(east-extent)} km E</text><text x="510" y="494" text-anchor="end">${esc(east+extent)} km E</text><text x="65" y="24">${esc(north+extent)} km N</text><text x="65" y="467" text-anchor="end">${esc(north-extent)}</text><text x="280" y="518" text-anchor="middle">Source-local offsets · samples, no interpolation</text></g></svg>`;
+    for(const cell of plot.querySelectorAll('[data-index]'))cell.onclick=()=>{this.node.querySelector('[data-sample]').value=cell.dataset.index;this.draw();};
+    this.node.querySelector('[data-scale]').textContent=`Blue −${limit} MPa · pale 0 · orange +${limit} MPa. ${saturated} samples exceed the color limit; exact values remain available. Dark cells are masked.`;
+    const p=report.points[selected],v=report.values[selected],format=x=>(x/1e6).toPrecision(6)+' MPa';
+    this.node.querySelector('[data-value]').textContent=`Sample ${selected+1}/${report.points.length} · east ${p.xKm.toFixed(2)} km, north ${p.yKm.toFixed(2)} km, depth ${p.depthKm} km. `+(v?`Coulomb ${format(v.coulombPa)} · shear ${format(v.shearPa)} · unclamping ${format(v.unclampingPa)}.`:'Masked near a source patch; no value shown.');
+  }
+}
