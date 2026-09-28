@@ -1,3 +1,4 @@
+import {calibrationOptions,CALIBRATION_VERSION} from './calibration.mjs';
 import {RouteHistory,validateRoutes} from './routes.mjs';
 import {PhaseAnalysis} from './phase.mjs';
 import {closeResponseWorkers} from './response.mjs';
@@ -42,6 +43,7 @@ process.chdir(path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'));
 const defaults=JSON.parse(readFileSync('config/default.json','utf8'));
 let routes=JSON.parse(readFileSync('config/routes.json','utf8'));
 const store=new Store(process.env.SEISMO_DB??'data/seismosphere.sqlite');
+store.db.exec(`CREATE TABLE IF NOT EXISTS calibration_runs(id TEXT PRIMARY KEY,created_at INTEGER,body TEXT NOT NULL); CREATE TRIGGER IF NOT EXISTS frozen_calibration_update BEFORE UPDATE ON calibration_runs BEGIN SELECT RAISE(ABORT,'Calibration runs are immutable'); END; CREATE TRIGGER IF NOT EXISTS frozen_calibration_delete BEFORE DELETE ON calibration_runs BEGIN SELECT RAISE(ABORT,'Calibration runs are immutable'); END;`);
 const routeHistory=new RouteHistory(store,routes);routes=routeHistory.current();
 const learned=new LearnedModel(store);
 const speech=new Speech();
@@ -158,7 +160,7 @@ const handler=async(req,res)=>{
     if(p==='/api/volcano-status-export'){const record=volcanoStatus.get(q.get('id'));res.setHeader('Content-Disposition','attachment; filename=usgs-volcano-status.'+(q.has('raw')?'geojson':'json'));if(q.has('raw')){res.writeHead(200,{'Content-Type':'application/geo+json; charset=utf-8'});return res.end(record.raw);}return send(res,200,record);}
     if(p==='/api/speech'&&req.method==='GET')return send(res,200,await speech.status());
     if(p==='/api/routes')return send(res,200,{network:q.get('version')?routeHistory.get(q.get('version')):routes,versions:routeHistory.list()});
-    if(p==='/api/status')return send(res,200,{feed,refreshing,speechBusy:speech.busy,volcanoStatusBusy:!!volcanoStatus.pending,weeklyVolcanoBusy:!!weeklyVolcanoes.pending,gnssBusy:gnss.busy,importing:!!importJobs.active,aiBusy,config,routes,integrity:store.verify(),coverage:store.get('coverage',[]),catalogCount:researchEvents().length,deletionSync:store.get('deletionSync',{}),catalogPolicy:'One provider per research run; authoritative aliases associated within that provider'});
+    if(p==='/api/status')return send(res,200,{feed,refreshing,statisticalBusy:fittingETAS,speechBusy:speech.busy,volcanoStatusBusy:!!volcanoStatus.pending,weeklyVolcanoBusy:!!weeklyVolcanoes.pending,gnssBusy:gnss.busy,importing:!!importJobs.active,aiBusy,config,routes,integrity:store.verify(),coverage:store.get('coverage',[]),catalogCount:researchEvents().length,deletionSync:store.get('deletionSync',{}),catalogPolicy:'One provider per research run; authoritative aliases associated within that provider'});
     if(p==='/api/randomizations')return send(res,200,{activeId:randomizations.active?.id??null,jobs:randomizations.list()});
     if(p==='/api/randomization-job')return send(res,200,randomizations.get(q.get('id')));
     if(p==='/api/randomization-export'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-randomization.json"');return send(res,200,randomizations.export(q.get('id')));}
@@ -202,6 +204,8 @@ const handler=async(req,res)=>{
     if(p==='/api/protocols')return send(res,200,{protocols:prospective.list(),runtimeError:prospective.lastError});
     if(p==='/api/protocol')return send(res,200,prospective.view(q.get('id')));
     if(p==='/api/protocol-export'){res.setHeader('Content-Disposition','attachment; filename=seismosphere-prospective-experiment.json');return send(res,200,prospective.export(q.get('id')));}
+    if(p==='/api/calibrations')return send(res,200,{busy:fittingETAS,runs:store.db.prepare('SELECT body FROM calibration_runs ORDER BY created_at DESC').all().map(r=>{const b=JSON.parse(r.body);return {id:b.id,report:b.report};})});
+    if(p==='/api/calibration-export'){const row=store.db.prepare('SELECT body FROM calibration_runs WHERE id=?').get(q.get('id'));if(!row)throw new Error('Calibration run not found');const bundle=JSON.parse(row.body),snapshot=store.db.prepare('SELECT body FROM snapshots WHERE id=?').get(bundle.input.inputSnapshotId);if(!snapshot||hash(JSON.parse(snapshot.body))!==bundle.input.inputSnapshotId||hash(bundle.input)!==bundle.id||hash(bundle.report)!==bundle.reportSha256||hash(bundle.implementation)!==bundle.input.implementationSha256)throw new Error('Calibration evidence integrity failed');res.setHeader('Content-Disposition','attachment; filename=seismosphere-depth-calibration.json');return send(res,200,{...bundle,snapshot:{id:bundle.input.inputSnapshotId,...JSON.parse(snapshot.body)}});}
     if(p==='/api/experiments')return send(res,200,{experiments:store.experiments()});
     if(p==='/api/catalog-quarantine')return send(res,200,{records:Object.values(store.get('deletionQuarantine',{})),policy:'No event is deleted based on an unidentified provider record. Manual/provider reconciliation is required.'});
     if(p==='/api/statistical-runs'){const family=q.get('family'),pattern=family==='spatial'?'rectangular-gaussian-spatial-etas-%':family==='temporal'?'regional-temporal-etas-%':'%';return send(res,200,{fitting:fittingETAS,runs:store.db.prepare("SELECT body FROM statistical_runs WHERE json_extract(body,'$.fit.version') LIKE ? ORDER BY created_at DESC LIMIT 20").all(pattern).map(r=>JSON.parse(r.body))});}
@@ -298,6 +302,15 @@ const handler=async(req,res)=>{
         const options=randomizationOptions(b),begin=options.start-config.lookbackDays*DAY,coverage=store.get('coverage',[]);
         if(!coverageComplete(coverage,{provider:config.catalogProvider,start:begin,end:options.end,minMagnitude:Number(Math.max(0,config.minMagnitude-config.magnitudeTolerance-(config.magnitudeMode==='analogue'?1:0)).toFixed(2))-.5}))throw new Error('Import complete conditioning and outcome coverage, including the partial-hit magnitude range, before randomizing.');
         return send(res,202,randomizations.create(researchEvents({asOf:options.end}),options,config,routes,boundaries,coverage.filter(c=>c.provider===config.catalogProvider&&c.end>=begin&&c.start<=options.end)));
+      }
+      if(p==='/api/calibrate-depth'){
+        if(fittingETAS)return send(res,409,{error:'A statistical analysis is already running'});
+        const frozenConfig=structuredClone(config),frozenRoutes=structuredClone(routes),options=calibrationOptions(b,frozenConfig);
+        const floor=Number(Math.max(0,config.minMagnitude-config.magnitudeTolerance-(config.magnitudeMode==='analogue'?1:0)).toFixed(2))-.5;
+        if(!coverageComplete(store.get('coverage',[]),{provider:config.catalogProvider,start:options.start-config.lookbackDays*DAY,end:options.end,minMagnitude:floor}))throw new Error('Import complete global training, conditioning and test coverage, including the partial-hit magnitude floor.');
+        const events=researchEvents({asOf:options.end}),inputSnapshotId=store.snapshot(events,options.end,'calibration-revised-catalog'),implementation=Object.fromEntries(['calibration','engine','routes','geo','store'].map(name=>['server/'+name+'.mjs',readFileSync('server/'+name+'.mjs','utf8')])),input={version:CALIBRATION_VERSION,options,config:frozenConfig,routes:frozenRoutes,boundaries,inputSnapshotId,implementationSha256:hash(implementation)},id=hash(input),previous=store.db.prepare('SELECT body FROM calibration_runs WHERE id=?').get(id);
+        if(previous)return send(res,200,{...JSON.parse(previous.body),reused:true});
+        fittingETAS=true;try{const report={...await runStatistical({events,options,config:frozenConfig,routes:frozenRoutes,boundaries},'calibration'),createdAt:Date.now()},bundle={id,input,implementation,report,reportSha256:hash(report)};store.db.prepare('INSERT INTO calibration_runs VALUES(?,?,?)').run(id,report.createdAt,JSON.stringify(bundle));return send(res,200,{id,report});}finally{fittingETAS=false;}
       }
       if(p==='/api/backtest'){
         const start=Date.parse(b.start),end=Date.parse(b.end),stepDays=Number(b.stepDays??5),targetBounds=b.region==='rectangle'?validateBounds(b):null;

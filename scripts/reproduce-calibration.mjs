@@ -1,0 +1,11 @@
+import {readFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+import {fileURLToPath} from 'node:url';
+import {calibrateDepth} from '../server/calibration.mjs';
+import {hash} from '../server/store.mjs';
+const file=process.argv[2];if(!file)throw new Error('Usage: node scripts/reproduce-calibration.mjs EXPORTED_JSON');
+const saved=JSON.parse(readFileSync(file,'utf8')),{id,...snapshot}=saved.snapshot;
+assert.equal(hash(saved.input),saved.id);assert.equal(hash(snapshot),id);assert.equal(saved.input.inputSnapshotId,id);assert.equal(hash(saved.report),saved.reportSha256);assert.equal(hash(saved.implementation),saved.input.implementationSha256);
+for(const name of ['calibration','engine','routes','geo','store'])assert.equal(saved.implementation['server/'+name+'.mjs'],readFileSync(fileURLToPath(new URL('../server/'+name+'.mjs',import.meta.url)),'utf8'),'Reproduction requires the frozen implementation exported with this run: '+name);
+const report={...calibrateDepth({events:snapshot.events,options:saved.input.options,config:saved.input.config,routes:saved.input.routes,boundaries:saved.input.boundaries}),createdAt:saved.report.createdAt};
+assert.equal(hash(report),saved.reportSha256);console.log(JSON.stringify({id:saved.id,identical:true,selectedDepth:report.selectedConfig.triggerDepth}));

@@ -1,3 +1,4 @@
+import {setupCalibration} from './calibration.js';
 import {setupExperimentHistory} from './experiment-history.js';
 import {setupRoutes} from './routes.js';
 import {workspaceCommand,filterWatches,watchFilterText} from './workspace-commands.js';
@@ -189,6 +190,7 @@ setupSpatialView(earth,()=>state,api,()=>deviceRole!=='viewer');
 setupRoutes({earth,api,reload:load,toast,canWrite:()=>deviceRole!=='viewer'});
 setupWorkbench(earth);
 setupRandomizationLab({api,toast});
+setupCalibration({api});
 try{deviceRole=(await setupPhoneAccess(api)).session.role;}catch(e){console.warn('Phone setup:',e.message);}
 resolutionHistory=setupResolutionHistory({api,getState:()=>state,toast,reloadLedger:loadLedger,canWrite:()=>deviceRole!=='viewer'});
 await load();refreshCatalogOnOpen();loadLedger().catch(()=>{});setInterval(()=>{if(state.live)load();},60000);
