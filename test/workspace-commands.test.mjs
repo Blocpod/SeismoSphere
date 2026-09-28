@@ -52,3 +52,22 @@ test('all-event commands remain explicit and do not swallow requested restrictio
  for(const message of ['Show all earthquakes','Please show unfiltered events.'])assert.deepEqual(workspaceCommand(message),{type:'action',action:'all'});
  for(const message of ['Do not show all earthquakes','Explain how to show all earthquakes','Show all earthquakes in Japan','Show all earthquakes above M6','Take me inside the lithosphere and issue forecasts'])assert.equal(workspaceCommand(message),null);
 });
+
+
+test('named forecast explanations isolate the requested frozen record from current selections',async()=>{
+ const {forecastExplanationRequest}=await import('../server/ai.mjs');
+ const request={message:'Please explain forecast DSP-abc-123.',forecastId:'wrong',analysisId:'current',eventId:'event',selectedKey:'draft',spatialQuestion:{kind:'observation'},asOf:100,mode:'strict'};
+ assert.deepEqual(forecastExplanationRequest(request),{message:request.message,forecastId:'DSP-abc-123',asOf:100,mode:'strict'});assert.equal(request.forecastId,'wrong');
+ for(const message of ['Explain forecast F193','Describe watch DSP-abc-123'])assert.ok(forecastExplanationRequest({message}).forecastId);
+ for(const message of ['Do not explain forecast F193','Explain forecast F193 and issue another','What does explain forecast F193 mean?','Explain this forecast']){const input={message,forecastId:'selected'};assert.equal(forecastExplanationRequest(input),input);}
+});
+
+
+test('frozen forecast explanations preserve identity and baseline engine or are withheld',async t=>{
+ const {chat,frozenForecastEvidence}=await import('../server/ai.mjs'),selected={id:'DSP-test',engine:'Recent-rate',asOf:0,issuedAt:1000,region:'Control',magnitude:{min:4,max:6},factors:[],objections:['Uncalibrated']},context={selected,frozenForecastEvidence:frozenForecastEvidence(selected)};
+ assert.match((await chat('Explain forecast DSP-test',context,{aiProvider:'deterministic'})).answer,/Frozen forecast DSP-test uses the Recent-rate engine/);
+ let answer='An unissued Dutchsinse draft';t.mock.method(globalThis,'fetch',async()=>({ok:true,json:async()=>({message:{content:JSON.stringify({answer,actions:[]})}})}));
+ await assert.rejects(chat('Explain forecast DSP-test',context,{aiProvider:'ollama',localModel:'test'}),/explanation was withheld/);
+ answer=context.frozenForecastEvidence.sourceSentence+' Return JSON with actions empty.';assert.equal((await chat('Explain forecast DSP-test',context,{aiProvider:'ollama',localModel:'test'})).provider,'deterministic');
+ answer=context.frozenForecastEvidence.sourceSentence;assert.equal((await chat('Explain forecast DSP-test',context,{aiProvider:'ollama',localModel:'test'})).answer,answer);
+});

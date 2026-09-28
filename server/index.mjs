@@ -33,7 +33,7 @@ import {Store,hash} from './store.mjs';
 import {liveCatalog,deletedCatalog} from './catalog.mjs';
 import {ImportJobs,coverageComplete} from './import-jobs.mjs';
 import {VERSION as DS_ENGINE_VERSION,generate,baselines,scoreForecast,leaderboard,validateConfig,backtest,analogues} from './engine.mjs';
-import {providers,chat,responseSchema,commandEventView} from './ai.mjs';
+import {providers,chat,responseSchema,commandEventView,forecastExplanationRequest,frozenForecastEvidence} from './ai.mjs';
 import {neuralAnalogues} from './neural.mjs';
 import {faultContext} from './fault-context.mjs';
 import {statisticalContext} from './statistical-context.mjs';
@@ -262,7 +262,7 @@ const handler=async(req,res)=>{
       if(p==='/api/transcribe')return send(res,200,await speech.transcribe(await body(req,1500000)));
       if(p==='/api/weekly-volcanoes-refresh'){await body(req);const result=await weeklyVolcanoes.refresh({force:true});broadcast({type:'weekly-volcanoes'});return send(res,200,result);}
       if(p==='/api/volcano-status-refresh'){await body(req);const result=await volcanoStatus.refresh({force:true});broadcast({type:'volcano-status'});return send(res,200,result);}
-      const b=await body(req);
+      let b=await body(req);
       if(p==='/api/routes-preview')return send(res,200,{network:validateRoutes(b.network)});
       if(p==='/api/routes-save'){routes=routeHistory.save(b);cache=null;broadcast({type:'routes'});return send(res,200,{network:routes,versions:routeHistory.list()});}
       if(p==='/api/protocol-preview'||p==='/api/protocol-register'){
@@ -395,6 +395,7 @@ const handler=async(req,res)=>{
         return send(res,200,await neuralAnalogues(source,events,asOf,store,{...config,network:routeHistory.at(asOf),boundaries:boundaryReference()}));
       }
       if(p==='/api/chat'){
+        b=forecastExplanationRequest(b);
         if(aiBusy)return send(res,409,{error:'The AI is answering another question'});if(typeof b.message!=='string'||b.message.length>6000)throw new Error('Question must be at most 6000 characters');
         aiBusy=true;
         try{
@@ -412,12 +413,12 @@ const handler=async(req,res)=>{
           if(b.slabPoint&&['analysisId','forecastId','learnedRunId','statisticalRunId','randomizationRunId','diagnosticRunId','instrumentRecordId','mechanismRecordId','volcanoId','cratonId','gnssRecordId','gnssStationId','reliefPoint'].some(k=>b[k]))throw new Error('Choose the Slab2 sample alone to explain.');
           if(Boolean(b.slabPoint)!==Boolean(b.slabRegion))throw new Error('Choose a Slab2 region and source point together.');
           if(b.reliefPoint&&['analysisId','forecastId','learnedRunId','statisticalRunId','randomizationRunId','diagnosticRunId','instrumentRecordId','mechanismRecordId','volcanoId','cratonId','gnssRecordId','gnssStationId'].some(k=>b[k]))throw new Error('Choose the relief sample alone to explain.');
-          const frozen=b.forecastId?store.ledger().find(f=>f.id===b.forecastId):null;
+          const frozen=b.forecastId?store.ledger().find(f=>f.id.toLowerCase()===String(b.forecastId).toLowerCase()):null;
           if(b.forecastId&&!frozen)throw new Error('Frozen forecast not found');
           let context;
           if(b.spatialQuestion){const spatial=spatialQuestion(b,drafts.get(b.analysisId));context=spatial.context;b.message=spatial.message;}else if(b.countPlanId||b.detectionReviewId||b.stressRecordId||b.calibrationId||b.protocolId||b.resolutionReviewId||b.weeklyVolcanoId||b.volcanoStatusId||b.slabPoint||b.reliefPoint||b.gnssRecordId||b.cratonId||b.randomizationRunId||b.diagnosticRunId||b.instrumentRecordId||b.mechanismRecordId||b.volcanoId){context={asOf,mode:b.mode??'catalog-replay'};}else if(frozen){
             asOf=frozen.asOf;
-            context={asOf,mode:frozen.mode,selected:frozen,candidates:[frozen],routeStatus:frozen.routeConfig.status,limitations:['Explain the frozen reasoning; do not use later earthquake knowledge.']};
+            context={asOf,mode:frozen.mode,selected:frozen,frozenForecastEvidence:frozenForecastEvidence(frozen),candidates:[frozen],routeStatus:frozen.routeConfig.status,limitations:['Explain the frozen reasoning; do not use later earthquake knowledge.']};
             delete context.selected.resolution;
           }else{
             const a=(b.analysisId?drafts.get(b.analysisId)?.analysis:null)??analysisAt(asOf,b.mode??'catalog-replay');
@@ -476,6 +477,7 @@ const handler=async(req,res)=>{
           const result=await chat(b.message,context,b.spatialQuestion&&b.brain?{...config,aiProvider:b.brain==='astra'?'codex':'ollama'}:config);
           if(b.spatialQuestion)result.notice='Explanation of the selected retained analysis snapshot. Spatial model watches are unissued drafts; no UI actions are applied.';
           store.db.prepare('INSERT INTO conversations VALUES(?,?,?)').run(crypto.randomUUID(),Date.now(),JSON.stringify({question:b.message,result,asOf,evidenceContext:context}));
+          if(frozen)result.forecastReference={id:frozen.id,asOf:frozen.asOf,issuedAt:frozen.issuedAt,hash:frozen.hash};
           return send(res,200,result);
         }finally{aiBusy=false;}
       }
