@@ -5,7 +5,7 @@ export class StressLayer{
   constructor(earth,explorer){
     Object.assign(this,{earth,explorer});earth.stressLayer=this;this.group=new THREE.Group();earth.scene.add(this.group);this.group.visible=false;
     this.caption=document.createElement('section');this.caption.className='stress-map-caption panel';this.caption.hidden=true;this.caption.innerHTML='<strong>STATIC STRESS · MODEL CALCULATION</strong><p></p><button class="secondary" data-inspect>Inspect samples</button><button class="secondary" data-hide>Hide stress</button>';document.querySelector('#workspace').append(this.caption);
-    this.button=document.createElement('button');this.button.id='stress-open';this.button.textContent='Static stress';this.button.setAttribute('aria-label','Inspect static stress calculations');this.button.onclick=()=>explorer.node.closest('dialog').showModal();document.querySelector('.globe-toolbar').append(this.button);
+    this.button=document.createElement('button');this.button.id='stress-open';this.button.textContent='Static stress';this.button.setAttribute('aria-label','Inspect static stress calculations');this.button.onclick=()=>earth.mechanisms.open();document.querySelector('.globe-toolbar').append(this.button);
     this.note=document.createElement('div');this.note.className='stress-source-caption';this.note.hidden=true;document.querySelector('#workspace').append(this.note);
     this.caption.querySelector('[data-inspect]').onclick=()=>explorer.node.closest('dialog').showModal();this.caption.querySelector('[data-hide]').onclick=()=>{explorer.node.querySelector('[data-globe]').checked=false;this.sync();};
   }
