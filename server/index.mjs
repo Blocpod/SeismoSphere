@@ -391,7 +391,7 @@ const handler=async(req,res)=>{
         store.saveExperiment(experimentId,report);store.set('lastBacktest',report);resolveExpired();broadcast({type:'ledger',count:forecastIds.length});
         return send(res,200,report);
       }
-      if(p==='/api/analogues'){const asOf=Number(b.asOf??Date.now());const events=researchEvents({asOf,strict:b.mode==='strict'});const source=events.find(e=>e.id===b.eventId);if(!source)throw new Error('Select a catalog event first');return send(res,200,{source,matches:analogues(source,events,asOf,config.radiusKm,config.windowDays),method:'Magnitude/depth source similarity with fully elapsed local outcome windows; not a trained graph neural network'});}
+      if(p==='/api/analogues'){const asOf=Number(b.asOf??Date.now());const events=researchEvents({asOf,strict:b.mode==='strict'});const source=events.find(e=>e.id===b.eventId);if(!source)throw new Error('Select a catalog event first');return send(res,200,{source,cutoff:asOf,windowDays:config.windowDays,radiusKm:config.radiusKm,matches:analogues(source,events,asOf,config.radiusKm,config.windowDays),method:'Magnitude/depth source similarity with fully elapsed local outcome windows; not a trained graph neural network'});}
       if(p==='/api/neural-analogues'){
         const asOf=Number(b.asOf??Date.now());if(!Number.isFinite(asOf)||asOf>Date.now()+60000)throw new Error('Invalid cutoff');
         const events=researchEvents({asOf,strict:b.mode==='strict'}),source=events.find(e=>e.id===b.eventId);
