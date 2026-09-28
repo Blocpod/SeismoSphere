@@ -1,3 +1,4 @@
+import {CountSchedules} from './count-schedules.mjs';
 import {prospectiveCountLeaderboard} from './count-leaderboard.mjs';
 import {CountForecasts} from './count-forecasts.mjs';
 import {learnedUncertainty} from './learned-uncertainty.mjs';
@@ -55,6 +56,7 @@ const detectionReviews=new DetectionReviews(store);
 const routeHistory=new RouteHistory(store,routes);routes=routeHistory.current();
 const learned=new LearnedModel(store);
 const countForecasts=new CountForecasts(store,learned);
+const countSchedules=new CountSchedules(store,countForecasts);
 const speech=new Speech();
 const instruments=new Instruments(store),seedlink=new SeedLink(instruments),phases=new PhaseAnalysis(instruments);
 const mechanisms=new Mechanisms(store);
@@ -182,6 +184,8 @@ const handler=async(req,res)=>{
     if(p==='/api/learned-uncertainty'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-learned-uncertainty.json"');return send(res,200,learnedUncertainty(learned.get(q.get('id'))));}
     if(p==='/api/tectonic-export'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-tectonic-baseline.json"');return send(res,200,learned.getTectonic(q.get('id')));}
     if(p==='/api/learned-report')return send(res,200,learned.report(q.get('id')));
+    if(p==='/api/count-schedule-export'){const plan=countSchedules.get(q.get('id'));res.setHeader('Content-Disposition','attachment; filename="seismosphere-count-schedule.json"');return send(res,200,{...plan,forecasts:plan.slots.filter(s=>s.forecastId).map(s=>countForecasts.export(s.forecastId))});}
+    if(p==='/api/count-schedules')return send(res,200,{plans:countSchedules.list(),error:countSchedules.lastError});
     if(p==='/api/count-forecasts'){const records=countForecasts.list();return send(res,200,{busy:countForecasts.busy,records,cohorts:prospectiveCountLeaderboard(records)});}
     if(p==='/api/count-forecast-export'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-count-forecast.json"');return send(res,200,countForecasts.export(q.get('id')));}
     if(p==='/api/learned-runs')return send(res,200,learned.list());
@@ -286,6 +290,9 @@ const handler=async(req,res)=>{
       if(p==='/api/waveform-picks')return send(res,200,phases.annotate(b));
       if(p==='/api/waveform-spectrum')return send(res,200,await instruments.spectrum(b));
       if(p==='/api/learned-tectonic')return send(res,200,learned.tectonic(b.id));
+      if(p==='/api/count-schedule-preview')return send(res,200,countSchedules.preview(b));
+      if(p==='/api/count-schedule-register')return send(res,200,countSchedules.register(b));
+      if(p==='/api/count-schedule-stop')return send(res,200,countSchedules.stop(b.id));
       if(p==='/api/count-forecast-issue')return send(res,200,await countForecasts.issue(b.id,feed));
       if(p==='/api/learned-train')return send(res,200,await learned.train());
       if(p==='/api/learned-predict')return send(res,200,await learned.predict(b.id,Date.parse(b.cutoff),b.mode??'catalog-replay',b.model??'graph'));
@@ -477,7 +484,7 @@ const handler=async(req,res)=>{
 const server=http.createServer(handler);
 server.listen(port,'127.0.0.1',()=>{console.log(`SeismoSphere running at http://127.0.0.1:${port}`);if(!process.env.SEISMO_TEST_MODE){importJobs.kick();refresh();weeklyVolcanoes.refresh().then(()=>broadcast({type:'weekly-volcanoes'})).catch(e=>{console.error(e.message);broadcast({type:'weekly-volcanoes'});});volcanoStatus.refresh().then(()=>broadcast({type:'volcano-status'})).catch(e=>{console.error(e.message);broadcast({type:'volcano-status'});});if(access.settings.enabled)access.start(handler).catch(e=>{access.lastError=e.message;console.error('Phone access: '+e.message);});}});
 const interval=setInterval(()=>{if(!process.env.SEISMO_TEST_MODE){refresh();weeklyVolcanoes.refresh().then(()=>broadcast({type:'weekly-volcanoes'})).catch(e=>{console.error(e.message);broadcast({type:'weekly-volcanoes'});});volcanoStatus.refresh().then(()=>broadcast({type:'volcano-status'})).catch(e=>{console.error(e.message);broadcast({type:'volcano-status'});});}},5*60000);interval.unref();
-const protocolInterval=setInterval(()=>{if(!process.env.SEISMO_TEST_MODE)try{const countResult=countForecasts.tick(feed),result=prospective.tick(feed);if(result.changes||countResult.changes)broadcast({type:'protocol'});}catch(e){console.error('Prospective schedule: '+e.message);}},30000);protocolInterval.unref();
+const protocolInterval=setInterval(async()=>{if(!process.env.SEISMO_TEST_MODE)try{await countSchedules.tick(feed);const countResult=countForecasts.tick(feed),result=prospective.tick(feed);if(result.changes||countResult.changes)broadcast({type:'protocol'});}catch(e){console.error('Prospective schedule: '+e.message);}},30000);protocolInterval.unref();
 let closing=false;
 function shutdown(){if(closing)return;closing=true;clearInterval(interval);clearInterval(protocolInterval);clearTimeout(reviewTimer);learned.close();speech.close();const importsStopped=Promise.all([seedlink.close(),closeResponseWorkers(),importJobs.shutdown(),randomizations.shutdown(),gnss.shutdown(),volcanoStatus.shutdown(),weeklyVolcanoes.shutdown()]);access.close();for(const client of clients)client.end();server.close(async()=>{await importsStopped;store.close();process.exit(0);});server.closeAllConnections();setTimeout(()=>process.exit(0),3000).unref();}
 process.on('SIGINT',shutdown);process.on('SIGTERM',shutdown);
