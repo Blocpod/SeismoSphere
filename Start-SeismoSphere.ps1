@@ -1,6 +1,7 @@
 param([switch]$NoBrowser)
 $ErrorActionPreference = 'Stop'
 $projectRoot = $PSScriptRoot
+try {
 $nodeCommand = Get-Command node -ErrorAction SilentlyContinue
 if ($nodeCommand) { $nodeExe = $nodeCommand.Source } else {
   $nodeExe = Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe'
@@ -8,7 +9,7 @@ if ($nodeCommand) { $nodeExe = $nodeCommand.Source } else {
 if (-not (Test-Path -LiteralPath $nodeExe)) { throw 'Node.js 24 or later is required. Install it, then launch again.' }
 $nodeVersion = & $nodeExe --version
 if ($LASTEXITCODE -ne 0 -or [int]($nodeVersion.TrimStart('v').Split('.')[0]) -lt 24) { throw 'This installation requires Node.js 24 or later.' }
-$requiredAssets = @('public\assets\earth-8k.jpg','public\assets\slab2-depth.json','public\assets\gem-faults.json','public\vendor\three.module.js','public\vendor\qrcode.mjs')
+$requiredAssets = @('public\assets\earth-8k.jpg','public\assets\slab2-depth.json','public\assets\gem-faults.json','public\vendor\three.module.js','public\vendor\qrcode.mjs','public\vendor\three.core.js','public\vendor\OrbitControls.js','public\assets\earth.jpg','public\assets\earth-night.jpg','public\assets\earth-clouds.jpg','public\assets\earth-normal.jpg','public\assets\earth-specular.jpg','public\assets\plates.json')
 if ($requiredAssets | Where-Object { -not (Test-Path -LiteralPath (Join-Path $projectRoot $_)) }) {
   Push-Location -LiteralPath $projectRoot
   try { & $nodeExe 'scripts/setup.mjs'; if ($LASTEXITCODE -ne 0) { throw 'Asset setup failed. Check the internet connection and retry.' } } finally { Pop-Location }
@@ -40,4 +41,20 @@ if (-not $NoBrowser) {
     $profile = Join-Path $projectRoot 'data\desktop-browser'
     Start-Process -FilePath $appBrowser -ArgumentList @("--app=http://127.0.0.1:$appPort", ('--user-data-dir="' + $profile + '"'), '--no-first-run')
   } else { Start-Process "http://127.0.0.1:$appPort" }
+}
+
+} catch {
+  $launchFailure = $_
+  $startupLog = Join-Path $projectRoot 'logs\startup-error.log'
+  try {
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $startupLog) | Out-Null
+    Add-Content -LiteralPath $startupLog -Value ("{0:o} {1}" -f (Get-Date), $launchFailure.Exception.Message)
+  } catch { }
+  if (-not $NoBrowser) {
+    try {
+      Add-Type -AssemblyName System.Windows.Forms
+      [System.Windows.Forms.MessageBox]::Show(("SeismoSphere could not start.`n`n{0}`n`nStartup log: {1}" -f $launchFailure.Exception.Message, $startupLog), 'SeismoSphere startup', [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+    } catch { }
+  }
+  throw $launchFailure
 }

@@ -52,6 +52,8 @@ Double-click **Launch SeismoSphere.cmd**, or run `node server/index.mjs` with No
 
 The **SeismoSphere AI** desktop icon opens a dedicated Edge/Chrome app window, starts the local backend and requests a catalog refresh. It also starts the installed Ollama service if needed. Run `Create-DesktopShortcut.ps1` to recreate this installation's icon. The main interface uses translucent liquid-glass panels, an 8K desktop Earth, atmospheric shading and responsive phone controls.
 
+If startup fails, the launcher displays the reason and saves it in `logs/startup-error.log`. Missing core globe assets trigger setup automatically, which requires an internet connection. Server failures also write details to `logs/server-error.log`. For terminal diagnostics, run `./Start-SeismoSphere.ps1 -NoBrowser`; failures return a nonzero exit code without opening a dialog.
+
 Run `node scripts/setup.mjs` to restore local Three.js and Earth/plate assets. The runtime has no npm dependencies. Run `npm test` for the scientific and persistence tests.
 
 ## Working capabilities
