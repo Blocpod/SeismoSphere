@@ -10,7 +10,7 @@ import numpy as np
 import torch
 from torch import nn
 
-VERSION = "equal-area-weekly-gnn-0.1.1"
+VERSION = "equal-area-weekly-gnn-0.2.0"
 DAY = 86400000
 ROWS, COLS = 6, 12
 NODES = ROWS * COLS
@@ -137,6 +137,29 @@ def metrics(y, expected):
             "logLikelihood": float(ll.sum()), "meanAbsoluteError": float(np.abs(y - expected).mean())}
 
 
+def select_ensemble(predictions, observed, splits):
+    """Choose convex count weights on validation only, before examining test scores."""
+    names = ["graph", "noNeighbors", "trainingMean", "recentRate"]
+    validation = splits == "validation"
+    values = np.stack([predictions[name][validation] for name in names]).astype(np.float64)
+    target = observed[validation]
+    best_score, best_weights, trials = -math.inf, None, []
+    # Fixed tenth-step simplex: 286 candidates, ties prefer earlier (graph-heavy) weights.
+    for graph in range(10, -1, -1):
+        for local in range(10 - graph, -1, -1):
+            for mean in range(10 - graph - local, -1, -1):
+                weights = np.array([graph, local, mean, 10 - graph - local - mean]) / 10
+                expected = np.maximum(np.tensordot(weights, values, axes=1), 1e-12)
+                score = float((target * np.log(expected) - expected).sum())
+                trials.append({"weights": weights.tolist(), "validationObjective": score})
+                if score > best_score + 1e-9:
+                    best_score, best_weights = score, weights
+    expected = sum(w * predictions[name].astype(np.float64) for w, name in zip(best_weights, names))
+    return expected, {"components": names, "weights": best_weights.tolist(), "step": 0.1,
+                      "selection": "Maximum validation Poisson log likelihood (constant log-factorial omitted)",
+                      "tieBreak": "Descending graph, no-neighbor, then training-mean weight", "trials": trials}
+
+
 def train(payload):
     started = time.monotonic()
     o = payload["options"]
@@ -156,6 +179,7 @@ def train(payload):
     recent = (np.expm1(x[:, :, 2]) + base) / 5
     predictions = {"graph": graph_pred, "noNeighbors": local_pred,
                    "trainingMean": np.broadcast_to(base, y.shape), "recentRate": recent}
+    predictions["ensemble"], ensemble = select_ensemble(predictions, y, splits)
     scores = {}
     for split in ["train", "validation", "test"]:
         sel = splits == split
@@ -166,12 +190,12 @@ def train(payload):
         scores[split] = {"windows": int(sel.sum()), "firstCutoff": int(cutoffs[sel][0]),
                          "lastEnd": int(cutoffs[sel][-1] + 7 * DAY), "models": values}
     weights = {key: value.tolist() for key, value in model.state_dict().items()}
-    artifact = {"weights": weights, "mean": mean.tolist(), "scale": scale.tolist(), "base": base.tolist()}
+    artifact = {"weights": weights, "mean": mean.tolist(), "scale": scale.tolist(), "base": base.tolist(), "ensemble": ensemble}
     model_hash = hashlib.sha256(json.dumps(artifact, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
     report = {"version": VERSION, "options": o, "features": FEATURES,
               "grid": {"rows": ROWS, "columns": COLS, "cells": NODES, "areaKm2": 4 * math.pi * 6371.0088 ** 2 / NODES,
                        "method": "Equal sin(latitude) and longitude bins; four edge-sharing neighbors with dateline wrap, no polar shortcut."},
-              "training": graph_fit, "ablation": local_fit, "scores": scores,
+              "training": graph_fit, "ablation": local_fit, "scores": scores, "ensemble": ensemble,
               "artifact": artifact, "weightsSha256": model_hash,
               "runtime": {"torch": torch.__version__, "numpy": np.__version__, "python": sys.version.split()[0],
                           "device": "cpu", "threads": 4, "elapsedSeconds": time.monotonic() - started},
@@ -181,7 +205,10 @@ def train(payload):
                               "Expected seven-day catalog counts in very broad cells, not calibrated probability or precise epicenter/magnitude prediction.",
                               "Clustering may reflect aftershocks; this does not establish advance mainshock prediction or stress transfer.",
                               "Validation selects checkpoints; test windows never update weights or normalization. Earlier observed test events may enter later test features.",
-                              "Single predeclared seed and architecture; no significance claim. Weeks and neighboring cells are dependent."]}
+                              "Single predeclared seed and architecture; no significance claim. Weeks and neighboring cells are dependent.",
+                              "Ensemble weights use the same validation split as checkpoint selection; validation scores are selection-biased. No test outcomes select weights.",
+                              "This ensemble averages weekly count models, not DS alert envelopes or ETAS intensities; it does not modify canonical rules.",
+                              "The historical test interval has been inspected in earlier development; it is not a new untouched confirmatory dataset."]}
     report["projection"] = predict({"report": report, "events": payload["events"], "cutoff": o["end"]})
     return report
 

@@ -3,7 +3,7 @@ import copy
 import math
 import numpy as np
 import torch
-from seismic_gnn import DAY, NODES, adjacency, catalog, cell, dataset, features, metrics, predict, train
+from seismic_gnn import DAY, NODES, adjacency, catalog, cell, dataset, features, metrics, predict, train, select_ensemble
 
 torch.set_num_threads(4)
 torch.use_deterministic_algorithms(True)
@@ -40,6 +40,16 @@ for e in changed:
 second = train({"options": o, "events": changed})
 assert report["artifact"] == second["artifact"], "Test outcomes leaked into checkpoint or normalization"
 assert report["training"] == second["training"]
+assert report["ensemble"] == second["ensemble"], "Test outcomes leaked into ensemble selection"
+assert len(report["ensemble"]["trials"]) == 286
+assert math.isclose(sum(report["ensemble"]["weights"]), 1)
+for window in report["testWindows"]:
+    blend = sum(w * np.array(window[name]) for w, name in zip(report["ensemble"]["weights"], report["ensemble"]["components"]))
+    assert np.allclose(blend, window["ensemble"])
+fixture = {name: np.full((2, 1), value) for name, value in zip(["graph", "noNeighbors", "trainingMean", "recentRate"], [2, 8, 8, 8])}
+_, selection = select_ensemble(fixture, np.array([[2], [1000]]), np.array(["validation", "test"]))
+assert selection["weights"] == [1, 0, 0, 0]
+
 cutoff = 1200 * DAY
 before = features(catalog(events, 5), cutoff, 5)
 future = events + [{**events[0], "mag": 9, "time": cutoff + 1}]
