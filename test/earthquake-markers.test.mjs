@@ -108,3 +108,17 @@ test('watch highlights use retained geometry and honor existing layer visibility
  earth.highlightSourceForecasts([linked,other],{id:'deep',depth:602});assert.equal(earth.forecastGroup.children.length,1);assert.equal(earth.pathGroup.children.length,2);assert.equal(earth.pathGroup.visible,false);
  earth.clear(earth.forecastGroup);earth.clear(earth.pathGroup);earth.highlightSourceForecasts([linked],{id:'deep',depth:300});earth.highlightSourceForecasts([other],{id:'deep',depth:602});assert.equal(earth.forecastGroup.children.length,0);
 });
+
+test('catalog and timeline changes refresh section evidence after projecting the current events',()=>{
+ globalThis.document={querySelector:()=>null};
+ try{
+  const earth=Object.assign(Object.create(Earth.prototype),{eventGroup:new THREE.Group(),depthScale:1,container:{clientHeight:900},renderer:{getPixelRatio:()=>1},camera:{fov:35},glow:new THREE.Texture(),syncPresentation(){}});
+  let projected,snapshot;
+  earth.geology={updateSectionEvents(){projected=earth.events.filter(e=>e.lat>0);},refreshProfile(){snapshot={events:structuredClone(projected),asOf:earth.asOf};}};
+  const event={id:'arrival',lat:38,lon:-115,depth:6,mag:2.5,time:100};
+  earth.setEvents([],0);assert.deepEqual(snapshot,{events:[],asOf:0});
+  earth.setEvents([event],200);assert.deepEqual(snapshot,{events:[event],asOf:200});
+  earth.setEvents([],50);assert.deepEqual(snapshot,{events:[],asOf:50});
+  earth.clear(earth.eventGroup);
+ }finally{delete globalThis.document;}
+});
