@@ -29,3 +29,12 @@ The protocol also preserves the selected midpoint definition. Calibration proven
 Saved runs expose **Explain calibration with my AI**. The selected workspace brain receives only a verified saved calibration summary, its earlier training and later test intervals, comparison counts and stated limitations. Requests before creation time are rejected. Explanations cannot trigger globe commands or register experiments; answers that alter the required threshold/test-count sentence are withheld. Switching runs or starting another fit suppresses delayed answers. This guard covers those anchor values, not general factual validation of AI prose.
 
 Seven focused checks pass. Isolated HTTP requests verified deterministic output, earlier-cutoff rejection, and actual local Qwen 3.6 and ChatGPT-authenticated Astra responses. Both preserved the fixture threshold and test counts. A focused prompt correction removed local instruction echo; the local rerun produced natural explanatory prose. The fixtures issued no forecasts and did not change production settings or records. Run scripts/calibration-protocol-check.mjs --ai for both brains or --local for just the configured local brain.
+
+
+## Retained-catalog acceptance run
+
+The 2026-09-28 run `a8298ff5eb189e1b1a45588958a385302bab1f0daf9b8ed13e136de3ed5c4de0` uses global USGS retrieval through M3 for 2011-02-01–2011-04-01. Training runs 2011-02-15–2011-03-05; the later test runs 2011-03-06–2011-04-01. It contains only one scheduled training issuance and two test issuances, so this is a functional acceptance example with weak statistical support.
+
+The objective selected 400 km. All three candidates had six DS training hits; their matched recent-rate controls differed. The selected variant later had 9/29 DS full hits versus 10/29 for unchanged 300 km. It therefore did not improve the DS full-hit count. The workspace remains at 300 km. This previously explored historical interval is not an untouched scientific test.
+
+The exported source/input/report checksums verified, and `scripts/reproduce-calibration.mjs` reproduced the report identically. Actual local Qwen 3.6 35B explained both counts correctly with no actions. The saved UI now identifies exact training/test dates, creation time, run ID and issuance counts, and restores its dates when selected.
