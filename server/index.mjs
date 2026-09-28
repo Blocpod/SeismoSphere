@@ -183,6 +183,11 @@ const handler=async(req,res)=>{
     if(p==='/api/slab-sample'){if(!q.has('lat')||!q.has('lon')||!q.get('lat').trim()||!q.get('lon').trim())throw new Error('Provide latitude and longitude.');return send(res,200,await slabSample(q.get('id'),{lat:Number(q.get('lat')),lon:Number(q.get('lon'))},Date.now()));}
     if(p==='/api/slab-source'){const source=await slabSource(q.get('id'),q.get('field'));res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Content-Disposition':`attachment; filename="${source.name}"`});return res.end(source.bytes);}
     if(p==='/api/rupture-stress-history')return send(res,200,{records:ruptureInputs.history(Object.fromEntries(q))});
+    if(p==='/api/rupture-projection-export'){
+      const record=ruptureInputs.projection(q.get('id')),source=ruptureInputs.get(record.sourceId),{id,...body}=record,{id:sourceId,...sourceBody}=source;
+      res.setHeader('Content-Disposition','attachment; filename="seismosphere-rupture-projection.json"');
+      return send(res,200,{record,source,integrity:{recordValid:hash(body)===id,companionValid:hash(record.raw)===record.receipt.sha256,sourceRecordValid:hash(sourceBody)===sourceId,sourceValid:hash(source.raw)===source.receipt.sha256,sourceLinked:record.sourceId===sourceId&&record.sourceHash===source.receipt.sha256}});
+    }
     if(p==='/api/rupture-stress-export'){
       const record=ruptureInputs.stress(q.get('id')),source=ruptureInputs.get(record.sourceId);
       res.setHeader('Content-Disposition','attachment; filename="seismosphere-static-stress.json"');
@@ -253,6 +258,7 @@ const handler=async(req,res)=>{
       }
       if(p==='/api/stations-query')return send(res,200,await instruments.stations(b));
       if(p==='/api/rupture-stress-query')return send(res,200,await ruptureInputs.calculate(b));
+      if(p==='/api/rupture-projection-query')return send(res,200,await ruptureInputs.registerProjection(b));
       if(p==='/api/rupture-input-query')return send(res,200,await ruptureInputs.query(b));
       if(p==='/api/mechanism-query')return send(res,200,await mechanisms.query(b));
       if(p==='/api/waveform-query')return send(res,200,await instruments.waveform(b));

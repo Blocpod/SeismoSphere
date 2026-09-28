@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {checkCoordinates} from '../scripts/check-stress-coordinates.mjs';
+import {checkCoordinates} from '../server/stress-coordinates.mjs';
 
 test('geographic source check rejects misplaced or mismatched companion patches',()=>{
   const model={origin:{lat:0,lon:179.9},patches:[{xStartKm:0,yStartKm:-1,xEndKm:0,yEndKm:1,topKm:1,bottomKm:3,dipDeg:90,slipM:1,rakeDeg:90}]};

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {Store,hash} from '../server/store.mjs';
 import {RuptureInputs,stressIntegrity} from '../server/rupture-inputs.mjs';
 import {parseCoulombInput} from '../server/coulomb-input.mjs';
+import {destination} from '../server/geo.mjs';
 const raw=`Test rupture
 #reg1= 0 #reg2= 0 #fixed= 1
 PR1= 0.25 PR2= 0.25
@@ -19,6 +20,21 @@ Map info
 test('Coulomb input validates explicit slip encoding, counts, origins and geometry',()=>{
   const p=parseCoulombInput(raw);assert.equal(p.patches.length,1);assert.equal(p.patches[0].slipM,2);assert.equal(p.patches[0].rakeDeg,90);assert.deepEqual(p.origin,{lat:-31,lon:-72});assert.equal(p.elasticInput.poisson,.25);
   for(const bad of [raw.replace('rake netslip','rtlat reverse'),raw.replace('#fixed= 1','#fixed= 2'),raw.replace('100 90 2','200 90 2'),raw.replace('100 90 2','100 90 NaN'),raw.replace('30 1 6','0 1 6'),raw.replace('30 1 6','30 6 1'),raw.replace('zero lat = -31','zero lat = -131'),raw.replace('PR2= 0.25','PR2= 0.3'),raw.replace('E2= 8e5','E2= -1')])assert.throws(()=>parseCoulombInput(bad));
+});
+test('companion projection receipts preserve bytes, reject strict hindsight and retain failed checks',async t=>{
+  const store=new Store(':memory:'),model=parseCoulombInput(raw),p=model.patches[0],east=(p.bottomKm-p.topKm)/Math.tan(p.dipDeg*Math.PI/180)/2,north=5,center=destination(model.origin,Math.atan2(east,north)*180/Math.PI,Math.hypot(east,north));
+  const fsp=`% Coordinates are given for center of each subfault\n% LAT LON X==EW Y==NS Z SLIP RAKE TRUP RISE SF_MOMENT\n${center.lat} ${center.lon} 0 0 3.5 2 90 0 1 1e18\n`,file={kind:'Slip model (FSP)',name:'model.fsp',url:'https://earthquake.usgs.gov/product/test/model.fsp',bytes:null};
+  const body={schema:'seismosphere.rupture-input.v1',event:{time:100},product:{status:'UPDATE',updateTime:200,files:[file]},model,raw,receipt:{sha256:hash(raw)},createdAt:250},source={...body,id:hash(body)},service=new RuptureInputs(store,{});store.db.prepare('INSERT INTO rupture_inputs VALUES(?,?,?,?)').run(source.id,'test',250,JSON.stringify(source));
+  let requests=0;t.mock.method(globalThis,'fetch',async url=>{requests++;assert.equal(url,file.url);return new Response(fsp);});
+  try{
+    const request={sourceId:source.id,asOf:300};await assert.rejects(service.registerProjection({...request,mode:'strict'}),/No archived/);
+    await assert.rejects(service.registerProjection({...request,fileName:'https://evil.test'}),/published companion/);assert.equal(requests,0);
+    const saved=await service.registerProjection(request);assert.equal(saved.validation.supported,true);assert.equal(saved.raw,fsp);assert.equal(saved.receipt.sha256,hash(fsp));assert.equal((await service.registerProjection(request)).reused,true);assert.equal(requests,1);
+    await assert.rejects(service.registerProjection({...request,asOf:saved.createdAt-1,mode:'strict'}),/No archived/);assert.equal((await service.registerProjection({...request,asOf:Date.now(),mode:'strict'})).id,saved.id);
+    const {id,...record}=service.projection(saved.id);assert.equal(hash(record),id);assert.throws(()=>store.db.exec('DELETE FROM rupture_projections'),/immutable/);assert.throws(()=>store.db.exec("UPDATE rupture_projections SET body='{}'"),/immutable/);
+    const wrong={...body,model:{...model,origin:{lat:0,lon:0}}},wrongSource={...wrong,id:hash(wrong)};store.db.prepare('INSERT INTO rupture_inputs VALUES(?,?,?,?)').run(wrongSource.id,'wrong',250,JSON.stringify(wrongSource));
+    const rejected=await service.registerProjection({...request,sourceId:wrongSource.id});assert.equal(rejected.validation.supported,false);assert.match(rejected.validation.reason,/50 m tolerance/);assert.equal(rejected.raw,fsp);
+  }finally{store.close();}
 });
 test('rupture source archives exact bytes once, enforces source identity/cutoffs and remains immutable',async t=>{
   const store=new Store(':memory:'),detail={properties:{products:{'finite-fault':[{id:'source',type:'finite-fault',status:'UPDATE',updateTime:200,contents:{'coulomb.inp':{url:'https://earthquake.usgs.gov/product/test/coulomb.inp',length:Buffer.byteLength(raw)}}}]}}};

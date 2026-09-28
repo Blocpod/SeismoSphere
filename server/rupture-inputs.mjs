@@ -4,6 +4,7 @@ import {hash} from './store.mjs';
 import {retrieveSource} from './instruments.mjs';
 import {finiteFaultProducts,finiteFaultAvailability} from '../public/finite-fault.js';
 import {parseCoulombInput} from './coulomb-input.mjs';
+import {checkCoordinates} from './stress-coordinates.mjs';
 
 export function stressIntegrity(record,source){
   const {id,...body}=record,{id:sourceId,...sourceBody}=source;
@@ -15,6 +16,10 @@ export class RuptureInputs{
     this.store=store;this.mechanisms=mechanisms;this.busy=false;
     store.db.exec(`CREATE TABLE IF NOT EXISTS rupture_inputs(id TEXT PRIMARY KEY,query_key TEXT NOT NULL,created_at INTEGER NOT NULL,body TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS rupture_stress(id TEXT PRIMARY KEY,query_key TEXT NOT NULL,created_at INTEGER NOT NULL,body TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS rupture_projections(id TEXT PRIMARY KEY,query_key TEXT NOT NULL,created_at INTEGER NOT NULL,body TEXT NOT NULL);
+      CREATE INDEX IF NOT EXISTS rupture_projection_queries ON rupture_projections(query_key,created_at);
+      CREATE TRIGGER IF NOT EXISTS frozen_projection_update BEFORE UPDATE ON rupture_projections BEGIN SELECT RAISE(ABORT,'Projection receipts are immutable'); END;
+      CREATE TRIGGER IF NOT EXISTS frozen_projection_delete BEFORE DELETE ON rupture_projections BEGIN SELECT RAISE(ABORT,'Projection receipts are immutable'); END;
       CREATE INDEX IF NOT EXISTS rupture_stress_queries ON rupture_stress(query_key);
       CREATE TRIGGER IF NOT EXISTS frozen_stress_update BEFORE UPDATE ON rupture_stress BEGIN SELECT RAISE(ABORT,'Stress results are immutable'); END;
       CREATE TRIGGER IF NOT EXISTS frozen_stress_delete BEFORE DELETE ON rupture_stress BEGIN SELECT RAISE(ABORT,'Stress results are immutable'); END;
@@ -24,6 +29,27 @@ export class RuptureInputs{
   }
   get(id){const row=this.store.db.prepare('SELECT body FROM rupture_inputs WHERE id=?').get(String(id));if(!row)throw new Error('Saved rupture input not found');return JSON.parse(row.body);}
   stress(id){const row=this.store.db.prepare('SELECT body FROM rupture_stress WHERE id=?').get(String(id));if(!row)throw new Error('Saved stress result not found');return JSON.parse(row.body);}
+  projection(id){const row=this.store.db.prepare('SELECT body FROM rupture_projections WHERE id=?').get(String(id));if(!row)throw new Error('Saved projection receipt not found');return JSON.parse(row.body);}
+  async registerProjection(input){
+    const source=this.get(input.sourceId),{id,...body}=source,asOf=Number(input.asOf),mode=input.mode??'catalog-replay';
+    if(!Number.isFinite(asOf)||asOf>Date.now()+1000)throw new Error('Choose an elapsed projection cutoff');
+    if(hash(body)!==id||hash(source.raw)!==source.receipt.sha256)throw new Error('Rupture source integrity failed');
+    const reason=finiteFaultAvailability(source,source.product,{asOf,mode});if(reason)throw new Error(reason);
+    const files=source.product.files.filter(f=>f.kind==='Slip model (FSP)'&&(!input.fileName||f.name===input.fileName));
+    if(files.length!==1)throw new Error('Choose one published companion FSP file from this source product');
+    const file=files[0],key=hash({sourceId:id,fileName:file.name,method:'spherical-center-check-1'});
+    const saved=this.store.db.prepare('SELECT id FROM rupture_projections WHERE query_key=? AND created_at<=? ORDER BY created_at DESC LIMIT 1').get(key,mode==='strict'?asOf:Number.MAX_SAFE_INTEGER);
+    if(saved)return {...this.projection(saved.id),reused:true};
+    if(mode==='strict')throw new Error('No archived projection receipt existed at this strict cutoff');
+    if(this.busy)throw new Error('A rupture operation is already running');this.busy=true;
+    try{
+      const companion=await retrieveSource(file.url,'USGS finite-fault companion');
+      if(file.bytes!==null&&companion.receipt.bytes!==file.bytes)throw new Error('Published companion file length does not match inventory');
+      let validation;try{validation={supported:true,...checkCoordinates(source.model,companion.raw)};}catch(error){if(error.code!=='ERR_ASSERTION')throw error;validation={supported:false,reason:error.message};}
+      const record={schema:'seismosphere.rupture-projection.v1',method:'spherical-center-check-1',sourceId:id,sourceHash:source.receipt.sha256,file,...companion,validation,createdAt:companion.receipt.fetchedAt},recordId=hash(record);
+      this.store.db.prepare('INSERT INTO rupture_projections VALUES(?,?,?,?)').run(recordId,key,record.createdAt,JSON.stringify({...record,id:recordId}));return {...record,id:recordId};
+    }finally{this.busy=false;}
+  }
   history(input){
     const source=this.get(input.sourceId),asOf=Number(input.asOf),mode=input.mode??'catalog-replay';
     if(!Number.isFinite(asOf)||asOf>Date.now()+1000)throw new Error('Choose an elapsed stress cutoff');
