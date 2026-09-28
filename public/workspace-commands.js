@@ -1,6 +1,7 @@
 // Explicit local view controls never ask a language model to invent targets or parameters.
 export function workspaceCommand(text){
  const s=String(text).trim().replace(/^please\s+/i,'').replace(/[.!]$/,'');let m;
+ if(/^(?:show|open|inspect) (?:the )?(?:lithosphere|asthenosphere|lithospheric mantle)(?: layers?| controls?)?$/i.test(s))return {type:'action',action:'lithosphere'};
  if((m=s.match(/^(?:use|show|switch to|enable) (?:the )?(scientific|cinematic)(?: view| rendering| mode)?$/i)))return {type:'action',action:m[1].toLowerCase()};
  if((m=s.match(/^(?:use|show|switch to|enable) (?:the )?(hemisphere|wedge)(?: cutaway| view)?$/i)))return {type:'action',action:m[1].toLowerCase()};
  if(/^show (?:all )?(?:earthquakes|events) deeper than 300 km (?:during|in) the last 72 hours$/i.test(s))return {type:'action',action:'deep'};

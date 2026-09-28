@@ -30,6 +30,7 @@
           "gnss",
           "relief",
           "slabSurfaces",
+          "lithosphere",
           "volcanoActivity",
           "weeklyVolcanoes",
           "hemisphere",
