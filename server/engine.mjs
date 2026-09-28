@@ -1,8 +1,9 @@
+import {swarmRouteChanges} from './swarm-assessment.mjs';
 import {analogueEvents} from './catalog.mjs';
 import {routeWalks,oriented} from './routes.mjs';
 import {insideBounds,validateBounds,longitudeWidth,distance,midpoint,pathMidpoint,equivalentMagnitude,moment,DAY,clamp,seeded,destination} from './geo.mjs';
 import {hash} from './store.mjs';
-export const VERSION='ds-research-0.4.1';
+export const VERSION='ds-research-0.5.0';
 export function validateConfig(c){
   if(c.catalogProvider!==undefined&&!['USGS','EMSC'].includes(c.catalogProvider))throw new Error('Choose one research catalog: USGS or EMSC');
   const limits={triggerDepth:[0,700],minMagnitude:[0,9],lookbackDays:[1,90],windowDays:[7,10],radiusKm:[50,1000],magnitudeTolerance:[0.1,2],deepEscalation:[0,2],maxTargets:[1,40]};
@@ -46,7 +47,7 @@ export function generate(all,asOf,config,routeConfig,boundaryPoints=[],targetBou
   const significant=recent.filter(e=>e.mag>=config.minMagnitude).sort((a,b)=>b.mag-a.mag||a.id.localeCompare(b.id)).slice(0,180);
   const deep=significant.filter(e=>e.depth>config.triggerDepth);
   const candidates=[];const priorCache=new Map();const clusters=swarms(recent,{start:asOf-config.lookbackDays*DAY,end:asOf});
-  function add(center,sources,kind,path=[],route=null,routeIds=[]){
+  function add(center,sources,kind,path=[],route=null,routeIds=[],swarmContext=null){
     const local=recent.filter(e=>distance(e,center)<=config.radiusKm);
     const maxLocal=local.length?Math.max(...local.map(e=>e.mag)):null;
     const flank=Math.max(...sources.map(e=>e.mag));
@@ -61,7 +62,7 @@ export function generate(all,asOf,config,routeConfig,boundaryPoints=[],targetBou
     if(kind.includes('midpoint'))factor(kind==='path-midpoint'?'Route-distance fulcrum':'Geodesic fulcrum',18,kind==='path-midpoint'?'Halfway along the cumulative great-circle segment lengths between the two source anchor waypoints on the configured route; not proof of transfer':'Great-circle midpoint of two recent significant events; geometric relationship is not proof of transfer',sources.map(e=>e.id));
     if(route)factor('Configured corridor',12,`${route.name}; ${route.provenance?.status??'illustrative'} geometry, physical transfer unvalidated`,[route.id]);
     if(route?.kind==='craton-edge')factor('Configured craton-edge progression',6,'Follows this explicitly entered craton-edge hypothesis; the geological reference layer does not create routes',[route.id]);
-    if(kind==='swarm-redistribution')factor('Swarm redistribution',6,`${sources.length} clustered catalog sources feed the configured path; no measured energy conservation or transfer`,sources.map(e=>e.id));
+    if(kind==='swarm-redistribution')factor('Swarm redistribution',6,`${sources.length} clustered catalog sources feed paths anchored at the later-half centroid (full centroid when unavailable); ${swarmContext?.added.length??0} new immediate endpoints and ${swarmContext?.removed.length??0} no-longer-reachable immediate endpoints versus the earlier centroid; no measured energy conservation or transfer`,sources.map(e=>e.id));
     if(kind==='equidistant-progression')factor('Along-route spacing',6,'Configured waypoint lies within 15% of the observed source spacing along the entered path',sources.map(e=>e.id));
     if(kind==='reflection')factor('Configured termination',6,'The directed walk reached an explicit termination and reverses along that same path',[route?.id]);
     if(config.rules.silence)factor('Local release contrast',maxLocal===null||maxLocal<flank-1?12:-10,maxLocal===null?'No catalog events inside this radius during the lookback; coverage is not uniform':`Largest local event M${maxLocal.toFixed(1)} versus source M${flank.toFixed(1)}`,local.slice(0,10).map(e=>e.id));
@@ -79,7 +80,7 @@ export function generate(all,asOf,config,routeConfig,boundaryPoints=[],targetBou
     if(prior.length<20)objections.push(`Only ${prior.length} completed source analogues in the imported catalog; no reliable calibration.`);
     if(sources.some(e=>!['mw','mww','mwc','mwb','mwr'].includes(e.magType)))objections.push('Source magnitudes include non-Mw or unspecified scales; the moment conversion is approximate.');
     const match=clamp(factors.reduce((s,f)=>s+f.points,0),0,100);
-    candidates.push({key:hash({center,sources:sources.map(e=>e.id),kind,config,asOf,routeVersion:routeConfig.version,routeIds}).slice(0,16),engine:'DS',engineVersion:VERSION,kind,center,radiusKm:config.radiusKm,region:route?.name??`Fulcrum near ${center.lat.toFixed(1)}°, ${center.lon.toFixed(1)}°`,sources:sources.map(e=>e.id),sourceEvents:sources,path,routeId:route?.id??null,routeIds,routeProvenance:route?routeIds.map(id=>({id,...routeConfig.routes.find(r=>r.id===id)?.provenance})):[],modelMatch:match,magnitude:{central:+central.toFixed(2),min:+Math.max(0,central-config.magnitudeTolerance).toFixed(2),max:+Math.min(10,central+config.magnitudeTolerance).toFixed(2),mode:config.magnitudeMode,explanation:magnitudeExplanation,...(config.magnitudeMode==='analogue'?{analogueEvidence:{asOf,radiusKm:config.radiusKm,windowDays:config.windowDays,minimumOutcomeCount:5,conditioning:'Largest follow-up at least source magnitude minus 1, within radius of each historical source; windows without qualifying events are excluded from the median. Source magnitude/depth matching, not full sequence geometry matching.',samples:prior.map(a=>({sourceId:a.source.id,sourceTime:a.source.time,largest:a.largest,subsequentCount:a.subsequentCount}))}}:{})},validFrom:asOf,validUntil:asOf+config.windowDays*DAY,asOf,factors,objections,analogueCount:prior.length,boundaryKm,status:'DRAFT',label:'Experimental Dutchsinse-style model hypothesis'});
+    candidates.push({key:hash({engineVersion:VERSION,center,sources:sources.map(e=>e.id),kind,config,asOf,routeVersion:routeConfig.version,routeIds}).slice(0,16),engine:'DS',engineVersion:VERSION,kind,center,radiusKm:config.radiusKm,region:route?.name??`Fulcrum near ${center.lat.toFixed(1)}°, ${center.lon.toFixed(1)}°`,sources:sources.map(e=>e.id),sourceEvents:sources,path,routeId:route?.id??null,routeIds,routeProvenance:route?routeIds.map(id=>({id,...routeConfig.routes.find(r=>r.id===id)?.provenance})):[],modelMatch:match,magnitude:{central:+central.toFixed(2),min:+Math.max(0,central-config.magnitudeTolerance).toFixed(2),max:+Math.min(10,central+config.magnitudeTolerance).toFixed(2),mode:config.magnitudeMode,explanation:magnitudeExplanation,...(config.magnitudeMode==='analogue'?{analogueEvidence:{asOf,radiusKm:config.radiusKm,windowDays:config.windowDays,minimumOutcomeCount:5,conditioning:'Largest follow-up at least source magnitude minus 1, within radius of each historical source; windows without qualifying events are excluded from the median. Source magnitude/depth matching, not full sequence geometry matching.',samples:prior.map(a=>({sourceId:a.source.id,sourceTime:a.source.time,largest:a.largest,subsequentCount:a.subsequentCount}))}}:{})},validFrom:asOf,validUntil:asOf+config.windowDays*DAY,asOf,factors,objections,analogueCount:prior.length,boundaryKm,status:'DRAFT',...(swarmContext?{swarmContext}:{}),label:'Experimental Dutchsinse-style model hypothesis'});
   }
   if(config.rules.midpoint&&config.midpointMode!=='route')for(let i=0;i<significant.length;i++)for(let j=i+1;j<significant.length;j++){
     const a=significant[i],b=significant[j],d=distance(a,b);
@@ -97,7 +98,7 @@ export function generate(all,asOf,config,routeConfig,boundaryPoints=[],targetBou
         if(config.rules.spacing&&right.e.time>left.e.time){const spacing=path.slice(1).reduce((s,p,k)=>s+distance(path[k],p),0);let onward=0;for(let k=right.index+1;k<points.length;k++){onward+=distance(points[k-1],points[k]);if(Math.abs(onward-spacing)/spacing<=.15)add(points[k],[left.e,right.e],'equidistant-progression',points.slice(left.index,k+1),route,[route.id]);if(onward>spacing*1.15)break;}}
       }
     }
-    if(config.rules.swarm!==false)for(const swarm of clusters.slice(0,8)){const ids=new Set(swarm.eventIds),sources=recent.filter(e=>ids.has(e.id)).sort((a,b)=>b.mag-a.mag||a.id.localeCompare(b.id)).slice(0,30);if(sources[0]?.mag<config.minMagnitude)continue;for(const w of routeWalks(routeConfig,swarm.center,{reflection:false}))add(w.center,sources,'swarm-redistribution',w.path,w.route,w.routeIds);}
+    if(config.rules.swarm!==false)for(const swarm of clusters.slice(0,8)){const ids=new Set(swarm.eventIds),sources=recent.filter(e=>ids.has(e.id)).sort((a,b)=>b.mag-a.mag||a.id.localeCompare(b.id)).slice(0,30);if(sources[0]?.mag<config.minMagnitude)continue;const changes=swarmRouteChanges(swarm,routeConfig);for(const w of routeWalks(routeConfig,changes.anchor,{reflection:false}))add(w.center,sources,'swarm-redistribution',w.path,w.route,w.routeIds,changes);}
   }
   const ranked=candidates.filter(c=>insideBounds(c.center,targetBounds)).sort((a,b)=>b.modelMatch-a.modelMatch||a.key.localeCompare(b.key));const result=[];
   for(const c of ranked){if(result.every(r=>distance(r.center,c.center)>config.radiusKm*0.65))result.push(c);if(result.length>=config.maxTargets)break;}
@@ -110,7 +111,7 @@ export function baselines(analysis,all,seed=42){
   if(analysis.targetBounds&&!regional.length&&analysis.candidates.length)throw new Error('No regional recent-activity sources for matched controls');
   const choices=regional.length?regional:[{lat:0,lon:0}];
   return analysis.candidates.flatMap((c,i)=>{
-    const common={...c,label:'Experimental matched control hypothesis',comparisonOf:c.key,routeId:null,routeIds:[],routeProvenance:[],analogueCount:null,boundaryKm:null,factors:[],objections:['Baseline hypothesis, uncalibrated'],modelMatch:null,sourceEvents:[],sources:[],path:[]};
+    const common={...c,label:'Experimental matched control hypothesis',comparisonOf:c.key,swarmContext:null,routeId:null,routeIds:[],routeProvenance:[],analogueCount:null,boundaryKm:null,factors:[],objections:['Baseline hypothesis, uncalibrated'],modelMatch:null,sourceEvents:[],sources:[],path:[]};
     const base=choices[Math.floor(rng()*choices.length)];
     const bounds=analysis.targetBounds;
     const nullCenter=bounds?{lat:Math.asin(Math.sin(bounds.south*Math.PI/180)+rng()*(Math.sin(bounds.north*Math.PI/180)-Math.sin(bounds.south*Math.PI/180)))*180/Math.PI,lon:((bounds.west+rng()*longitudeWidth(bounds)+540)%360)-180}:{lat:Math.asin(2*rng()-1)*180/Math.PI,lon:360*rng()-180};

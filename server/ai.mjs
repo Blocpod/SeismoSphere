@@ -113,7 +113,7 @@ export async function chat(message,context,config){
     // Explain the frozen envelope, not unrelated archived configuration or later assessments.
     const selected=Object.fromEntries(['id','engine','engineVersion','kind','region','asOf','issuedAt','center','radiusKm','magnitude','validFrom','validUntil','modelMatch','sources','sourceEvents','factors','objections','comparisonOf'].map(k=>[k,f[k]]));
     for(const key of ['asOf','issuedAt','validFrom','validUntil'])if(Number.isFinite(selected[key]))selected[key]=new Date(selected[key]).toISOString();
-    if(!control)for(const key of ['routeId','routeIds','routeProvenance','path','analogueCount','boundaryKm'])selected[key]=f[key];
+    if(!control)for(const key of ['routeId','routeIds','routeProvenance','path','analogueCount','boundaryKm','swarmContext'])selected[key]=f[key];
     selected.status='ISSUED';selected.interpretation=control?'Matched control: magnitude, radius and time envelope are inherited from a DS candidate; the control changes the center. It is not a Dutchsinse forecast or a separately fitted magnitude estimate.':'Frozen experimental model forecast.';
     context={asOf:context.asOf,mode:context.mode,frozenForecastEvidence:context.frozenForecastEvidence,selected};
   }

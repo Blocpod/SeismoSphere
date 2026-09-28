@@ -16,5 +16,6 @@ test('midpoint definitions select geodesic or cumulative route geometry and pres
  assert.equal(generate(events,now,{...config,midpointMode:'route',rules:{...config.rules,routes:false}},routes).candidates.length,0);
  assert.throws(()=>validateConfig({...config,midpointMode:'arithmetic'}),/midpoint/);
  const {midpointMode,...legacyConfig}=config,old=previousGenerate(events,now,legacyConfig,routes),current=generate(events,now,legacyConfig,routes);
- assert.deepEqual(current.candidates.map(c=>({key:c.key,center:c.center,modelMatch:c.modelMatch})),old.candidates.map(c=>({key:c.key,center:c.center,modelMatch:c.modelMatch})));
+ assert.deepEqual(current.candidates.map(c=>({center:c.center,modelMatch:c.modelMatch})),old.candidates.map(c=>({center:c.center,modelMatch:c.modelMatch})));
+ assert.notDeepEqual(current.candidates.map(c=>c.key),old.candidates.map(c=>c.key),'Engine revisions must have separate candidate identities');
 });

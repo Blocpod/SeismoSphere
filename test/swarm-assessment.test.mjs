@@ -1,6 +1,9 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {assessSwarm} from '../server/swarm-assessment.mjs';
+import {assessSwarm,swarmRouteChanges} from '../server/swarm-assessment.mjs';
+import {generate,baselines} from '../server/engine.mjs';
+import {readFileSync} from 'node:fs';
+import {DAY} from '../server/geo.mjs';
 test('swarm assessment respects frozen identity, time, provider and individual magnitudes',()=>{
  const event=(id,changes={})=>({id,type:'earthquake',provider:'USGS',time:20,lat:0,lon:0,mag:4.5,...changes});
  const events=[event('small'),event('hit',{mag:5.2}),event('future',{time:101}),event('deleted',{status:'deleted'}),event('explosion',{type:'explosion'}),event('other',{provider:'EMSC'}),event('source-alias',{aliases:['source']}),event('early',{time:9})];
@@ -13,4 +16,18 @@ test('swarm assessment respects frozen identity, time, provider and individual m
  const small=assessSwarm(swarm,events.filter(e=>e.id!=='hit'),[watch],network,100);assert.deepEqual(small.targets[0].matchingEventIds,[]);assert.match(small.targets[0].assessment,/does not resolve/);
  assert.equal(JSON.stringify({watch,events,swarm,network}),input);
  assert.deepEqual(assessSwarm(swarm,events,[watch],{...network,routes:[]},100).movement,[]);
+});
+test('centroid progression changes generated targets and identifies only distinct shared-anchor branches',()=>{
+ const p=lon=>({lat:0,lon}),route=(id,lons)=>({id,name:id,points:lons.map(p),provenance:{status:'illustrative'}});
+ const network={version:'v1',captureKm:20,maxHops:1,routes:[route('main',[.1,1.1,4]),route('branch',[1.1,-4]),route('duplicate',[1.1,4])]};
+ const swarm={center:p(.7),migration:{from:p(.1),to:p(1.1)}};
+ const changes=swarmRouteChanges(swarm,network);
+ assert.deepEqual(changes.previous.map(e=>e.center.lon),[1.1]);assert.equal(changes.removed.length,1);assert.equal(changes.branches.length,1);assert.equal(changes.branches[0].endpoints.length,2);assert.deepEqual(changes.branches[0].endpoints.map(e=>e.center.lon),[4,-4]);
+ assert.equal(swarmRouteChanges({...swarm,migration:{from:p(1.1),to:p(1.1)}},network).added.length,0);
+ assert.equal(swarmRouteChanges({...swarm,migration:{}},network).removed.length,0);
+ const now=100*DAY,events=Array.from({length:6},(_,i)=>({id:'s'+i,...p(i<3?.1:1.1),depth:10,mag:5,magType:'mw',type:'earthquake',provider:'USGS',time:now-(i<3?8:2)*DAY}));
+ const config=JSON.parse(readFileSync(new URL('../config/default.json',import.meta.url)));config.rules={...config.rules,deep:false,midpoint:false,spacing:false};
+ const result=generate(events,now,config,network);assert.equal(result.candidates.length,2);assert.ok(result.candidates.every(c=>c.swarmContext.anchor.lon===1.1));assert.deepEqual(result.candidates.map(c=>c.center.lon).sort((a,b)=>a-b),[-4,4]);
+ assert.ok(baselines(result,events).every(c=>c.swarmContext===null));
+ assert.deepEqual(generate([...events,{...events[0],id:'future',time:now+DAY,lon:7}],now,config,network).candidates,result.candidates);
 });
