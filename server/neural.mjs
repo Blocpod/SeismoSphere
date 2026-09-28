@@ -1,15 +1,26 @@
 import {analogueEvents} from './catalog.mjs';
-import {distance,DAY} from './geo.mjs';
+import {distance,midpoint,DAY} from './geo.mjs';
 import {hash} from './store.mjs';
 const MODEL='nomic-embed-text:latest';
 export function fingerprint(source,events){
-  const neighbors=events.filter(e=>e.id!==source.id&&e.time<=source.time&&e.time>=source.time-10*DAY&&distance(source,e)<=3500).sort((a,b)=>b.mag-a.mag||a.id.localeCompare(b.id)).slice(0,7).sort((a,b)=>a.time-b.time);
+  const context=events.filter(e=>e.id!==source.id&&e.time<=source.time&&e.time>=source.time-10*DAY&&distance(source,e)<=3500);
+  const neighbors=[...context].sort((a,b)=>b.mag-a.mag||a.id.localeCompare(b.id)).slice(0,7).sort((a,b)=>a.time-b.time);
   const nodes=[...neighbors,source];
   const text=['Seismic sequence graph. Trigger magnitude '+source.mag.toFixed(1)+', depth '+Math.round(source.depth/25)*25+' km.'];
   nodes.forEach((e,i)=>text.push(`Node ${i}: magnitude offset ${(e.mag-source.mag).toFixed(1)}, depth ${Math.round(e.depth/25)*25} km, time ${((e.time-source.time)/DAY).toFixed(1)} days, source distance ${Math.round(distance(e,source)/100)*100} km.`));
   const edges=[];for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){const d=Math.round(distance(nodes[i],nodes[j])/100)*100;edges.push([i,j,d]);}
   text.push('Pair distances in km: '+edges.map(([a,b,d])=>`${a}-${b}:${d}`).join(', '));
-  return {version:'relative-sequence-graph-1',text:text.join('\n'),nodeIds:nodes.map(e=>e.id),nodeCount:nodes.length,edges};
+  const midpointStructure=[];
+  for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+    const span=distance(nodes[i],nodes[j]);if(span<500||span>3500)continue;
+    const center=midpoint(nodes[i],nodes[j]),support=[...context,source].filter(e=>e.id!==nodes[i].id&&e.id!==nodes[j].id&&distance(e,center)<=200);
+    midpointStructure.push({endpoints:[i,j],spanKm:span,center,supportIds:support.map(e=>e.id)});
+  }
+  const local=context.filter(e=>distance(source,e)<=400),early=local.filter(e=>e.time<source.time-5*DAY),late=local.filter(e=>e.time>=source.time-5*DAY),meanDepth=a=>a.length?a.reduce((n,e)=>n+e.depth,0)/a.length:null;
+  const activity={radiusKm:400,windowDays:10,earlyIds:early.map(e=>e.id),lateIds:late.map(e=>e.id),earlyPerDay:early.length/5,latePerDay:late.length/5,depthChangeKm:early.length&&late.length?meanDepth(late)-meanDepth(early):null};
+  text.push('Geodesic midpoint support within 200 km, endpoint pairs 500–3500 km apart: '+(midpointStructure.map(m=>`${m.endpoints.join('-')}:${m.supportIds.length} other prior events`).join(', ')||'no eligible pairs')+'. Absence of catalog support is not proven seismic silence.');
+  text.push(`Local activity within 400 km before trigger: earlier five days ${early.length} events, later five days ${late.length} events. Mean depth change ${activity.depthChangeKm===null?'unavailable':activity.depthChangeKm.toFixed(1)+' km (positive deeper)'}. Descriptive catalog counts, not a fitted swarm or completeness-corrected rate.`);
+  return {version:'relative-sequence-graph-2',text:text.join('\n'),nodeIds:nodes.map(e=>e.id),nodeCount:nodes.length,edges,midpointStructure,activity};
 }
 function cosine(a,b){let dot=0,aa=0,bb=0;for(let i=0;i<a.length;i++){dot+=a[i]*b[i];aa+=a[i]**2;bb+=b[i]**2;}return dot/Math.max(1e-12,Math.sqrt(aa*bb));}
 async function embed(texts){
@@ -27,7 +38,7 @@ export async function neuralAnalogues(source,events,asOf,store,{windowDays=10,ra
   const missing=graphs.filter(g=>!g.vector);
   for(let i=0;i<missing.length;i+=16){const batch=missing.slice(i,i+16);const vectors=await embed(batch.map(g=>'search_document: '+g.text));for(let n=0;n<batch.length;n++){batch[n].vector=vectors[n];store.set(batch[n].cacheKey,vectors[n]);}}
   const q=graphs[0];
-  const matches=graphs.slice(1).map(g=>({source:g.source,similarity:cosine(q.vector,g.vector),nodeIds:g.nodeIds,nodeCount:g.nodeCount,graph:g.text})).sort((a,b)=>b.similarity-a.similarity).slice(0,12);
+  const matches=graphs.slice(1).map(g=>({source:g.source,similarity:cosine(q.vector,g.vector),nodeIds:g.nodeIds,nodeCount:g.nodeCount,graph:g.text,midpointStructure:g.midpointStructure,activity:g.activity})).sort((a,b)=>b.similarity-a.similarity).slice(0,12);
   for(const match of matches){const outcomes=catalog.filter(e=>e.time>match.source.time&&e.time<=match.source.time+windowDays*DAY&&distance(e,match.source)<=radiusKm&&e.mag>=source.mag-1);match.followUps=outcomes.length;match.largest=outcomes.length?Math.max(...outcomes.map(e=>e.mag)):null;}
-  return {model:MODEL,modelDigest:digest,searched:pool.length,indexed:missing.length,queryGraph:q.text,matches,method:'Local neural embeddings of relative event-sequence graphs, ranked by cosine similarity. This pretrained text embedding model is not a trained seismic GNN and its similarity is not predictive probability. Outcomes are excluded from graph encoding.',cutoff:asOf};
+  return {model:MODEL,modelDigest:digest,searched:pool.length,indexed:missing.length,graphVersion:q.version,queryGraph:q.text,queryFeatures:{nodeIds:q.nodeIds,midpointStructure:q.midpointStructure,activity:q.activity},matches,method:'Local neural embeddings of relative event-sequence graphs, ranked by cosine similarity. This pretrained text embedding model is not a trained seismic GNN and its similarity is not predictive probability. Encodes preceding midpoint support and local five-day activity/depth changes. These summaries are not fitted swarm classifications; pathway topology and boundary type are not encoded. Outcomes are excluded from graph encoding.',cutoff:asOf};
 }
