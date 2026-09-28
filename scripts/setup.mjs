@@ -18,3 +18,5 @@ await import('./setup-relief.mjs');
 await import('./setup-faults.mjs');
 await import('./setup-volcanoes.mjs');
 for(const [file,url] of [['public/vendor/qrcode.mjs','https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js'],['public/vendor/LICENSE-qrcode.txt','https://raw.githubusercontent.com/kazuhikoarase/qrcode-generator/master/LICENSE']]){const r=await fetch(url);if(!r.ok)throw new Error(`QR dependency: HTTP ${r.status}`);const value=await r.text();await writeFile(file,value+(file.endsWith('.mjs')?'\nexport default qrcode;\n':''));}
+
+await import('./setup-crust.mjs');

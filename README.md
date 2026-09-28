@@ -54,7 +54,7 @@ The **SeismoSphere AI** desktop icon opens a dedicated Edge/Chrome app window, s
 
 If startup fails, the launcher displays the reason and saves it in `logs/startup-error.log`. Missing core globe assets trigger setup automatically, which requires an internet connection. Server failures also write details to `logs/server-error.log`. For terminal diagnostics, run `./Start-SeismoSphere.ps1 -NoBrowser`; failures return a nonzero exit code without opening a dialog.
 
-Run `node scripts/setup.mjs` to restore local Three.js and Earth/plate assets. The runtime has no npm dependencies. Run `npm test` for the scientific and persistence tests.
+Run `node scripts/setup.mjs` to restore local Three.js, Earth/plate assets and the source-verified CRUST1.0 columns. Crust preparation requires Python 3 (standard library only); the desktop launcher also restores missing crust assets automatically. Run `node scripts/setup-crust.mjs` to restore just these columns. The runtime has no npm dependencies. Run `npm test` for the scientific and persistence tests.
 
 ## Working capabilities
 

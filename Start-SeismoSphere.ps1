@@ -14,6 +14,11 @@ if ($requiredAssets | Where-Object { -not (Test-Path -LiteralPath (Join-Path $pr
   Push-Location -LiteralPath $projectRoot
   try { & $nodeExe 'scripts/setup.mjs'; if ($LASTEXITCODE -ne 0) { throw 'Asset setup failed. Check the internet connection and retry.' } } finally { Pop-Location }
 }
+$crustAssets = @('bnds','vp','vs','rho')
+if ($crustAssets | Where-Object { -not (Test-Path -LiteralPath (Join-Path $projectRoot "public\assets\crust1\$_.f32")) }) {
+  Push-Location -LiteralPath $projectRoot
+  try { & $nodeExe 'scripts/setup-crust.mjs'; if ($LASTEXITCODE -ne 0) { throw 'Crust setup failed. Install Python 3 and check the internet connection, then retry.' } } finally { Pop-Location }
+}
 $appPort = 4318
 try {
   $appStatus = Invoke-RestMethod -Uri "http://127.0.0.1:$appPort/api/system/health" -TimeoutSec 2
