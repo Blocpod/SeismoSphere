@@ -4,7 +4,10 @@ const date=t=>new Date(t).toISOString().slice(0,10);
 const names={graph:'Cell graph',noNeighbors:'No-neighbor ablation',trainingMean:'Training mean',recentRate:'Recent rate',ensemble:'Validation-weighted ensemble',tectonic:'PB2002 tectonic baseline'};
 export function countLeaderboard(scores,tectonic=null){
   const models={...scores.models};
+  const events=models.graph?.events;
+  if(!Number.isSafeInteger(events)||events<0||!models.trainingMean||!Number.isInteger(scores.windows)||scores.windows<1||!Number.isFinite(scores.firstCutoff)||!Number.isFinite(scores.lastEnd)||scores.firstCutoff>=scores.lastEnd||Object.values(models).some(s=>s.events!==events||!Number.isFinite(s.logLikelihood)))throw new Error('Models do not share valid event counts and a completed test interval');
   if(tectonic){const t=tectonic.test;if(t.windows!==scores.windows||t.events!==scores.models.graph.events||t.start!==scores.firstCutoff||t.end!==scores.lastEnd)throw new Error('Tectonic comparison does not share this test interval and event count');models.tectonic={...t,bitsPerEventVsTrainingMean:t.events?(t.logLikelihood-scores.models.trainingMean.logLikelihood)/(t.events*Math.LN2):null};}
+  if(Object.values(models).some(s=>!Number.isFinite(s.logLikelihood)))throw new Error('Model likelihoods must be finite');
   return Object.entries(models).map(([name,score])=>({name,...score})).sort((a,b)=>b.logLikelihood-a.logLikelihood||a.name.localeCompare(b.name));
 }
 const leaderboardRows=rows=>rows.map((s,i)=>`<tr role="row"><th scope="row" role="rowheader">${i+1}. ${escape(names[s.name]??s.name)}</th><td role="cell" data-label="Expected count">${s.expectedCount.toFixed(1)}</td><td role="cell" data-label="Log likelihood">${s.logLikelihood.toFixed(2)}</td><td role="cell" data-label="Bits/event vs mean">${s.bitsPerEventVsTrainingMean===null?'Unavailable':s.bitsPerEventVsTrainingMean.toFixed(3)}</td></tr>`).join('');

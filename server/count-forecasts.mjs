@@ -4,6 +4,9 @@ import {tectonicCell} from './tectonic-baseline.mjs';
 import {hash} from './store.mjs';
 const DAY=86400000;
 export function scoreCounts(models,observed){
+ if(!Array.isArray(observed)||observed.length!==72||Array.from(observed).some(y=>!Number.isSafeInteger(y)||y<0))throw new Error('Count outcomes must contain 72 nonnegative integer cell counts');
+ const entries=Object.entries(models??{});
+ if(!entries.length||entries.some(([,cells])=>!Array.isArray(cells)||cells.length!==72||Array.from(cells).some(mu=>!Number.isFinite(mu)||mu<=0)))throw new Error('Every compared model must contain 72 positive finite cell expectations');
  const logFactorial=[0];return Object.fromEntries(Object.entries(models).map(([name,cells])=>{let logLikelihood=0,absoluteError=0;for(let i=0;i<72;i++){const y=observed[i],mu=cells[i];while(logFactorial.length<=y)logFactorial.push(logFactorial.at(-1)+Math.log(logFactorial.length));logLikelihood+=y*Math.log(mu)-mu-logFactorial[y];absoluteError+=Math.abs(y-mu);}return [name,{logLikelihood,meanAbsoluteError:absoluteError/72,expectedCount:cells.reduce((a,b)=>a+b,0),events:observed.reduce((a,b)=>a+b,0)}];}));
 }
 export class CountForecasts{
