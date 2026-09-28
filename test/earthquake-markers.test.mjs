@@ -64,3 +64,17 @@ test('keyboard globe navigation respects bounds, cancels flight, and leaves othe
   earth.scientific=true;earth.setReducedMotion(false);assert.equal(earth.controls.enableDamping,false);
  }finally{delete globalThis.document;}
 });
+
+test('section selection follows the real curved projection and ignores hidden original markers',async()=>{
+ const {curvedSection}=await import('../public/curved-section.js');
+ const geologySource=readFileSync(new URL('../public/geology.js',import.meta.url),'utf8').replace("'three'",JSON.stringify(new URL('../public/vendor/three.module.js',import.meta.url).href)).replace("import {setupSectionTools} from './section-tools.js';",'').replace("'./section-geometry.js'",JSON.stringify(new URL('../public/section-geometry.js',import.meta.url).href)).replace("'./curved-section.js'",JSON.stringify(new URL('../public/curved-section.js',import.meta.url).href));
+ const {Geology}=await import('data:text/javascript;base64,'+Buffer.from(geologySource).toString('base64'));
+ const geology=Object.assign(Object.create(Geology.prototype),{curvedPath:curvedSection([{lat:0,lon:170},{lat:0,lon:-170},{lat:20,lon:-170}],100)});
+ const event={id:'projected',lat:.5,lon:179,depth:300,mag:4.5,time:0};const projected=geology.projectEvent(event);assert.ok(Math.abs(projected.point.length()-(1-300/6371.0088))<1e-12);assert.ok(Math.abs(projected.point.y)<1e-10);assert.ok(Math.abs(projected.surface.length()-1)<1e-12);
+ assert.equal(geology.projectEvent({...event,lat:40}),null);
+ const earth=Object.assign(Object.create(Earth.prototype),{geology,eventGroup:new THREE.Group(),selectionGroup:new THREE.Group(),glow:new THREE.Texture(),syncPresentation(){}});
+ const hidden=new THREE.Points();hidden.userData.events=[event];hidden.visible=false;earth.eventGroup.add(hidden);geology.curvedPoints=new THREE.Points();geology.curvedPoints.userData.events=[event];
+ assert.deepEqual(earth.pickableEventObjects(),[geology.curvedPoints]);earth.selectEvent(event);assert.equal(earth.selectionGroup.children.length,2);assert.ok(earth.selectionGroup.children[0].position.distanceTo(projected.point)<1e-12);
+ const annotationSource=readFileSync(new URL('../public/focus-annotation.js',import.meta.url),'utf8').replace("'three'",JSON.stringify(new URL('../public/vendor/three.module.js',import.meta.url).href));const {FocusAnnotation}=await import('data:text/javascript;base64,'+Buffer.from(annotationSource).toString('base64'));earth.asOf=1000;const annotation=Object.assign(Object.create(FocusAnnotation.prototype),{earth,getState:()=>({selectedEvent:event})}).sample();assert.equal(annotation.anchor,'PROJECTED CURVED PROFILE');assert.ok(annotation.point.distanceTo(projected.point)<1e-12);
+ earth.selectEvent({...event,lat:40});assert.equal(earth.selectionGroup.children.length,0);geology.curvedPoints=null;assert.deepEqual(earth.pickableEventObjects(),[]);
+});

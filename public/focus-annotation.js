@@ -9,13 +9,13 @@ export class FocusAnnotation{
  }
  sample(){
   const e=this.earth,state=this.getState(),id=state.selectedEvent?.id;if(!id||state.future)return null;
-  const source=e.geology?.section?e.geology.sectionEvents:e.eventGroup.children.find(p=>p.userData.events)?.userData.events;
+  const source=e.geology?.curvedPath?e.geology.curvedPoints?.userData.events:e.geology?.section?e.geology.sectionEvents:e.eventGroup.children.find(p=>p.userData.events)?.userData.events;
   if(this.source!==source||this.id!==id){this.source=source;this.id=id;this.event=source?.find(v=>v.id===id)??null;}
   const event=this.event;if(!event||event.time>e.asOf)return null;
   const radius=e.geology?.section?1-event.depth/R:e.xray?Math.max(.04,1-event.depth/R*e.depthScale):1.009;
   let point=new Vector3(Math.cos(event.lat*rad)*Math.cos(event.lon*rad),Math.sin(event.lat*rad),-Math.cos(event.lat*rad)*Math.sin(event.lon*rad)).multiplyScalar(radius);
-  if(e.geology?.section)point=e.geology.projected(point);else if(!e.xray)e.relief?.liftVector(point);
-  const anchor=e.geology?.section?'PROJECTED SECTION':e.xray?'HYPOCENTER':'SURFACE PROJECTION',measure=`M${event.mag.toFixed(1)} ${event.magType??''} · ${event.depth.toFixed(1)} km depth`,scale=e.geology?.section?1:e.depthScale;
+  if(e.geology?.curvedPath){const projection=e.geology.projectEvent(event);if(!projection)return null;point=projection.point;}else if(e.geology?.section)point=e.geology.projected(point);else if(!e.xray)e.relief?.liftVector(point);
+  const anchor=e.geology?.curvedPath?'PROJECTED CURVED PROFILE':e.geology?.section?'PROJECTED SECTION':e.xray?'HYPOCENTER':'SURFACE PROJECTION',measure=`M${event.mag.toFixed(1)} ${event.magType??''} · ${event.depth.toFixed(1)} km depth`,scale=e.geology?.section||e.geology?.curvedPath?1:e.depthScale;
   return {event,point,anchor,measure,scale};
  }
  project(camera=this.earth.camera,width=this.earth.container.clientWidth,height=this.earth.container.clientHeight){

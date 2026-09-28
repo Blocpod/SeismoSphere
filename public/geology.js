@@ -1,3 +1,4 @@
+import {curvedCoordinates} from './curved-section.js';
 import * as THREE from 'three';
 import {makeSection,sectionCoordinates,sectionVector,clipSectionSegment,cutawayNormals} from './section-geometry.js';
 import {setupSectionTools} from './section-tools.js';
@@ -85,6 +86,11 @@ export class Geology {
     document.querySelector('.field-caption').hidden=this.section||!earth.field.visible;
     document.querySelector('#xray-toggle').classList.toggle('active',earth.xray);document.querySelector('#xray-toggle').setAttribute('aria-pressed',String(earth.xray));
     earth.setEvents(earth.events,earth.asOf);this.drawSlabs();this.updateCaption();earth.faults?.updateClipping();earth.instruments?.updateClipping();earth.volcanoes?.updateClipping();earth.volcanoActivity?.updateClipping();earth.weeklyVolcanoes?.updateClipping();earth.cratons?.updateClipping();earth.geodesy?.updateClipping();earth.mechanisms?.update();this.drawSectionTrack?.();earth.syncPresentation();earth.relief?.sync();
+  }
+  projectEvent(event){
+    if(this.curvedPath){const c=curvedCoordinates(event,this.curvedPath);if(!c.inside)return null;const segment=this.curvedPath.segments[c.segmentIndex],along=c.alongKm+this.curvedPath.lengthKm/2-segment.offsetKm-segment.frame.lengthKm/2;return {point:new THREE.Vector3().fromArray(sectionVector(along,event.depth,segment.frame)),surface:new THREE.Vector3().fromArray(sectionVector(along,0,segment.frame))};}
+    if(!this.contains(event))return null;
+    return {point:this.projected(xyz(event.lat,event.lon,1-event.depth/R)),surface:this.projected(xyz(event.lat,event.lon,1))};
   }
   projected(point){const angle=Math.atan2(point.dot(new THREE.Vector3().fromArray(this.frame.tangent)),point.dot(new THREE.Vector3().fromArray(this.frame.radial)));return new THREE.Vector3().fromArray(sectionVector(angle*R,(1-point.length())*R,this.frame));}
   contains(event){return sectionCoordinates(event,this.frame).inside;}

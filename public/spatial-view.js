@@ -86,7 +86,7 @@ export function setupSpatialView(earth,getState=()=>null,api=null,canWrite=()=>t
   if(sessionMode==='immersive-ar'&&!placed){if(reticle.visible){anchor.setFromMatrixPosition(reticle.matrix).add(new THREE.Vector3(0,radius+.025,0));placed=true;reticle.visible=false;}return;}
   raycaster.ray.applyMatrix4(placeMatrix().clone().invert());earth.scene.updateMatrixWorld(true);
   const surface=earth.xray||earth.geology?.section?Infinity:raycaster.intersectObject(earth.surface,false)[0]?.distance??Infinity;
-  const hit=raycaster.intersectObjects(earth.eventGroup.children.filter(c=>c.visible),false).filter(h=>h.object.userData.events&&h.index!==undefined&&h.distance<=surface+.025).filter(h=>{const m=h.object.material,p=m.clippingPlanes??[];return !p.length||!(m.clipIntersection?p.every(plane=>plane.distanceToPoint(h.point)<0):p.some(plane=>plane.distanceToPoint(h.point)<0));}).sort((a,b)=>a.distanceToRay-b.distanceToRay)[0];
+  const hit=raycaster.intersectObjects(earth.pickableEventObjects(),false).filter(h=>h.object.userData.events&&h.index!==undefined&&h.distance<=surface+.025).filter(h=>{const m=h.object.material,p=m.clippingPlanes??[];return !p.length||!(m.clipIntersection?p.every(plane=>plane.distanceToPoint(h.point)<0):p.some(plane=>plane.distanceToPoint(h.point)<0));}).sort((a,b)=>a.distanceToRay-b.distanceToRay)[0];
   if(hit){selected=hit.object.userData.events[hit.index];earth.sonification?.selected(selected);lastCard='';}
  }
  async function check(){
