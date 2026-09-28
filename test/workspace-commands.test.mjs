@@ -34,3 +34,15 @@ test('AI-proposed navigation is discarded for an explanatory question',async t=>
  const result=await chat('Explain the Fiji surface event',{candidates:[],asOf:0},{aiProvider:'ollama',localModel:'test'});
  assert.deepEqual(result.actions,[]);assert.deepEqual(result.proposedActions,['pacific','surface','explain']);assert.equal(result.discardedActions,3);assert.equal(result.answer,'This is an explanation.');
 });
+
+
+test('copilot preserves provider event type and certainty in ordinary and spatial explanations',async t=>{
+ const {chat}=await import('../server/ai.mjs');const selectedEvent={id:'fixture:blast',place:'Test site',type:'mining explosion',typeCertainty:'suspected',mag:2,depth:0,time:0};
+ for(const extra of [{},{spatialQuestion:{kind:'observation'}}]){
+  const result=await chat('Explain this event',{asOf:0,candidates:[],selectedEvent,...extra},{aiProvider:'deterministic'});
+  assert.match(result.answer,/mining explosion \(suspected\)/);assert.equal(selectedEvent.typeCertainty,'suspected');
+ }
+ let sent;t.mock.method(globalThis,'fetch',async(_url,options)=>{sent=JSON.parse(options.body);return {ok:true,json:async()=>({message:{content:JSON.stringify({answer:'Provider reports a suspected mining explosion.',actions:[]})}})};});
+ await chat('Explain this earthquake',{asOf:0,candidates:[],selectedEvent},{aiProvider:'ollama',localModel:'test'});
+ assert.match(sent.messages[0].content,/never silently call an explosion/);assert.match(sent.messages[1].content,/"typeCertainty":"suspected"/);assert.match(sent.messages[1].content,/1970-01-01T00:00:00.000Z/);assert.equal(selectedEvent.timeIso,undefined);
+});
