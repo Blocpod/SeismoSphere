@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {stressPosition,stressColor} from '../public/stress-geometry.js';
+import {stressPosition,stressColor,stressLegend} from '../public/stress-geometry.js';
 import {destination,R} from '../server/geo.mjs';
 import {unit} from '../public/fault-geometry.js';
 test('stress samples map at depth across dateline/poles and share signed MPa colors',()=>{
@@ -10,4 +10,9 @@ test('stress samples map at depth across dateline/poles and share signed MPa col
   }
   assert.deepEqual(stressColor(0,1),[221/255,221/255,221/255]);assert.deepEqual(stressColor(-2e6,1),[43/255,130/255,205/255]);assert.deepEqual(stressColor(2e6,1),[235/255,133/255,68/255]);
   assert.throws(()=>stressPosition({lat:91,lon:0},{xKm:0,yKm:0,depthKm:10}));assert.throws(()=>stressColor(NaN,1));
+});
+test('export stress legends preserve comparison sign, MPa scale, depth and receiver',()=>{
+  const e={result:{options:{receiver:{strike:19,dip:19,rake:90}},report:{points:[{depthKm:10}]}},baseline:{id:'b'},limitMPa:.5,depthScale:3};
+  assert.deepEqual(stressLegend(e),['STATIC STRESS · CURRENT − BASELINE · blue −0.5 / orange +0.5 MPa','10 km samples · receiver 19/19/90° · 3× depth · NOT A FORECAST']);
+  assert.match(stressLegend({...e,baseline:null})[0],/COULOMB CHANGE/);
 });

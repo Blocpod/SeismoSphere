@@ -9,3 +9,8 @@ export function stressColor(value,limit){
   if(!Number.isFinite(value)||!Number.isFinite(limit)||limit<=0)throw new Error('Invalid stress color value');
   const t=Math.max(-1,Math.min(1,value/(limit*1e6))),rgb=t<0?[43,130,205]:[235,133,68];return rgb.map(c=>Math.round(221+(c-221)*Math.abs(t))/255);
 }
+export function stressLegend(evidence){
+  const r=evidence.result.options.receiver,depth=evidence.result.report.points[0].depthKm;
+  return [`STATIC STRESS · ${evidence.baseline?'CURRENT − BASELINE':'COULOMB CHANGE'} · blue −${evidence.limitMPa} / orange +${evidence.limitMPa} MPa`,
+    `${depth} km samples · receiver ${r.strike}/${r.dip}/${r.rake}° · ${evidence.depthScale}× depth · NOT A FORECAST`];
+}

@@ -78,7 +78,7 @@ export class Earth {
       renderer.setPixelRatio(ratio);renderer.setSize(size.x,size.y,false);renderer.render(this.scene,this.camera);
     }
   }
-  focus(p,zoom=2.6,fromFlight=false){if(!fromFlight){this.onExternalFocus?.();this.spatialLayer?.clear();}this.controls.autoRotate=false;const orbit=document.querySelector('#orbit-toggle');orbit?.classList.remove('active');orbit?.setAttribute('aria-pressed','false');this.targetCamera=position(p,this.mobile?Math.max(this.baseDistance*.85,zoom):zoom);if(this.reduced||this.scientific){this.camera.position.copy(this.targetCamera);this.targetCamera=null;}}
+  focus(p,zoom=2.6,fromFlight=false,{regional=false}={}){if(!fromFlight){this.onExternalFocus?.();this.spatialLayer?.clear();}this.controls.autoRotate=false;const orbit=document.querySelector('#orbit-toggle');orbit?.classList.remove('active');orbit?.setAttribute('aria-pressed','false');this.targetCamera=position(p,this.mobile&&!regional?Math.max(this.baseDistance*.85,zoom):zoom);if(this.reduced||this.scientific){this.camera.position.copy(this.targetCamera);this.targetCamera=null;}}
   showTravelPath(points){
     if(!this.travelGroup){this.travelGroup=new THREE.Group();this.scene.add(this.travelGroup);}
     this.clear(this.travelGroup);this.travelPoints=points;
