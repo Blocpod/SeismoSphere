@@ -73,6 +73,8 @@ The stored 2011 experiment yielded DS 28/94 hits, recent-rate 55/94, and uniform
 
 ## Next implementation priorities
 
+Paired uncertainty checkpoint: saved learned-model test weeks now support circular block-bootstrap comparisons at fixed 1/4/13-week lengths, preserving cells and models within each week. Exports include hashes, seed, 2,000 replicate counts and percentile intervals. Independent Python reproduces actual ensemble-versus-graph endpoints; all 139 tests pass. Independent completeness validation, model-selection uncertainty, calibrated probabilities and prospective evaluation remain open.
+
 - Preserve the verified core and close remaining UI state consistency issues.
 - Keep combined-provider data out of model input until explicit cross-provider reconciliation exists.
 - Evaluate temporal and spatial ETAS across better-conditioned regions, threshold/completeness sensitivity and untouched data.

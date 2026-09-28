@@ -1,3 +1,4 @@
+import {learnedUncertainty} from './learned-uncertainty.mjs';
 import {detectionContext} from './detection-context.mjs';
 import {DetectionReviews} from './detection.mjs';
 import {stressContext} from './stress-context.mjs';
@@ -175,6 +176,7 @@ const handler=async(req,res)=>{
     if(p==='/api/events'){const asOf=numberParam(q,'asOf',Date.now());const mode=q.get('mode')??'catalog-replay';const events=researchEvents({asOf,start:numberParam(q,'start',asOf-30*DAY),strict:mode==='strict'});return send(res,200,{events,asOf,mode,feed,catalogProvider:config.catalogProvider});}
     if(p==='/api/analysis')return send(res,200,analysisAt(numberParam(q,'asOf',Date.now()),q.get('mode')??'catalog-replay'));
     if(p==='/api/providers')return send(res,200,await providers());
+    if(p==='/api/learned-uncertainty'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-learned-uncertainty.json"');return send(res,200,learnedUncertainty(learned.get(q.get('id'))));}
     if(p==='/api/learned-runs')return send(res,200,learned.list());
     if(p==='/api/catalog-diagnostics')return send(res,200,{fitting:fittingETAS,runs:store.db.prepare('SELECT body FROM catalog_diagnostics ORDER BY created_at DESC LIMIT 20').all().map(r=>JSON.parse(r.body))});
     if(p==='/api/station-stream'&&req.method==='GET')return send(res,200,seedlink.status(q.get('preview')==='1'));
