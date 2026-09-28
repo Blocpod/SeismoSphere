@@ -1,10 +1,12 @@
+import {fileURLToPath} from 'node:url';
+import path from 'node:path';
 import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {hash} from '../server/store.mjs';
 import {tectonicCell} from '../server/tectonic-baseline.mjs';
 import {scoreCounts} from '../server/count-forecasts.mjs';
-const file=process.argv[2];if(!file)throw new Error('Usage: node scripts/reproduce-count-forecast.mjs exported-record.json');
-const {id,assessment,...f}=JSON.parse(readFileSync(file,'utf8'));
+export function verifyCountForecast(record){
+const {id,assessment,...f}=record;
 assert.equal(hash(f),id);assert.equal(hash(f.inputSnapshot),f.inputSnapshotId);
 if(f.version==='prospective-count-2')assert.equal(hash(f.scoringSource),f.scoringHash);
 if(assessment){const {id:assessmentId,...a}=assessment;assert.equal(hash(a),assessmentId);assert.equal(a.forecastId,id);
@@ -14,4 +16,6 @@ if(assessment){const {id:assessmentId,...a}=assessment;assert.equal(hash(a),asse
   assert.deepEqual(observed,a.observed);assert.deepEqual(scoreCounts(f.models,observed),a.scores);
  }
 }
-console.log('PASS: frozen forecast and input hashes'+(assessment?.status==='SCORED'?', outcome counts and six model scores reproduce.':'; no scored assessment is present.'));
+return {scored:assessment?.status==='SCORED'};
+}
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){const file=process.argv[2];if(!file)throw new Error('Usage: node scripts/reproduce-count-forecast.mjs exported-record.json');const result=verifyCountForecast(JSON.parse(readFileSync(file,'utf8')));console.log('PASS: frozen forecast and input hashes'+(result.scored?', outcome counts and six model scores reproduce.':'; no scored assessment is present.'));}
