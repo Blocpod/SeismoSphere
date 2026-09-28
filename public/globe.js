@@ -96,6 +96,16 @@ export class Earth {
     this.forecastGroup.add(this.ring(f.center,f.radiusKm,0xffefbd,1.045,1));
     this.drawForecastPath(this.pathGroup,f.path??[],0xffefbd,1);
   }
+  showResolvedForecast(f,review){
+    this.setXray(false);this.clear(this.selectionGroup);
+    const color=review.result.status==='HIT'?0x72ddd0:review.result.status==='PARTIAL HIT'?0xffb85f:review.result.status==='MISS'?0xff8f9a:0xb6c4d0;
+    this.selectionGroup.add(this.ring(f.center,f.radiusKm,color,1.045,1));
+    this.drawForecastPath(this.selectionGroup,f.path??[],color,.8);
+    const event=review.result.event;
+    if(event){const points=this.eventPoints([event],position(event,1.02).toArray(),true);this.selectionGroup.add(points,this.ring(event,70,color,1.04,1));}
+    this.selectionGroup.userData.reviewEvent={reviewId:review.id,forecastId:f.id,createdAt:review.createdAt,observationCutoff:review.observationCutoff,status:review.result.status,event:event??null,policy:'Frozen target and retained assessment event revision; background catalog and drafts are revised-catalog context, not the saved outcome snapshot.'};
+    this.focus(f.center,this.mobile?this.baseDistance:2.6);this.syncPresentation();
+  }
   captureFigure(width=2000,height=1300){
     this.advanceDeepFocus();this.geology?.advanceSlabFade();this.stressLayer?.sync();this.relief?.sync();this.slabSurfaces?.sync();this.volcanoActivity?.sync();this.weeklyVolcanoes?.sync();
     const textures=this.scientific?[this.surfaceMaterial.map]:[this.surfaceMaterial.map,this.surfaceMaterial.normalMap,this.surfaceMaterial.specularMap,this.night,...(this.clouds.visible?[this.clouds.material.uniforms.cloudMap.value]:[])];

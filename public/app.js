@@ -1,3 +1,4 @@
+import {outcomeMetricsHtml} from './outcome-metrics.js';
 import {setupAnalogueReplay,replaySearchStillCurrent} from './analogue-replay.js';
 import {setupModelComparison} from './model-comparison.js';
 import {forecastSources,forecastRoutes} from './forecast-sources.js';
@@ -245,7 +246,13 @@ function labelDialogs(){for(const [index,dialog] of [...document.querySelectorAl
 }}
 labelDialogs();
 try{deviceRole=(await setupPhoneAccess(api)).session.role;}catch(e){console.warn('Phone setup:',e.message);}
-resolutionHistory=setupResolutionHistory({api,getState:()=>state,toast,reloadLedger:loadLedger,canWrite:()=>deviceRole!=='viewer'});
+resolutionHistory=setupResolutionHistory({api,getState:()=>state,toast,reloadLedger:loadLedger,canWrite:()=>deviceRole!=='viewer',showOnEarth:async(f,review)=>{
+ state.playing=false;$('#play').textContent='▶';$('#play').setAttribute('aria-label','Play timeline');state.search='';state.filter='all';$('#event-search').value='';filterUI();
+ await showModelEarth(Math.min(review.observationCutoff,f.validUntil),'catalog-replay',()=>{
+  earth.showResolvedForecast(f,review);
+  showSelection(`<span class="eyebrow">${esc(review.result.status)} · RETAINED ASSESSMENT</span><h2>${esc(f.region)}</h2><p>Frozen ${esc(f.engine)} watch ${esc(f.id)}<br>${f.radiusKm} km radius · M${f.magnitude.min}–${f.magnitude.max}<br>${esc(new Date(f.validFrom).toISOString())} through ${esc(new Date(f.validUntil).toISOString())}</p><p>${esc(review.result.reason??'The assigned event meets this saved assessment’s criteria.')}</p>${review.result.event?'<p>Retained event: '+esc(review.result.event.id)+' · M'+review.result.event.mag+'</p>':''}${outcomeMetricsHtml(f,review.result)}<p class="muted">Review ${esc(review.id)} · received ${esc(new Date(review.createdAt).toISOString())}. The colored outline is the frozen target; the event marker uses the retained review revision. Background catalog and draft watches are revised-catalog context at the frozen window end, not the saved outcome snapshot.</p>`);
+ });$('#ledger-dialog').close();
+}});
 labelDialogs();
 await load();refreshCatalogOnOpen();loadLedger().catch(()=>{});setInterval(()=>{if(state.live)load();},60000);
 
