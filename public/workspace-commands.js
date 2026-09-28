@@ -1,6 +1,7 @@
 // Explicit local view controls never ask a language model to invent targets or parameters.
 export function workspaceCommand(text){
  const s=String(text).trim().replace(/^please\s+/i,'').replace(/[.!]$/,'');let m;
+ if(/^replay this configuration through every historical analogue$/i.test(s))return {type:'analogueReplay'};
  if(/^compare (?:the )?(?:yuri|dutchsinse|ds)(?: model)? (?:against|with|to) (?:the )?etas(?: model)?$/i.test(s))return {type:'action',action:'modelComparison'};
  if(/^show (?:all|unfiltered) (?:earthquakes|events)$/i.test(s))return {type:'action',action:'all'};
  if(/^take me inside (?:the )?lithosphere$/i.test(s))return {type:'action',action:'lithosphere'};
