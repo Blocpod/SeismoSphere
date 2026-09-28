@@ -1,4 +1,8 @@
 const R=6371.0088,rad=Math.PI/180;
+export function slabUncertaintyDepths(cells,sign){
+ if(cells.length%5||![-1,1].includes(sign))throw new Error('Invalid slab uncertainty grid.');
+ return Float32Array.from({length:cells.length/5},(_,i)=>{const depth=cells[i*5],uncertainty=cells[i*5+1],bound=depth+sign*uncertainty;return Number.isFinite(depth)&&Number.isFinite(uncertainty)&&uncertainty>=0&&Math.abs(bound)<=R?bound:NaN;});
+}
 export function slabPosition(lon,lat,depth,scale=1){
  if(![lon,lat,depth,scale].every(Number.isFinite)||Math.abs(lat)>90||Math.abs(depth)>6371.0088||scale<=0)throw new Error('Invalid slab coordinates or depth scale.');
  const radius=Math.max(.04,1-depth*scale/R);return [radius*Math.cos(lat*rad)*Math.cos(lon*rad),radius*Math.sin(lat*rad),-radius*Math.cos(lat*rad)*Math.sin(lon*rad)];
