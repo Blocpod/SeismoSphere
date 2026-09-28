@@ -1,4 +1,8 @@
 import {stressLegend} from './stress-geometry.js';
+export function slabSurfaceLegend(slab){
+ if(!slab)return [];
+ return [`SLAB2 · ${slab.region} · STATIC MODEL · DEPTH ${slab.depthScale}×${slab.depthScale>1?' EXAGGERATED':''}`,...(slab.uncertaintyEnvelope?['ENVELOPE: DEPTH ±1 PDF STANDARD DEVIATION · NOT A CONFIDENCE INTERVAL']:[])];
+}
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const iso=time=>new Date(time).toISOString();
 const credits=[
@@ -54,7 +58,7 @@ export function setupFigure({earth,getState,toast}){
       const labeledSvg=payload.learnedModel?finalSvg.replace('</svg>',text(80,1445,(payload.learnedModel.projection.model==='tectonic'?'PB2002 TECTONIC':payload.learnedModel.projection.model==='ensemble'?'WEIGHTED ENSEMBLE':'LEARNED CELL GRAPH')+' · M ≥ 5 · 7-DAY EXPECTED CATALOG COUNTS · BROAD CELLS · UNCALIBRATED',20,'#b3d4ff')+'</svg>'):payload.spatialETAS?finalSvg.replace('</svg>',text(80,1445,`SPATIAL ETAS · M ≥ ${payload.spatialETAS.options.minMagnitude} · ${payload.spatialETAS.horizonDays}-DAY DIRECT COMPONENT · LOG COLORS · EXCLUDES FUTURE CASCADES`,20,'#b3d4ff')+'</svg>'):finalSvg;
       const annotatedSvg=capture.focusAnnotation?labeledSvg.replace('</svg>',`<circle cx="${capture.focusAnnotation.x+200}" cy="${capture.focusAnnotation.y+210}" r="11" fill="none" stroke="#e1fff5" stroke-width="2"/>`+text(80,350,capture.focusAnnotation.anchor+' · '+capture.focusAnnotation.measure,18,'#e1fff5')+text(80,377,capture.focusAnnotation.place.slice(0,100),17,'#d0e8e1')+'</svg>'):labeledSvg;
       const reliefSvg=payload.reliefSurface?annotatedSvg.replace('</svg>',text(80,1378,`ETOPO 2022 · ${payload.reliefSurface.display.scale}× RELIEF${payload.reliefSurface.display.scale>1?' · EXAGGERATED':''} · 9-ARC-MINUTE GRID · STATIC REFERENCE · doi:10.25921/fd45-gt74`,18,'#b3d4ff')+'</svg>'):annotatedSvg;
-      const slabSvg=payload.slabSurfaces?reliefSvg.replace('</svg>',text(80,1346,'SLAB2 SURFACE · '+payload.slabSurfaces.region+' · '+payload.slabSurfaces.depthScale+'× DEPTH · STATIC MODEL · doi:10.5066/F7PV6JNV',18,'#b3d4ff')+'</svg>'):reliefSvg;
+      const slabSvg=payload.slabSurfaces?reliefSvg.replace('</svg>',text(80,1346,'SLAB2 SURFACE · '+payload.slabSurfaces.region+' · '+payload.slabSurfaces.depthScale+'× DEPTH · STATIC MODEL · doi:10.5066/F7PV6JNV',18,'#b3d4ff')+slabSurfaceLegend(payload.slabSurfaces).slice(1).map(line=>text(80,1250,line,18,'#b3d4ff')).join('')+'</svg>'):reliefSvg;
       const activitySvg=payload.volcanoActivity?slabSvg.replace('</svg>',text(80,1314,'USGS VOLCANO STATUS · CHECKED '+iso(payload.volcanoActivity.checkedAt)+(payload.volcanoActivity.stale?' · STALE CHECK':'')+' · AVIATION COLORS; GROUND ALERTS SEPARATE',18,'#b3d4ff')+'</svg>'):slabSvg;
       const weeklySvg=payload.weeklyVolcanoes?activitySvg.replace('</svg>',text(80,1282,'Global Volcanism Program, Smithsonian Institution · PUBLISHED '+(payload.weeklyVolcanoes.publishedAt??'UNKNOWN')+(payload.weeklyVolcanoes.publicationOld?' · OLDER PUBLICATION':''),18,'#b3d4ff')+'</svg>'):activitySvg;
       const image=await png(weeklySvg);current={svg:weeklySvg,png:image,json:JSON.stringify({sha256:hash,hashMethod:'SHA-256 of UTF-8 JSON.stringify(evidence), preserving property order',evidence:payload},null,2),name:`seismosphere-${hash.slice(0,12)}`};

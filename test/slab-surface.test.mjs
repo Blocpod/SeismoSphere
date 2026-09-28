@@ -2,6 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {slabPosition,slabTriangles,slabUncertaintyDepths} from '../public/slab-surface-geometry.js';
 import {chat} from '../server/ai.mjs';
+import {slabSurfaceLegend} from '../public/figure.js';
+
+test('shared export legend distinguishes source uncertainty from confidence coverage',()=>{
+ assert.deepEqual(slabSurfaceLegend(null),[]);
+ const slab={region:'ker',depthScale:3,uncertaintyEnvelope:{confidenceInterval:false}},before=structuredClone(slab);
+ const lines=slabSurfaceLegend(slab);assert.match(lines[0],/ker.*3× EXAGGERATED/);assert.match(lines[1],/±1 PDF STANDARD DEVIATION.*NOT A CONFIDENCE INTERVAL/);assert.deepEqual(slab,before);
+ assert.equal(slabSurfaceLegend({...slab,uncertaintyEnvelope:null}).length,1);
+});
 
 test('uncertainty envelope preserves source signs and gaps without assuming confidence coverage',()=>{
  const cells=new Float32Array([10,20,0,0,0,600,5,0,0,0,NaN,1,0,0,0,40,-1,0,0,0]),original=cells.slice();
