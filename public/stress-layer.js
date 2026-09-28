@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {stressPosition,stressColor} from './stress-geometry.js';
+import {stressPosition,stressColor,ruptureCorners} from './stress-geometry.js';
 import {finiteFaultAvailability} from './finite-fault.js';
 export class StressLayer{
   constructor(earth,explorer){
@@ -12,18 +12,22 @@ export class StressLayer{
   sync(){
     const e=this.explorer,c=e.cutoff(),source=e.source,record=e.record,projection=e.projection,limit=Number(e.node.querySelector('[data-limit]').value);
     const ready=source&&record&&projection?.sourceId===source.id&&projection.validation.supported&&projection.validation.earthRadiusKm===6371.0088&&!finiteFaultAvailability(source,source.product,c)&&Number.isFinite(limit)&&limit>0&&(c.mode!=='strict'||Math.max(record.createdAt,projection.createdAt,e.baseline?.createdAt??0)<=c.asOf);
-    e.node.querySelector('[data-globe]').disabled=!ready;e.node.querySelector('[data-locate]').disabled=!ready;e.node.querySelector('[data-geographic]').disabled=!ready;const valid=ready&&e.node.querySelector('[data-globe]').checked;
+    e.node.querySelector('[data-globe]').disabled=!ready;e.node.querySelector('[data-locate]').disabled=!ready;e.node.querySelector('[data-geographic]').disabled=!ready;e.node.querySelector('[data-rupture]').disabled=!ready;const valid=ready&&e.node.querySelector('[data-globe]').checked;
     this.group.visible=!!valid;if(this.caption.hidden===!!valid)this.caption.hidden=!valid;if(this.note.hidden===!!valid)this.note.hidden=!valid;if(!valid){if(this.key){this.earth.clear(this.group);this.key=null;}return;}
-    const report=e.difference??e.plotReport,key=[record.id,projection.id,e.baseline?.id,limit,this.earth.depthScale].join(':');
+    const report=e.difference??e.plotReport,key=[record.id,projection.id,e.baseline?.id,limit,this.earth.depthScale,e.node.querySelector('[data-rupture]').checked].join(':');
     if(key!==this.key){
       this.earth.clear(this.group);this.key=key;const positions=[],colors=[],indices=[];
       report.points.forEach((p,i)=>{const value=report.values[i];if(!value)return;indices.push(i);positions.push(...stressPosition(source.model.origin,p,this.earth.depthScale));colors.push(...new THREE.Color(...stressColor(value.coulombPa,limit)).convertSRGBToLinear().toArray());});
       const geometry=new THREE.BufferGeometry();geometry.userData.sampleIndices=indices;geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
       this.group.add(new THREE.Points(geometry,new THREE.PointsMaterial({vertexColors:true,size:5,sizeAttenuation:false,toneMapped:false,depthTest:true,depthWrite:false})));
+      if(e.node.querySelector('[data-rupture]').checked){
+        const vertices=[];for(const patch of source.model.patches){const corners=ruptureCorners(patch).map(p=>stressPosition(source.model.origin,p,this.earth.depthScale));for(const [a,b]of [[0,1],[1,2],[2,3],[3,0]])vertices.push(...corners[a],...corners[b]);}
+        const lines=new THREE.BufferGeometry();lines.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));this.group.add(new THREE.LineSegments(lines,new THREE.LineBasicMaterial({color:0xf2ce8e,transparent:true,opacity:.75,depthTest:true,depthWrite:false})));
+      }
     }
-    this.group.children[0].material.clippingPlanes=this.earth.geology?.section?this.earth.geology.planes:[];this.group.children[0].material.clipIntersection=true;
+    for(const object of this.group.children){object.material.clippingPlanes=this.earth.geology?.section?this.earth.geology.planes:[];object.material.clipIntersection=true;}
     const provenance=`STATIC STRESS · ${record.report.solver} ${record.report.solverVersion} · source ${source.event.place} · projection receipt ${projection.id.slice(0,12)} · ${e.difference?'difference between saved calculations':'saved calculation'} · not a forecast`;if(this.note.textContent!==provenance)this.note.textContent=provenance;
-    const caption=`${e.difference?'Current − baseline':'Coulomb change'} · blue −${limit} / orange +${limit} MPa · ${report.points.length-report.excludedCount} unmasked samples · ${e.grid.depth} km depth · ${this.earth.depthScale}× depth scale${this.earth.depthScale>1?' (exaggerated)':''}. Fixed-size sample symbols, no interpolation. Use X-ray to see below the surface; click or tap a sample to inspect its values.`;if(this.caption.querySelector('p').textContent!==caption)this.caption.querySelector('p').textContent=caption;
+    const caption=`${e.difference?'Current − baseline':'Coulomb change'} · blue −${limit} / orange +${limit} MPa · ${report.points.length-report.excludedCount} unmasked samples · ${e.grid.depth} km depth · ${this.earth.depthScale}× depth scale${this.earth.depthScale>1?' (exaggerated)':''}. Fixed-size sample symbols, no interpolation. Use X-ray to see below the surface; click or tap a sample to inspect its values.${e.node.querySelector('[data-rupture]').checked?' Amber outlines show published source rupture patches, not stress colors.':''}`;if(this.caption.querySelector('p').textContent!==caption)this.caption.querySelector('p').textContent=caption;
   }
   pick(event){
     this.sync();if(!this.group.visible||!this.earth.xray)return false;
@@ -39,5 +43,5 @@ export class StressLayer{
     const e=this.explorer,sample=e.node.querySelector('[data-sample]');sample.value=String(best);e.draw();e.node.closest('dialog').showModal();sample.focus();sample.scrollIntoView({block:'center'});return true;
   }
   show(){this.sync();if(!this.group.visible)return;this.earth.setXray(true);this.earth.focus(this.explorer.source.model.origin,1.35,false,{regional:true});this.explorer.node.closest('dialog').close();}
-  evidence(){this.sync();if(!this.group.visible)return null;const e=this.explorer;return {sourceId:e.source.id,sourceHash:e.source.receipt.sha256,result:e.record,baseline:e.baseline??null,projection:e.projection,limitMPa:Number(e.node.querySelector('[data-limit]').value),depthScale:this.earth.depthScale,policy:'Static calculation, not an observed stress field or timed forecast. Spherical source mapping checked against companion patch centers. Actual sample depth with displayed scaling and 0.04-radius core clamp. Fixed five-pixel symbols, masked samples omitted, no interpolation. Colors use current minus baseline when a baseline is selected.'};}
+  evidence(){this.sync();if(!this.group.visible)return null;const e=this.explorer;return {rupturePatches:e.node.querySelector('[data-rupture]').checked,sourceId:e.source.id,sourceHash:e.source.receipt.sha256,result:e.record,baseline:e.baseline??null,projection:e.projection,limitMPa:Number(e.node.querySelector('[data-limit]').value),depthScale:this.earth.depthScale,policy:'Static calculation, not an observed stress field or timed forecast. Spherical source mapping checked against companion patch centers. Actual sample depth with displayed scaling and 0.04-radius core clamp. Fixed five-pixel symbols, masked samples omitted, no interpolation. Colors use current minus baseline when a baseline is selected.'};}
 }

@@ -12,5 +12,11 @@ export function stressColor(value,limit){
 export function stressLegend(evidence){
   const r=evidence.result.options.receiver,depth=evidence.result.report.points[0].depthKm;
   return [`STATIC STRESS · ${evidence.baseline?'CURRENT − BASELINE':'COULOMB CHANGE'} · blue −${evidence.limitMPa} / orange +${evidence.limitMPa} MPa`,
-    `${depth} km samples · receiver ${r.strike}/${r.dip}/${r.rake}° · ${evidence.depthScale}× depth · NOT A FORECAST`];
+    `${depth} km samples · receiver ${r.strike}/${r.dip}/${r.rake}° · ${evidence.depthScale}× depth · NOT A FORECAST${evidence.rupturePatches?' · amber outlines: source patches':''}`];
+}
+export function ruptureCorners(p){
+  const {xStartKm:x,yStartKm:y,xEndKm:xx,yEndKm:yy,topKm:top,bottomKm:bottom,dipDeg:dip}=p,length=Math.hypot(xx-x,yy-y);
+  if(![x,y,xx,yy,top,bottom,dip].every(Number.isFinite)||!length||top<0||bottom<=top||dip<=0||dip>90)throw new Error('Invalid rupture patch geometry');
+  const horizontal=(bottom-top)/Math.tan(dip*Math.PI/180),dx=horizontal*(yy-y)/length,dy=-horizontal*(xx-x)/length;
+  return [{xKm:x,yKm:y,depthKm:top},{xKm:xx,yKm:yy,depthKm:top},{xKm:xx+dx,yKm:yy+dy,depthKm:bottom},{xKm:x+dx,yKm:y+dy,depthKm:bottom}];
 }
