@@ -17,7 +17,7 @@ import {ResolutionReviews,resolutionReviewEvidence} from './resolution-reviews.m
 import {WeeklyVolcanoes,weeklyVolcanoEvidence} from './weekly-volcanoes.mjs';
 import {VolcanoStatus,volcanoStatusEvidence} from './volcano-status.mjs';
 import {slabSurfaces,slabSource,slabSample} from './slab-surfaces.mjs';
-import {crustSample} from './crust.mjs';
+import {crustSample,crustProfile} from './crust.mjs';
 import http from 'node:http';
 import {readFileSync,existsSync,createReadStream,mkdirSync,writeFileSync} from 'node:fs';
 import path from 'node:path';
@@ -199,6 +199,7 @@ const handler=async(req,res)=>{
       res.setHeader('Content-Disposition','attachment; filename="seismosphere-volcano.json"');return send(res,200,{volcano,provenance:data.provenance,datasetSha256:sha256});
     }
     if(p==='/api/slab-surfaces')return send(res,200,await slabSurfaces());
+    if(p==='/api/crust-profile'){const options={};for(const key of ['lat','lon','bearing','lengthKm','halfWidthKm']){if(!q.get(key)?.trim())throw new Error('Provide all section coordinates and dimensions.');options[key]=Number(q.get(key));}return send(res,200,await crustProfile(options));}
     if(p==='/api/crust-sample'){if(!q.get('lat')?.trim()||!q.get('lon')?.trim())throw new Error('Provide latitude and longitude.');return send(res,200,await crustSample(Number(q.get('lat')),Number(q.get('lon'))));}
     if(p==='/api/slab-sample'){if(!q.has('lat')||!q.has('lon')||!q.get('lat').trim()||!q.get('lon').trim())throw new Error('Provide latitude and longitude.');return send(res,200,await slabSample(q.get('id'),{lat:Number(q.get('lat')),lon:Number(q.get('lon'))},Date.now()));}
     if(p==='/api/slab-source'){const source=await slabSource(q.get('id'),q.get('field'));res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Content-Disposition':`attachment; filename="${source.name}"`});return res.end(source.bytes);}

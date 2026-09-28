@@ -1,5 +1,6 @@
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
+import {makeSection,sectionVector} from '../public/section-geometry.js';
 
 export function crustCell(lat,lon){
  if(!Number.isFinite(lat)||Math.abs(lat)>90||!Number.isFinite(lon)||Math.abs(lon)>180)throw new Error('Invalid crust sample coordinates.');
@@ -27,4 +28,13 @@ async function load(){
 export async function crustSample(lat,lon){
  const cell=crustCell(lat,lon),{metadata,grids}=await load(),values=Object.fromEntries(Object.entries(grids).map(([field,bytes])=>[field,Array.from({length:9},(_,i)=>bytes.readFloatLE((cell.index*9+i)*4))]));
  return {query:{lat,lon},cell,layers:crustColumn(metadata.layers,values),sourceValues:values,provenance:metadata,policy:'Static one-degree cell-average reference. Signed depth is positive below sea level; negative depths lie above it. Zero-thickness layers are absent. Mantle properties have no specified bottom. No interpolation, local resolution or earthquake association is inferred.'};
+}
+export function crustProfilePoints(options){
+ const frame=makeSection(options),steps=Math.ceil(frame.lengthKm/50);
+ return {frame,points:Array.from({length:steps+1},(_,i)=>{const alongKm=(i/steps-.5)*frame.lengthKm,v=sectionVector(alongKm,0,frame);return {alongKm,lat:Math.asin(Math.max(-1,Math.min(1,v[1])))*180/Math.PI,lon:Math.atan2(-v[2],v[0])*180/Math.PI};})};
+}
+export async function crustProfile(options){
+ const {frame,points}=crustProfilePoints(options),samples=[];let provenance;
+ for(const point of points){const column=await crustSample(point.lat,point.lon);provenance=column.provenance;samples.push({...point,cell:column.cell,layers:column.layers,sourceValues:column.sourceValues});}
+ return {frame,samples,provenance,policy:'Static one-degree cell-average reference sampled along a great-circle profile at intervals no larger than 50 km. Repeated cells are retained; sampling does not increase source resolution. No interpolation between source columns or earthquake association is inferred.'};
 }

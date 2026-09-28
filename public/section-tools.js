@@ -1,4 +1,5 @@
 import {curvedSection,curvedCoordinates,curvedTrack,curvedSlabSamples} from './curved-section.js';
+import {showCrustProfile} from './crust-profile.js';
 import * as THREE from 'three';
 import {makeSection,sectionFromEndpoints,sectionVector,sectionCoordinates,surfaceVector,cutawayNormals} from './section-geometry.js';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -14,6 +15,8 @@ export function setupSectionTools(geology){
     <details class="evidence"><summary>Curved waypoint profile</summary><p class="muted">Follow consecutive great-circle arcs. Enter one latitude, longitude pair per line. Each segment must be 50–18,000 km. The nearest bounded arc assigns each observation once; ties use the first segment. Rounded end caps are included. This observation profile is not a fault surface or pressure-transfer route.</p><form id="curved-section-form"><label>Profile waypoints<textarea name="waypoints" rows="5" required placeholder="35, 140&#10;25, 145&#10;10, 150"></textarea></label><button class="secondary" type="submit">Build curved depth profile</button></form></details>
     <p id="section-status" role="status"></p><div id="section-profile"></div>`;
   document.body.appendChild(dialog);const form=dialog.querySelector('#section-form'),endpointForm=dialog.querySelector('#section-endpoint-form'),status=dialog.querySelector('#section-status'),profile=dialog.querySelector('#section-profile');
+  const crustButton=document.createElement('button');crustButton.className='secondary';crustButton.textContent='Show CRUST1.0 columns on this section';form.after(crustButton);
+  crustButton.onclick=async()=>{crustButton.disabled=true;status.textContent='Loading published crust profile…';try{const shown=await showCrustProfile(geology);status.textContent=shown?'CRUST1.0 columns shown at true depth. One-degree averages sampled every ≤50 km; block widths reflect sampling, not exact cell-boundary crossings. Profile overlays the schematic cap; deeper layers remain schematic.':'Section changed while loading. Apply the crust profile again.';}catch(error){status.textContent=error.message;}finally{crustButton.disabled=false;}};
   const track=new THREE.Group(),picks=new THREE.Group();earth.scene.add(track,picks);
   const pickbar=document.createElement('div');pickbar.className='section-pickbar panel';pickbar.hidden=true;pickbar.innerHTML='<span role="status"></span><button class="secondary">Cancel picking</button>';document.querySelector('#workspace').appendChild(pickbar);
   let picking=null,exported=null,curvedPath=null,curvedPrevious=null,slabCache=null;
