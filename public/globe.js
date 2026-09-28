@@ -164,6 +164,7 @@ export class Earth {
     this.syncPresentation();
   }
   syncPresentation(){
+    this.lithosphere?.sync();
     const transparent=this.surfaceMaterial.opacity<1;if(this.surfaceMaterial.transparent!==transparent){this.surfaceMaterial.transparent=transparent;this.surfaceMaterial.needsUpdate=true;}
     const cinematic=!this.scientific,section=!!this.geology?.section;
     this.clouds.visible=cinematic&&!this.xray&&!section;this.atmosphere.visible=cinematic&&!section;this.halo.visible=cinematic&&!section;this.stars.visible=cinematic;

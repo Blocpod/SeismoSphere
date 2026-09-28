@@ -19,6 +19,11 @@ if ($crustAssets | Where-Object { -not (Test-Path -LiteralPath (Join-Path $proje
   Push-Location -LiteralPath $projectRoot
   try { & $nodeExe 'scripts/setup-crust.mjs'; if ($LASTEXITCODE -ne 0) { throw 'Crust setup failed. Install Python 3 and check the internet connection, then retry.' } } finally { Pop-Location }
 }
+$lithoAssets = @('nodes.f32','faces.u32','metadata.json')
+if ($lithoAssets | Where-Object { -not (Test-Path -LiteralPath (Join-Path $projectRoot "public\assets\litho1\$_")) }) {
+  Push-Location -LiteralPath $projectRoot
+  try { & $nodeExe 'scripts/setup-lithosphere.mjs'; if ($LASTEXITCODE -ne 0) { throw 'Lithosphere setup failed. Python, NumPy and SciPy are required; scripts/setup-model.ps1 prepares this runtime.' } } finally { Pop-Location }
+}
 $appPort = 4318
 try {
   $appStatus = Invoke-RestMethod -Uri "http://127.0.0.1:$appPort/api/system/health" -TimeoutSec 2
