@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
 const source=readFileSync(new URL('../public/lithosphere.js',import.meta.url),'utf8').replace("'three'",JSON.stringify(new URL('../public/vendor/three.module.js',import.meta.url).href));
-const {lithospherePositions,lithosphereSection}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {lithospherePositions,lithosphereSection,nearestLithosphereNode}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 test('lithosphere mesh preserves original boundary depths and scales only radial depth',()=>{
  const data=new Float32Array(39);data[0]=30;data[2]=-120;for(let i=0;i<4;i++)data[3+i*9]=[17000,72000,72000,172000][i];
  for(const scale of [1,5,10,25])for(let boundary=0;boundary<4;boundary++){
@@ -19,4 +19,12 @@ test('filled sections lie on the section plane and stop at corridor endpoints',a
  // A source edge exactly on the section plane must retain its filled band.
  const edge=new Float32Array([1,-.05,0,1,.05,0,1,0,.2]);assert.equal(lithosphereSection(edge,edge.map(v=>v*.9),faces,frame).length,18);
  assert.equal(lithosphereSection(new Float32Array([1,0,.1,1,.1,.1,1,-.1,.1]),new Float32Array([.9,0,.09,.9,.09,.09,.9,-.09,.09]),faces,frame).length,0);
+});
+
+test('nearest source-node inspection crosses the dateline and retains unscaled properties',()=>{
+ const data=new Float32Array(78);data[0]=0;data[1]=.1;data[2]=179.9;data[39]=0;data[41]=-170;
+ data[3]=17000;data[12]=72000;data[21]=72000;data[30]=172000;
+ const sample=nearestLithosphereNode(data,0,-179.9);assert.equal(sample.nodeId,1);assert.ok(sample.distanceKm>22&&sample.distanceKm<23);assert.deepEqual(sample.boundaries.map(b=>b[0]),[17000,72000,72000,172000]);
+ sample.boundaries[0][0]=0;assert.equal(data[3],17000);
+ assert.throws(()=>nearestLithosphereNode(data,91,0));assert.throws(()=>nearestLithosphereNode(data,0,NaN));assert.throws(()=>nearestLithosphereNode(new Float32Array(),0,0));
 });
