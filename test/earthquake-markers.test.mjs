@@ -45,3 +45,22 @@ test('saved review selection is frozen in export evidence and cleared with geome
   assert.equal(evidence().savedReviewEvent,null);assert.equal(earth.selectionGroup.userData.reviewEvent,undefined);
   assert.equal(frozen.savedReviewEvent.reportHash,'retained-result-hash');
 });
+
+
+test('keyboard globe navigation respects bounds, cancels flight, and leaves other shortcuts alone',()=>{
+ globalThis.document={querySelector:()=>null};
+ try{
+  let stopped=0,prevented=0;const earth=Object.assign(Object.create(Earth.prototype),{camera:new THREE.PerspectiveCamera(),baseDistance:4,controls:{enabled:true,minDistance:1.2,maxDistance:6,update(){}},onExternalFocus(){stopped++;}});
+  earth.camera.position.set(4,0,0);
+  const key=(key,options={})=>earth.navigateKeyboard({key,preventDefault(){prevented++;},...options});
+  key('ArrowRight');assert.ok(Math.abs(Math.atan2(-earth.camera.position.z,earth.camera.position.x)*180/Math.PI-5)<1e-9);
+  key('ArrowUp',{shiftKey:true});assert.ok(Math.abs(Math.asin(earth.camera.position.y/4)*180/Math.PI-15)<1e-9);
+  for(let i=0;i<30;i++)key('+');assert.ok(Math.abs(earth.camera.position.length()-1.2)<1e-9);
+  for(let i=0;i<30;i++)key('-');assert.ok(Math.abs(earth.camera.position.length()-6)<1e-9);
+  key('Home');assert.ok(Math.abs(earth.camera.position.length()-4)<1e-9);
+  const before=earth.camera.position.clone(),count=prevented;key('Tab');key('+',{ctrlKey:true});earth.spatialView={active:true};key('ArrowLeft');assert.equal(prevented,count);assert.deepEqual(earth.camera.position,before);assert.equal(stopped,prevented);
+  earth.targetCamera=new THREE.Vector3();earth.cameraMove={};earth.controls.autoRotate=true;earth.setReducedMotion(true);assert.equal(earth.controls.enableDamping,false);assert.equal(earth.controls.autoRotate,false);assert.equal(earth.targetCamera,null);assert.equal(earth.cameraMove,null);
+  earth.setReducedMotion(false);assert.equal(earth.controls.enableDamping,true);assert.equal(earth.controls.autoRotate,false);
+  earth.scientific=true;earth.setReducedMotion(false);assert.equal(earth.controls.enableDamping,false);
+ }finally{delete globalThis.document;}
+});

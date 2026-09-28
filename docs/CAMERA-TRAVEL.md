@@ -22,3 +22,9 @@ The label uses the current rendered event list, including the 15,000-point limit
 Activating the annotation opens the existing event inspector. It does not issue a watch or ask an AI. The UI has no extra annotation animation; it tracks the existing camera and respects its reduced-motion setting. Publication figures include an anchor ring, source caption and exact projected coordinates in evidence. Native camera videos draw the selected anchor and a compact caption; submitted-frame evidence records its source identity, world point and screen coordinates.
 
 `scripts/focus-annotation-check.mjs` exercises eight fresh Chrome/WebKit layouts, keyboard reopening, back-hemisphere hiding, 5× depth geometry, true-depth sections, figure evidence, historical clearing and a Chrome video with per-frame annotation evidence. Physical-device and full visual acceptance remain open. The X-ray button state is now updated in the shared renderer method, fixing a stale active button after returning to the mobile Earth tab.
+
+## Keyboard and motion preferences
+
+Tab to the Earth canvas to rotate with arrow keys (5°, or 15° with Shift), zoom with plus/minus, and reset with Home. A visible focus border and accessible instructions identify the control. Tab leaves the canvas normally; browser modifier shortcuts are preserved. Navigation cancels an active camera flight without changing observation or model layers. Zoom respects the same minimum/maximum distances as pointer controls.
+
+Changes to the system reduced-motion preference take effect immediately: camera flights and automatic orbit stop, camera damping is disabled, and source-marker pulses follow the updated preference. Restoring motion does not automatically restart an orbit. Scientific rendering continues to suppress motion independently.
