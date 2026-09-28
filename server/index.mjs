@@ -1,4 +1,4 @@
-import {calibrationOptions,CALIBRATION_VERSION} from './calibration.mjs';
+import {calibrationOptions,calibrationVariant,CALIBRATION_VERSION} from './calibration.mjs';
 import {RouteHistory,validateRoutes} from './routes.mjs';
 import {PhaseAnalysis} from './phase.mjs';
 import {closeResponseWorkers} from './response.mjs';
@@ -223,8 +223,11 @@ const handler=async(req,res)=>{
       const b=await body(req);
       if(p==='/api/routes-preview')return send(res,200,{network:validateRoutes(b.network)});
       if(p==='/api/routes-save'){routes=routeHistory.save(b);cache=null;broadcast({type:'routes'});return send(res,200,{network:routes,versions:routeHistory.list()});}
-      if(p==='/api/protocol-preview')return send(res,200,prospective.preview(b,config,routes,boundaries));
-      if(p==='/api/protocol-register'){const result=prospective.register(b,config,routes,boundaries);broadcast({type:'protocol'});return send(res,200,result);}
+      if(p==='/api/protocol-preview'||p==='/api/protocol-register'){
+        const variant=b.calibrationId?calibrationVariant(store,b.calibrationId):{config,routes,boundaries,calibration:null};
+        const result=prospective[p==='/api/protocol-preview'?'preview':'register'](b,variant.config,variant.routes,variant.boundaries,variant.calibration);
+        if(p==='/api/protocol-register')broadcast({type:'protocol'});return send(res,200,result);
+      }
       if(p==='/api/protocol-stop'){const result=prospective.stop(b.id);broadcast({type:'protocol'});return send(res,200,result);}
       if(p==='/api/protocol-check'){const result=prospective.tick(feed);if(result.changes)broadcast({type:'protocol'});return send(res,200,result);}
       if(p==='/api/completeness'){

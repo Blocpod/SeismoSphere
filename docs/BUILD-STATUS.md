@@ -235,3 +235,6 @@ Full regression checkpoint (2026-09-27): the first current 101-test run passed 9
 
 
 Depth-calibration checkpoint: an earlier-interval grid search now selects a deep-trigger threshold before evaluating the frozen choice and unchanged configuration on a later interval. Saved input snapshots, implementation sources and hashes support exact export reproduction. Canonical settings and forecast records remain unchanged. Training/test isolation, 10 focused checks and isolated desktop/phone save/reuse/export/reproduction flows pass. This bounded one-parameter workflow is not probability calibration or demonstrated predictive skill; broader calibration, ensemble selection and independent prospective validation remain open. See DEPTH-CALIBRATION.md.
+
+
+Calibrated prospective variants: the registration form now selects immutable saved depth calibrations with their original rules/routes/boundaries and retained provenance. Evidence integrity and engine-source compatibility are checked before preview/registration. Fixed omission of midpointMode from prospective scientific settings and updated the protocol reproducer to verify routing sources. Six focused checks and an isolated HTTP fit/register/export check pass; live form inspected. Main settings and the 282-record ledger remain unchanged; no production experiment was registered.

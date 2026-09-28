@@ -17,3 +17,9 @@ The reproducer verifies input, snapshot, implementation and report hashes and re
 This is revised-catalog parameter selection, not prospective validation. Repeatedly trying holdout intervals can overfit them. Five forecasts is only an operational eligibility minimum, not evidence of calibration quality. A separate registered prospective experiment is needed to assess forecasting skill. The current workflow deliberately leaves all other parameters unchanged.
 
 Verification: the training-selection test changes only later observations and checks unchanged selected configuration, with changed test output. Isolated desktop/phone HTTP flows verify saving, reuse, input export, exact reproduction, unchanged canonical settings, an empty issuance ledger, and no horizontal overflow or JavaScript errors. All acceptance data are synthetic software fixtures.
+
+## Prospective use
+
+Research → Prospective experiments → Rule configuration can select a saved calibration. The server resolves the saved configuration, route graph and boundary reference from the retained run, checks its evidence hashes and requires unchanged engine/routing/geometry code. Preview and registration freeze the calibration ID, report/input hashes, training/test interval and selection objective with the protocol. Canonical settings stay unchanged. Newly fitted runs appear in the selector without reloading the app. Future outcomes are collected only after explicit protocol registration.
+
+The protocol also preserves the selected midpoint definition. Calibration provenance is included in the AI evidence context and protocol export; export the linked calibration separately for its full fitting inputs and source. Six focused checks and an isolated HTTP fit → preview → registration → protocol-export verification passed. The synthetic registration issued no forecasts, and no production protocol was registered.

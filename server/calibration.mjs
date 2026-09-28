@@ -1,7 +1,16 @@
 import {backtest,validateConfig,VERSION as engineVersion} from './engine.mjs';
 import {DAY} from './geo.mjs';
 import {hash} from './store.mjs';
+import {readFileSync} from 'node:fs';
 export const CALIBRATION_VERSION='ds-depth-selection-1';
+export function calibrationVariant(store,id){
+ const row=store.db.prepare('SELECT body FROM calibration_runs WHERE id=?').get(String(id));
+ if(!row)throw new Error('Saved calibration not found');
+ const b=JSON.parse(row.body),r=b.report;
+ if(hash(b.input)!==id||hash(r)!==b.reportSha256||hash(b.implementation)!==b.input.implementationSha256)throw new Error('Calibration evidence integrity failed');
+ for(const name of ['engine','routes','geo'])if(b.implementation['server/'+name+'.mjs']!==readFileSync(new URL('./'+name+'.mjs',import.meta.url),'utf8'))throw new Error('The calibrated engine has changed. Fit a new calibration before scheduling this variant.');
+ return {config:r.selectedConfig,routes:b.input.routes,boundaries:b.input.boundaries,calibration:{id,createdAt:r.createdAt,reportSha256:b.reportSha256,inputSnapshotId:b.input.inputSnapshotId,implementationSha256:b.input.implementationSha256,intervals:r.options,triggerDepth:r.selectedConfig.triggerDepth,objective:r.selection.objective}};
+}
 export function calibrationOptions(input,config,now=Date.now()){
  const options=Object.fromEntries(['start','trainEnd','end'].map(k=>[k,typeof input[k]==='number'?input[k]:Date.parse(input[k])]));
  options.testStart=options.trainEnd+DAY;options.stepDays=config.windowDays;
