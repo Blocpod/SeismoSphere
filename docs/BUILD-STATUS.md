@@ -73,6 +73,8 @@ The stored 2011 experiment yielded DS 28/94 hits, recent-rate 55/94, and uniform
 
 ## Next implementation priorities
 
+Curved observation-profile checkpoint: waypoint paths now support bounded great-circle segment selection, cumulative distance/depth profiles, a 3D X-ray path and projected hypocenters, and source-bearing JSON/SVG/CSV evidence. Figure/video context distinguishes curved observations from planar cutaways. Numerical geometry and evidence tests plus live Americas/Fiji, 390-pixel and exit-restoration checks pass. This does not complete curved Slab2 projection, local crust models or continuous subsurface surfaces; see CURVED-SECTIONS.md.
+
 Saved learned-run checkpoint: all retained model runs now have a native selector, compact history API and original-report loading. Polling preserves selection and outdated selection responses cannot replace a newer choice. The oldest of five real runs remains export-integrity-valid; phone layout and 139 automated tests pass, including history beyond the old ten-run list limit. Older-source inference restrictions remain in force.
 
 Mobile uncertainty acceptance: the comparison table now reflows into labeled cards below 600 pixels, retaining explicit table/row/cell semantics. Actual Chromium UI checks at 320×740 and 390×844 show all interval values without horizontal overflow (229/299-pixel table widths respectively). Model selection works at phone width; at 844×390 the 44-pixel close control remains visible. No browser errors were observed. The desktop viewport was restored. These are browser viewport checks, not physical-phone acceptance.
