@@ -315,3 +315,4 @@ Uncovered-event Earth inspection: review event rows now open their exact retaine
 
 
 Complete missed-event browsing: replaced the first-100-only UI with labelled per-engine page selectors, rendering at most 100 rows per engine while exposing every retained event. Actual 2,207-event DS review offers 23 pages; the final seven IDs exactly match its archived evidence. Phone-emulated page controls and rows pass without browser errors; six focused existing detection checks pass. Screenshot: artifacts/uncovered-event-pages-phone.png.
+Follow-up visual inspection found inline location buttons overlapping subsequent mobile event text. Block layout with vertical margins fixes the overlap; the final phone screenshot verifies separated text and controls.
