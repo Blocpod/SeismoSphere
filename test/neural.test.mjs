@@ -27,8 +27,25 @@ test('both analogue searches reject invalid sources and exclude foreign or non-e
 test('sequence graph v2 encodes prior midpoint support and equal-window activity without outcome leakage',()=>{
  const source={id:'source',time:100*DAY,lat:0,lon:0,mag:6,depth:400},e=(id,lon,time,depth)=>({...source,id,lon,time:time*DAY,depth,mag:5});
  const events=[e('west',-5,92,10),e('east',5,99,10),e('early',-1,93,10),e('late',1,99,20)],graph=fingerprint(source,events);
- assert.equal(graph.version,'relative-sequence-graph-2');assert.equal(graph.activity.earlyPerDay,.2);assert.equal(graph.activity.latePerDay,.2);assert.equal(graph.activity.depthChangeKm,10);
+ assert.equal(graph.version,'relative-sequence-graph-3');assert.equal(graph.activity.earlyPerDay,.2);assert.equal(graph.activity.latePerDay,.2);assert.equal(graph.activity.depthChangeKm,10);
  const pair=graph.midpointStructure.find(m=>m.endpoints.map(i=>graph.nodeIds[i]).sort().join(',')==='east,west');assert.ok(pair.supportIds.includes('source'));assert.ok(pair.supportIds.includes('early'));assert.ok(pair.supportIds.includes('late'));
  assert.deepEqual(fingerprint(source,[...events,e('outcome',0,101,30)]),graph);
  assert.equal(fingerprint(source,[]).activity.depthChangeKm,null);
+});
+
+
+test('route graph encoding follows explicit directed links and preserves illustrative provenance',()=>{
+ const source={id:'source',time:100*DAY,lat:0,lon:0,mag:6,depth:400},prior={...source,id:'prior',lon:10,time:99*DAY};
+ const route=(id,points,next=[],termination=false)=>({id,points:points.map(lon=>({lat:0,lon})),next,termination,kind:'research-corridor',direction:'forward',provenance:{status:'illustrative'}});
+ const network={version:'frozen',createdAt:101*DAY,captureKm:50,maxHops:4,routes:[route('a',[0,5],['b']),route('b',[5,10],[],true)]};
+ const graph=fingerprint(source,[prior],network),context=graph.routeContext;
+ assert.equal(context.version,'frozen');assert.equal(context.retrospective,true);
+ const trigger=context.nodes.find(n=>graph.nodeIds[n.node]==='source');
+ assert.ok(trigger.reached.some(r=>graph.nodeIds[r.node]==='prior'&&r.hops===2&&r.routeIds.join(',')==='a,b'));
+ assert.ok(trigger.routes.every(r=>r.provenance.status==='illustrative'));
+ const disconnected=structuredClone(network);disconnected.routes[0].next=[];
+ assert.equal(fingerprint(source,[prior],disconnected).routeContext.nodes.find(n=>n.node===trigger.node).reached.length,0);
+ assert.notEqual(fingerprint(source,[prior],disconnected).text,graph.text);
+ assert.deepEqual(fingerprint(source,[prior,{...prior,id:'future',time:101*DAY}],network),graph);
+ assert.equal(fingerprint(source,[prior]).routeContext.version,null);
 });

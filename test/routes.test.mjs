@@ -13,3 +13,10 @@ test('engine emits sourced route rules, ignores future releases and versions can
  const a=generate(events,now,config,network);assert.ok(a.candidates.some(c=>c.routeId==='r'));assert.ok(a.stats.evaluatedCandidates>a.candidates.length);assert.deepEqual(a.candidates,generate([...events,event('future',10,now+1)],now,config,network).candidates);assert.notDeepEqual(a.candidates.map(c=>c.key),generate(events,now,config,{...network,version:'v2'}).candidates.map(c=>c.key));assert.ok(a.candidates.some(c=>c.factors.some(f=>f.rule==='Configured craton-edge progression')));
  for(const [rules,kind] of [[{deep:false,midpoint:true,spacing:false,swarm:false},'path-midpoint'],[{deep:false,midpoint:false,spacing:true,swarm:false},'equidistant-progression'],[{deep:false,midpoint:false,spacing:false,swarm:true},'swarm-redistribution']]){const r=generate(events,now,{...config,rules:{...config.rules,...rules}},network);assert.ok(r.candidates.some(c=>c.kind===kind),kind);}
 });
+
+
+test('route history cutoff cannot select later edits',()=>{
+ const s=new Store(':memory:'),h=new RouteHistory(s,base),first=h.current();
+ assert.equal(h.at(first.createdAt-1),null);assert.equal(h.at(first.createdAt).version,first.version);
+ assert.throws(()=>h.at(NaN),/cutoff/);s.close();
+});

@@ -36,6 +36,7 @@ export function routeWalks(network,source,{reflection=true}={}){
 }
 export class RouteHistory{
  constructor(store,initial){this.store=store;store.db.exec(`CREATE TABLE IF NOT EXISTS route_versions(id TEXT PRIMARY KEY,created_at INTEGER NOT NULL,body TEXT NOT NULL);CREATE TRIGGER IF NOT EXISTS frozen_route_update BEFORE UPDATE ON route_versions BEGIN SELECT RAISE(ABORT,'Route versions are immutable'); END;CREATE TRIGGER IF NOT EXISTS frozen_route_delete BEFORE DELETE ON route_versions BEGIN SELECT RAISE(ABORT,'Route versions are immutable'); END;`);if(!store.get('activeRoutes'))this.save({network:initial,note:'Imported existing illustrative route network',baseVersion:null});}
+ at(asOf){if(!Number.isFinite(asOf))throw new Error('Invalid route history cutoff.');const row=this.store.db.prepare('SELECT id FROM route_versions WHERE created_at<=? ORDER BY created_at DESC,rowid DESC LIMIT 1').get(asOf);return row?this.get(row.id):null;}
  current(){return this.get(this.store.get('activeRoutes'));}
  get(id){const r=this.store.db.prepare('SELECT body FROM route_versions WHERE id=?').get(id);if(!r)throw new Error('Route version not found.');const value=JSON.parse(r.body),{version,...body}=value;if(hash(body)!==version)throw new Error('Route version integrity failed.');return value;}
  list(){return this.store.db.prepare('SELECT id,created_at FROM route_versions ORDER BY created_at DESC,rowid DESC').all().map(r=>({version:r.id,createdAt:r.created_at}));}
