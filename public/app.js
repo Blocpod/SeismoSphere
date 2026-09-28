@@ -215,8 +215,15 @@ setupRoutes({earth,api,reload:load,toast,canWrite:()=>deviceRole!=='viewer'});
 setupWorkbench(earth);
 setupRandomizationLab({api,toast});
 setupCalibration({api});
+// Give each native dialog its visible heading as an accessible name.
+function labelDialogs(){for(const [index,dialog] of [...document.querySelectorAll('dialog')].entries()){
+ const heading=dialog.querySelector('h1,h2,h3');if(!heading||dialog.hasAttribute('aria-label')||dialog.hasAttribute('aria-labelledby'))continue;
+ heading.id ||= `seismosphere-dialog-title-${index}`;dialog.setAttribute('aria-labelledby',heading.id);
+}}
+labelDialogs();
 try{deviceRole=(await setupPhoneAccess(api)).session.role;}catch(e){console.warn('Phone setup:',e.message);}
 resolutionHistory=setupResolutionHistory({api,getState:()=>state,toast,reloadLedger:loadLedger,canWrite:()=>deviceRole!=='viewer'});
+labelDialogs();
 await load();refreshCatalogOnOpen();loadLedger().catch(()=>{});setInterval(()=>{if(state.live)load();},60000);
 
 // Resume only the live workspace; historical cutoffs remain under user control.
