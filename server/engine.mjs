@@ -16,9 +16,18 @@ export function validateConfig(c){
   return c;
 }
 function nearestBoundary(p,boundaryPoints){let best=Infinity;for(const b of boundaryPoints)best=Math.min(best,distance(p,b));return Number.isFinite(best)?best:null;}
-export function swarms(events){
+export function swarms(events,window=null){
   const bins=new Map();for(const e of events){const key=`${Math.floor(e.lat/2)}:${Math.floor(e.lon/2)}`;if(!bins.has(key))bins.set(key,[]);bins.get(key).push(e);}
-  return [...bins.values()].filter(a=>a.length>=5).map(a=>({center:{lat:a.reduce((s,e)=>s+e.lat,0)/a.length,lon:a.reduce((s,e)=>s+e.lon,0)/a.length},count:a.length,maxMagnitude:Math.max(...a.map(e=>e.mag)),moment:a.reduce((s,e)=>s+moment(e.mag),0),equivalentMagnitude:equivalentMagnitude(a.map(e=>e.mag)),eventIds:a.map(e=>e.id),method:'2-degree geographic bins; descriptive clusters, not a fitted swarm detector'})).sort((a,b)=>b.count-a.count).slice(0,20);
+  const mean=a=>({lat:a.reduce((s,e)=>s+e.lat,0)/a.length,lon:a.reduce((s,e)=>s+e.lon,0)/a.length,depth:a.reduce((s,e)=>s+e.depth,0)/a.length});
+  return [...bins.values()].filter(a=>a.length>=5).sort((a,b)=>b.length-a.length).slice(0,20).map(a=>{
+    const times=a.map(e=>e.time),start=window?.start??Math.min(...times),end=window?.end??Math.max(...times),middle=(start+end)/2,early=a.filter(e=>e.time<middle),late=a.filter(e=>e.time>=middle),halfDays=(end-start)/2/DAY;
+    const from=early.length?mean(early):null,to=late.length?mean(late):null;let diameterKm=0;
+    // ponytail: exact pairwise diameter for the 20 retained bins; spatial indexing if dense catalogs make this costly.
+    for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++)diameterKm=Math.max(diameterKm,distance(a[i],a[j]));
+    const migrationKm=from&&to?distance(from,to):null,rad=Math.PI/180,dl=from&&to?(to.lon-from.lon)*rad:0;
+    const bearing=from&&to&&migrationKm>1e-6?(Math.atan2(Math.sin(dl)*Math.cos(to.lat*rad),Math.cos(from.lat*rad)*Math.sin(to.lat*rad)-Math.sin(from.lat*rad)*Math.cos(to.lat*rad)*Math.cos(dl))/rad+360)%360:null;
+    return {center:{lat:mean(a).lat,lon:mean(a).lon},count:a.length,maxMagnitude:Math.max(...a.map(e=>e.mag)),moment:a.reduce((s,e)=>s+moment(e.mag),0),equivalentMagnitude:equivalentMagnitude(a.map(e=>e.mag)),eventIds:a.map(e=>e.id),diameterKm,migration:{from,to,distanceKm:migrationKm,bearingDegrees:bearing,depthChangeKm:from&&to?to.depth-from.depth:null,method:'Later-half minus earlier-half catalog centroids; positive depth change means deeper. Not a tracked rupture or measured transfer.'},rate:{start,end,earlyCount:early.length,lateCount:late.length,earlyPerDay:halfDays>0?early.length/halfDays:null,latePerDay:halfDays>0?late.length/halfDays:null,changePerDay:halfDays>0?(late.length-early.length)/halfDays:null,method:'Counts in two equal-duration halves; positive change is acceleration, negative is decay. Descriptive, without a significance test or completeness correction.'},method:'2-degree geographic bins; descriptive clusters, not a fitted swarm detector; moment assumes Mw-equivalent magnitudes'};
+  });
 }
 export function analogues(source,all,asOf,radius=400,windowDays=10){
   // Every analogue and its complete outcome window must precede the analysis cutoff.
@@ -34,7 +43,7 @@ export function generate(all,asOf,config,routeConfig,boundaryPoints=[],targetBou
   const recent=visible.filter(e=>e.time>=asOf-config.lookbackDays*DAY);
   const significant=recent.filter(e=>e.mag>=config.minMagnitude).sort((a,b)=>b.mag-a.mag||a.id.localeCompare(b.id)).slice(0,180);
   const deep=significant.filter(e=>e.depth>config.triggerDepth);
-  const candidates=[];const priorCache=new Map();
+  const candidates=[];const priorCache=new Map();const clusters=swarms(recent,{start:asOf-config.lookbackDays*DAY,end:asOf});
   function add(center,sources,kind,path=[],route=null,routeIds=[]){
     const local=recent.filter(e=>distance(e,center)<=config.radiusKm);
     const maxLocal=local.length?Math.max(...local.map(e=>e.mag)):null;
@@ -86,12 +95,12 @@ export function generate(all,asOf,config,routeConfig,boundaryPoints=[],targetBou
         if(config.rules.spacing&&right.e.time>left.e.time){const spacing=path.slice(1).reduce((s,p,k)=>s+distance(path[k],p),0);let onward=0;for(let k=right.index+1;k<points.length;k++){onward+=distance(points[k-1],points[k]);if(Math.abs(onward-spacing)/spacing<=.15)add(points[k],[left.e,right.e],'equidistant-progression',points.slice(left.index,k+1),route,[route.id]);if(onward>spacing*1.15)break;}}
       }
     }
-    if(config.rules.swarm!==false)for(const swarm of swarms(recent).slice(0,8)){const ids=new Set(swarm.eventIds),sources=recent.filter(e=>ids.has(e.id)).sort((a,b)=>b.mag-a.mag||a.id.localeCompare(b.id)).slice(0,30);if(sources[0]?.mag<config.minMagnitude)continue;for(const w of routeWalks(routeConfig,swarm.center,{reflection:false}))add(w.center,sources,'swarm-redistribution',w.path,w.route,w.routeIds);}
+    if(config.rules.swarm!==false)for(const swarm of clusters.slice(0,8)){const ids=new Set(swarm.eventIds),sources=recent.filter(e=>ids.has(e.id)).sort((a,b)=>b.mag-a.mag||a.id.localeCompare(b.id)).slice(0,30);if(sources[0]?.mag<config.minMagnitude)continue;for(const w of routeWalks(routeConfig,swarm.center,{reflection:false}))add(w.center,sources,'swarm-redistribution',w.path,w.route,w.routeIds);}
   }
   const ranked=candidates.filter(c=>insideBounds(c.center,targetBounds)).sort((a,b)=>b.modelMatch-a.modelMatch||a.key.localeCompare(b.key));const result=[];
   for(const c of ranked){if(result.every(r=>distance(r.center,c.center)>config.radiusKm*0.65))result.push(c);if(result.length>=config.maxTargets)break;}
   result.forEach(c=>c.catalogProvider=config.catalogProvider??'USGS');
-  return {asOf,...(targetBounds?{targetBounds}:{}),engineVersion:VERSION,config,routeVersion:routeConfig.version,routeStatus:routeConfig.status,candidates:result,deepEvents:deep,stats:{catalogEvents:visible.length,recentEvents:recent.length,significantEvents:significant.length,deepTriggers:deep.length,evaluatedCandidates:candidates.length},swarms:swarms(recent),limitations:['Pair search uses the strongest 180 events per window.','Geodesic geometry does not establish physical pressure transfer.','Only the selected provider supplies model input; unassociated reports from other catalogs are excluded.','Route anchoring uses explicit waypoints, not automatic geological routing; at most 24 deep sources and 64 walks per source are tested.', 'Swarm redistribution uses descriptive two-degree bins, at most eight clusters and 30 strongest sources; it is not a fitted swarm detector.', 'DS scores remain separate from temporal/spatial ETAS, the learned cell-graph count model and GEM/Slab2 reference views. Entered craton-edge routes remain hypotheses; event-graph discovery and calibrated model combination remain separate.']};
+  return {asOf,...(targetBounds?{targetBounds}:{}),engineVersion:VERSION,config,routeVersion:routeConfig.version,routeStatus:routeConfig.status,candidates:result,deepEvents:deep,stats:{catalogEvents:visible.length,recentEvents:recent.length,significantEvents:significant.length,deepTriggers:deep.length,evaluatedCandidates:candidates.length},swarms:clusters,limitations:['Pair search uses the strongest 180 events per window.','Geodesic geometry does not establish physical pressure transfer.','Only the selected provider supplies model input; unassociated reports from other catalogs are excluded.','Route anchoring uses explicit waypoints, not automatic geological routing; at most 24 deep sources and 64 walks per source are tested.', 'Swarm redistribution uses descriptive two-degree bins, at most eight clusters and 30 strongest sources; it is not a fitted swarm detector.', 'DS scores remain separate from temporal/spatial ETAS, the learned cell-graph count model and GEM/Slab2 reference views. Entered craton-edge routes remain hypotheses; event-graph discovery and calibrated model combination remain separate.']};
 }
 export function baselines(analysis,all,seed=42){
   const rng=seeded(seed);const recent=all.filter(e=>e.time<=analysis.asOf&&e.time>=analysis.asOf-analysis.config.lookbackDays*DAY&&e.mag>=analysis.config.minMagnitude&&e.status!=='deleted'&&e.type==='earthquake'&&(!e.provider||e.provider===(analysis.config.catalogProvider??'USGS')));
