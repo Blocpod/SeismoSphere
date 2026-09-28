@@ -1,0 +1,9 @@
+# Concentric event spacing
+
+Select a surface earthquake, then choose **Inspect radial spacing**. Set 100–3000 km spacing, one to six rings (outer radius at most 10,000 km), and a 1–25% tolerance measured against the base spacing. Each subsequent displayed earthquake is assigned to its nearest spacing multiple if it lies within that tolerance. Depth and direction are not matching criteria. The calculation uses spherical epicentral distance and the current catalog cutoff, provider and displayed filters.
+
+The globe displays each nominal radius and its two tolerance boundaries. A visible hypothesis label clears the overlay. Active results recalculate when the displayed catalog refreshes; source changes, timeline clearing and depth views remove the overlay. The panel lists per-ring counts and the observation cutoff. JSON export contains the source, parameters, eligible events, matches and measured offsets. Figure/video evidence includes the active report; geometry changes invalidate an ongoing fixed-context recording through the existing scene fingerprint.
+
+These are exploratory relationships, not measured waves, pressure transfer, statistical significance or automatically issued forecasts. The existing forecast engine's repeated-spacing rule is unchanged. Automatic global concentric candidate discovery and controlled significance testing remain separate work.
+
+Verification: a dateline fixture checks exact radial distances, future/prior/deleted/foreign-provider exclusion, invalid radius bounds and empty input. The existing earthquake marker regression also passes. The live in-app browser displayed one match at the 2,000 km ring among 444 later displayed events for the selected New Caledonia source, with all four nominal rings visible. The in-app automation did not report a download event; a completed file-download acceptance check remains outstanding. Screenshot: artifacts/radial-spacing-globe.png.

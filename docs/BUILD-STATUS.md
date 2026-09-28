@@ -238,3 +238,6 @@ Depth-calibration checkpoint: an earlier-interval grid search now selects a deep
 
 
 Calibrated prospective variants: the registration form now selects immutable saved depth calibrations with their original rules/routes/boundaries and retained provenance. Evidence integrity and engine-source compatibility are checked before preview/registration. Fixed omission of midpointMode from prospective scientific settings and updated the protocol reproducer to verify routing sources. Six focused checks and an isolated HTTP fit/register/export check pass; live form inspected. Main settings and the 282-record ledger remain unchanged; no production experiment was registered.
+
+
+Radial-spacing inspection: selected surface events now expose concentric spherical distance bands with configurable spacing/count/tolerance, subsequent displayed-event matches, live-cutoff updates, clear control and evidence payloads. The globe check showed the expected rings and counts; numerical cutoff/dateline/provider checks and marker regression pass. JSON download completion was not confirmed by the in-app automation. This completes an interactive geometry inspection slice, not automatic global concentric discovery or significance testing. See RADIAL-SPACING.md.

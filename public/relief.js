@@ -20,7 +20,7 @@ export class Relief{
  liftVector(vector){if(!this.enabled||!this.grid)return vector;const radius=vector.length();if(radius<.9999)return vector;const height=this.grid.heightAt(Math.asin(Math.max(-1,Math.min(1,vector.y/radius)))*deg,Math.atan2(-vector.z,vector.x)*deg);return vector.multiplyScalar((radius+Math.max(0,height)*this.effectiveScale/RELIEF_RADIUS_M)/radius);}
  sync(){
   this.updateAI();const e=this.earth;this.inspectionLight.visible=(this.enabled&&!!this.grid||!!e.geology?.section)&&!e.scientific;this.inspectionLight.position.copy(e.camera.position);const key=JSON.stringify([this.enabled&&!!this.grid,this.effectiveScale,this.seafloor,this.colors,e.mobile]);if(key!==this.displayKey){this.displayKey=key;this.revision++;this.rebuild();}
-  const roots=[e.plates,e.grid,e.field,e.forecastGroup,e.pathGroup,e.travelGroup,e.faults?.group,e.faults?.highlight,e.instruments?.group,e.volcanoes?.group,e.volcanoActivity?.group,e.weeklyVolcanoes?.group,e.cratons?.group,e.geodesy?.group,e.spatialLayer?.group];if(!e.geology?.section)roots.push(e.selectionGroup);for(const group of roots.filter(Boolean))group.traverse(part=>this.drape(part));
+  const roots=[e.radialSpacing?.group,e.plates,e.grid,e.field,e.forecastGroup,e.pathGroup,e.travelGroup,e.faults?.group,e.faults?.highlight,e.instruments?.group,e.volcanoes?.group,e.volcanoActivity?.group,e.weeklyVolcanoes?.group,e.cratons?.group,e.geodesy?.group,e.spatialLayer?.group];if(!e.geology?.section)roots.push(e.selectionGroup);for(const group of roots.filter(Boolean))group.traverse(part=>this.drape(part));
   for(const part of e.eventGroup.children)if(!part.userData.section&&part!==e.points&&!e.xray)this.drape(part);
   if(e.geology?.section)this.shapeCaps();
  }
