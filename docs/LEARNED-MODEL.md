@@ -83,3 +83,7 @@ Integration verification (2026-09-28): real run `4f666dc2f069ae0bb72e3dd9d4b5b18
 ## Historical count leaderboard
 
 The Research lab ranks models by Poisson log likelihood on the selected run's exact test interval. Selecting Fit + compare tectonic baseline inserts its immutable comparison into the same ranking, with bits/event recomputed against the shared training-mean reference. Interval bounds, window count and observed event count must agree. This does not mutate saved scores or mix DS alert hit rates and regional ETAS intensity scores with global count likelihoods. The historical ranking is exploratory, not prospective validation. On phones, rows reflow into labelled cards.
+
+## Prospective count issuance
+
+Research lab can freeze all six count models for a seven-day window beginning after computation completes. It requires a live USGS feed less than 15 minutes old, a previously prepared tectonic comparison, and strict inference from revisions received by the latest feed generation time. Feed generation is the conditioning cutoff so requested catalog coverage ends at a verified retrieval boundary. Conditioning can therefore omit the newest revisions received afterward; the export records both timestamps. The immutable record includes all 432 expectations, ensemble weights, exact input snapshot, source receipts, model identity and the frozen tectonic comparison. Hash-checked records are listed with JSON exports. Issuance is manually selected and is not a preregistered schedule. Version 1 does not yet assess outcomes; no future skill is asserted.

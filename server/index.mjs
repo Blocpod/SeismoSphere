@@ -1,3 +1,4 @@
+import {CountForecasts} from './count-forecasts.mjs';
 import {learnedUncertainty} from './learned-uncertainty.mjs';
 import {detectionContext} from './detection-context.mjs';
 import {DetectionReviews} from './detection.mjs';
@@ -52,6 +53,7 @@ store.db.exec(`CREATE TABLE IF NOT EXISTS calibration_runs(id TEXT PRIMARY KEY,c
 const detectionReviews=new DetectionReviews(store);
 const routeHistory=new RouteHistory(store,routes);routes=routeHistory.current();
 const learned=new LearnedModel(store);
+const countForecasts=new CountForecasts(store,learned);
 const speech=new Speech();
 const instruments=new Instruments(store),seedlink=new SeedLink(instruments),phases=new PhaseAnalysis(instruments);
 const mechanisms=new Mechanisms(store);
@@ -179,6 +181,8 @@ const handler=async(req,res)=>{
     if(p==='/api/learned-uncertainty'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-learned-uncertainty.json"');return send(res,200,learnedUncertainty(learned.get(q.get('id'))));}
     if(p==='/api/tectonic-export'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-tectonic-baseline.json"');return send(res,200,learned.getTectonic(q.get('id')));}
     if(p==='/api/learned-report')return send(res,200,learned.report(q.get('id')));
+    if(p==='/api/count-forecasts')return send(res,200,{busy:countForecasts.busy,records:countForecasts.list()});
+    if(p==='/api/count-forecast-export'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-count-forecast.json"');return send(res,200,countForecasts.get(q.get('id')));}
     if(p==='/api/learned-runs')return send(res,200,learned.list());
     if(p==='/api/catalog-diagnostics')return send(res,200,{fitting:fittingETAS,runs:store.db.prepare('SELECT body FROM catalog_diagnostics ORDER BY created_at DESC LIMIT 20').all().map(r=>JSON.parse(r.body))});
     if(p==='/api/station-stream'&&req.method==='GET')return send(res,200,seedlink.status(q.get('preview')==='1'));
@@ -281,6 +285,7 @@ const handler=async(req,res)=>{
       if(p==='/api/waveform-picks')return send(res,200,phases.annotate(b));
       if(p==='/api/waveform-spectrum')return send(res,200,await instruments.spectrum(b));
       if(p==='/api/learned-tectonic')return send(res,200,learned.tectonic(b.id));
+      if(p==='/api/count-forecast-issue')return send(res,200,await countForecasts.issue(b.id,feed));
       if(p==='/api/learned-train')return send(res,200,await learned.train());
       if(p==='/api/learned-predict')return send(res,200,await learned.predict(b.id,Date.parse(b.cutoff),b.mode??'catalog-replay',b.model??'graph'));
       if(p==='/api/import-control')return send(res,200,importJobs.control(String(b.id??''),b.action));
