@@ -19,3 +19,11 @@ test('automatic concentric discovery recovers repeated spacing without future or
  assert.equal(discoverRadialSpacing(events.slice(0,3),{asOf:300}).results.length,0);
  assert.equal(discoverRadialSpacing(events,{asOf:300,triggerDepth:600}).testedSources,0);
 });
+
+
+test('automatic search receipt reproduces source selection and ranked results after serialization',()=>{
+ const source={id:'s',lat:0,lon:179,time:100,mag:6,depth:500,provider:'USGS',type:'earthquake'},events=[source,...Array.from({length:6},(_,i)=>({...source,...destination(source,70,(i+1)*1000),id:'e'+i,time:200+i,depth:5}))];
+ const receipt=JSON.parse(JSON.stringify(discoverRadialSpacing(events,{asOf:300,triggerDepth:300})));
+ assert.equal(receipt.version,'radial-discovery-1');assert.deepEqual(receipt.testedSourceIds,['s']);assert.equal(receipt.inputEvents.length,7);
+ assert.deepEqual(discoverRadialSpacing(receipt.inputEvents,{asOf:receipt.asOf,triggerDepth:receipt.triggerDepth}),receipt);
+});
