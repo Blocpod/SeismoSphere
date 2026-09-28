@@ -182,6 +182,11 @@ const handler=async(req,res)=>{
     if(p==='/api/slab-surfaces')return send(res,200,await slabSurfaces());
     if(p==='/api/slab-sample'){if(!q.has('lat')||!q.has('lon')||!q.get('lat').trim()||!q.get('lon').trim())throw new Error('Provide latitude and longitude.');return send(res,200,await slabSample(q.get('id'),{lat:Number(q.get('lat')),lon:Number(q.get('lon'))},Date.now()));}
     if(p==='/api/slab-source'){const source=await slabSource(q.get('id'),q.get('field'));res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Content-Disposition':`attachment; filename="${source.name}"`});return res.end(source.bytes);}
+    if(p==='/api/rupture-stress-export'){
+      const record=ruptureInputs.stress(q.get('id')),{id,...body}=record;
+      res.setHeader('Content-Disposition','attachment; filename="seismosphere-static-stress.json"');
+      return send(res,200,{record,source:ruptureInputs.get(record.sourceId),integrity:{recordValid:hash(body)===id,implementationValid:hash(record.implementation)===record.implementationHash}});
+    }
     if(p==='/api/rupture-input-export'){
       const record=ruptureInputs.get(q.get('id')),{id,...body}=record;
       res.setHeader('Content-Disposition','attachment; filename="seismosphere-rupture-input.json"');
@@ -246,6 +251,7 @@ const handler=async(req,res)=>{
         fittingETAS=true;try{const result=await runStatistical({events,options},'completeness'),inputSnapshotId=store.snapshot(events,options.end,'catalog-completeness-revised'),report={...result,id,createdAt:Date.now(),inputSnapshotId,catalogMode:'revised-catalog diagnostic'};store.db.prepare('INSERT INTO catalog_diagnostics VALUES(?,?,?)').run(id,report.createdAt,JSON.stringify(report));return send(res,200,report);}finally{fittingETAS=false;}
       }
       if(p==='/api/stations-query')return send(res,200,await instruments.stations(b));
+      if(p==='/api/rupture-stress-query')return send(res,200,await ruptureInputs.calculate(b));
       if(p==='/api/rupture-input-query')return send(res,200,await ruptureInputs.query(b));
       if(p==='/api/mechanism-query')return send(res,200,await mechanisms.query(b));
       if(p==='/api/waveform-query')return send(res,200,await instruments.waveform(b));

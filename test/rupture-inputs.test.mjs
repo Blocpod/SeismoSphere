@@ -31,6 +31,10 @@ test('rupture source archives exact bytes once, enforces source identity/cutoffs
     const saved=await service.query(input),{id,...record}=service.get(saved.id);assert.equal(hash(record),id);assert.equal(record.raw,raw);assert.equal(record.receipt.sha256,hash(raw));assert.equal((await service.query(input)).reused,true);assert.equal(requests,1);
     await assert.rejects(service.query({...input,mode:'strict'}),/No archived/);
     assert.equal((await service.query({...input,asOf:Date.now(),mode:'strict'})).id,id);
+    const request={sourceId:id,asOf:Date.now(),mode:'strict',poisson:.25,shearModulusGPa:32,friction:.4,receiver:{strike:0,dip:30,rake:90},points:[{xKm:20,yKm:20,depthKm:10}]};
+    const stress=await service.calculate(request);assert.ok(Number.isFinite(stress.report.values[0].coulombPa));assert.equal(stress.sourceHash,record.receipt.sha256);assert.equal(hash(stress.implementation),stress.implementationHash);
+    assert.equal((await service.calculate(request)).reused,true);await assert.rejects(service.calculate({...request,asOf:300}),/receipt/);
+    const {id:stressId,...stressBody}=service.stress(stress.id);assert.equal(hash(stressBody),stressId);assert.throws(()=>store.db.exec('DELETE FROM rupture_stress'),/immutable/);
     assert.throws(()=>store.db.exec('DELETE FROM rupture_inputs'),/immutable/);assert.throws(()=>store.db.exec("UPDATE rupture_inputs SET body='{}'"),/immutable/);
   }finally{store.close();}
 });

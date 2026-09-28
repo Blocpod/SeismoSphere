@@ -11,3 +11,5 @@ The proprietary notice does not replace or override third-party licenses. Downlo
 - **Other scientific sources and runtime dependencies:** retain the source-specific terms and notices described in the [README credits](README.md#sources-and-credits), dependency distributions and documentation for Slab2, ETOPO, GEM faults, cratons, GNSS, station data and volcano reports. No ownership of these sources is claimed by Blocpod.
 
 Public catalog observations, geological facts and third-party forecasting methodologies are not claimed as Blocpod copyright. Source-traced route records document provenance; they do not establish ownership of the source material or scientific validation.
+
+- **cutde 26.3.6:** MIT, [cutde-org/cutde](https://github.com/cutde-org/cutde); triangular dislocation implementation based on Nikkhoo & Walter (2015). Its distribution retains the upstream license. The selected numerical reference fixture in `test/fixtures/cutde-halfspace.json` credits its pinned upstream commit and original MATLAB-result file checksum. Mako is separately licensed in its installed distribution.

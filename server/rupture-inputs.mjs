@@ -1,3 +1,5 @@
+import {readFileSync} from 'node:fs';
+import {instrumentResponse} from './response.mjs';
 import {hash} from './store.mjs';
 import {retrieveSource} from './instruments.mjs';
 import {finiteFaultProducts,finiteFaultAvailability} from '../public/finite-fault.js';
@@ -7,11 +9,30 @@ export class RuptureInputs{
   constructor(store,mechanisms){
     this.store=store;this.mechanisms=mechanisms;this.busy=false;
     store.db.exec(`CREATE TABLE IF NOT EXISTS rupture_inputs(id TEXT PRIMARY KEY,query_key TEXT NOT NULL,created_at INTEGER NOT NULL,body TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS rupture_stress(id TEXT PRIMARY KEY,query_key TEXT NOT NULL,created_at INTEGER NOT NULL,body TEXT NOT NULL);
+      CREATE INDEX IF NOT EXISTS rupture_stress_queries ON rupture_stress(query_key);
+      CREATE TRIGGER IF NOT EXISTS frozen_stress_update BEFORE UPDATE ON rupture_stress BEGIN SELECT RAISE(ABORT,'Stress results are immutable'); END;
+      CREATE TRIGGER IF NOT EXISTS frozen_stress_delete BEFORE DELETE ON rupture_stress BEGIN SELECT RAISE(ABORT,'Stress results are immutable'); END;
       CREATE INDEX IF NOT EXISTS rupture_input_queries ON rupture_inputs(query_key,created_at);
       CREATE TRIGGER IF NOT EXISTS frozen_rupture_update BEFORE UPDATE ON rupture_inputs BEGIN SELECT RAISE(ABORT,'Rupture inputs are immutable'); END;
       CREATE TRIGGER IF NOT EXISTS frozen_rupture_delete BEFORE DELETE ON rupture_inputs BEGIN SELECT RAISE(ABORT,'Rupture inputs are immutable'); END;`);
   }
   get(id){const row=this.store.db.prepare('SELECT body FROM rupture_inputs WHERE id=?').get(String(id));if(!row)throw new Error('Saved rupture input not found');return JSON.parse(row.body);}
+  stress(id){const row=this.store.db.prepare('SELECT body FROM rupture_stress WHERE id=?').get(String(id));if(!row)throw new Error('Saved stress result not found');return JSON.parse(row.body);}
+  async calculate(input){
+    const source=this.get(input.sourceId),{id,...body}=source,asOf=Number(input.asOf),mode=input.mode??'catalog-replay';
+    if(!Number.isFinite(asOf)||asOf>Date.now()+1000)throw new Error('Choose an elapsed stress cutoff');
+    if(hash(body)!==id||hash(source.raw)!==source.receipt.sha256)throw new Error('Rupture source integrity failed');
+    const reason=finiteFaultAvailability(source,source.product,{asOf,mode});if(reason)throw new Error(reason);
+    const options={points:input.points,receiver:input.receiver,poisson:input.poisson,shearModulusGPa:input.shearModulusGPa,friction:input.friction};
+    const implementation=readFileSync('model/stress.py','utf8'),implementationHash=hash(implementation),key=hash({sourceId:id,options,implementationHash,asOf,mode});
+    const old=this.store.db.prepare('SELECT id FROM rupture_stress WHERE query_key=?').get(key);if(old)return {...this.stress(old.id),reused:true};
+    if(this.busy)throw new Error('A rupture input or stress calculation is already running');this.busy=true;
+    try{
+      const report=await instrumentResponse({model:source.model,...options},'stress'),record={schema:'seismosphere.static-stress.v1',sourceId:id,sourceHash:source.receipt.sha256,options,implementationHash,implementation,asOf,mode,report,createdAt:Date.now()},recordId=hash(record);
+      this.store.db.prepare('INSERT INTO rupture_stress VALUES(?,?,?,?)').run(recordId,key,record.createdAt,JSON.stringify({...record,id:recordId}));return {...record,id:recordId};
+    }finally{this.busy=false;}
+  }
   async query(input){
     const asOf=Number(input.asOf),mode=input.mode??'catalog-replay';
     if(!Number.isFinite(asOf)||asOf>Date.now()+1000)throw new Error('Choose an elapsed rupture cutoff');
