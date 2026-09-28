@@ -526,3 +526,7 @@ Replay controls now play/pause all returned matches in daily increments, advance
 ### Configuration replay uses neural sequence graphs
 The brief's configuration replay command now calls the full local sequence-graph search rather than the magnitude/depth-only source search. It preserves rendered graph evidence, compares up to 160 eligible candidates and plays the top 12 returned matches. An in-flight search rejects deliberate source/mode/historical-time navigation; ordinary live refresh no longer falsely cancels it. All 211 integration tests passed before the live-refresh correction; three focused replay tests passed afterward, including that regression. Actual local Ollama run returned 12/160, entered February 2011 replay, advanced to day 4 and paused. Restored live catalog. Evidence: artifacts/neural-analogue-replay-phone.png. The bounded pretrained embedding search remains distinct from exhaustive catalog traversal and a trained seismic GNN.
 
+
+### Local embedding validation
+Neural search rejects zero/non-finite/overflowing vectors and incompatible dimensions before ranking. Invalid cached entries are re-embedded; a mixed-dimension cache rebuilds this bounded search. Cosine computation normalizes before multiplying and clamps floating-point drift to [-1,1]. Regression covers malformed response counts, zero/NaN/overflow values, mismatched response/cache dimensions, cache repair and large finite vectors. Five neural tests passed. Actual restarted API reused the local cache for 160 candidates and returned 12 finite bounded similarities.
+

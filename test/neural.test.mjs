@@ -2,6 +2,19 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fingerprint,neuralAnalogues} from '../server/neural.mjs';
 import {DAY} from '../server/geo.mjs';
+test('local embedding validation rejects invalid results, repairs damaged cache and bounds similarity',async t=>{
+ const source={id:'s',provider:'USGS',type:'earthquake',lat:0,lon:0,time:100*DAY,mag:5,depth:400},old={...source,id:'old',time:50*DAY};
+ let response=[[1,0],[0,1]],writes=0,cacheValue=null;
+ const store={get:()=>cacheValue,set:()=>writes++};
+ t.mock.method(globalThis,'fetch',async url=>({ok:true,json:async()=>url.endsWith('/api/tags')?{models:[{name:'nomic-embed-text:latest',digest:'test'}]}:{embeddings:response}}));
+ const run=()=>neuralAnalogues(source,[old],100*DAY,store);
+ for(const bad of [[[0,0],[1,0]],[[1,0],[1]],[[1,NaN],[1,0]],[[1e308,1e308],[1,0]],[[1,0]]]){response=bad;await assert.rejects(run(),/embedding/i);assert.equal(writes,0);}
+ cacheValue=[0,0];response=[[1e150,1e150],[1e150,1e150]];const repaired=await run();assert.equal(repaired.indexed,2);assert.equal(writes,2);assert.ok(Math.abs(repaired.matches[0].similarity-1)<1e-12);
+ let mixedReads=0,mixedWrites=0;response=[[1,0],[1,0]];
+ const rebuilt=await neuralAnalogues(source,[old],100*DAY,{get:()=>++mixedReads===1?[1,0]:[1,0,0],set:()=>mixedWrites++});assert.equal(rebuilt.indexed,2);assert.equal(mixedWrites,2);
+ response=[[1,0,0]];let reads=0;const mismatched={get:()=>++reads===1?[1,0]:null,set:()=>assert.fail('incompatible vector persisted')};
+ await assert.rejects(neuralAnalogues(source,[old],100*DAY,mismatched),/dimensions/);
+});
 test('neural sequence fingerprints exclude outcomes and geographic names',()=>{
   const s={id:'source',time:50*DAY,lat:0,lon:0,mag:5,depth:400,place:'Do not encode me'};
   const earlier={...s,id:'before',time:49*DAY,lon:5,mag:4};const future={...s,id:'after',time:51*DAY,mag:9};

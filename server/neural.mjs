@@ -40,11 +40,12 @@ export function fingerprint(source,events,network=null,boundaries=null,boundaryC
   });
   return {version:'relative-sequence-graph-4',text:text.join('\n'),nodeIds:nodes.map(e=>e.id),nodeCount:nodes.length,edges,midpointStructure,activity,routeContext,boundaryContext};
 }
-function cosine(a,b){let dot=0,aa=0,bb=0;for(let i=0;i<a.length;i++){dot+=a[i]*b[i];aa+=a[i]**2;bb+=b[i]**2;}return dot/Math.max(1e-12,Math.sqrt(aa*bb));}
+function vectorNorm(v){if(!Array.isArray(v)||!v.length||v.some(n=>!Number.isFinite(n)))return null;const squared=v.reduce((s,n)=>s+n*n,0);return squared>0&&Number.isFinite(squared)?Math.sqrt(squared):null;}
+function cosine(a,b){const aa=vectorNorm(a),bb=vectorNorm(b);if(!aa||!bb||a.length!==b.length)throw new Error('Incompatible local embedding vectors');let dot=0;for(let i=0;i<a.length;i++)dot+=(a[i]/aa)*(b[i]/bb);return Math.max(-1,Math.min(1,dot));}
 async function embed(texts){
   const r=await fetch('http://127.0.0.1:11434/api/embed',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:MODEL,input:texts,truncate:false,keep_alive:'5m'}),signal:AbortSignal.timeout(120000)});
   if(!r.ok)throw new Error(`Local embedding model returned HTTP ${r.status}: ${(await r.text()).slice(0,150)}`);
-  const j=await r.json();if(!Array.isArray(j.embeddings)||j.embeddings.length!==texts.length||j.embeddings.some(v=>!Array.isArray(v)||!v.length||v.some(n=>!Number.isFinite(n))))throw new Error('Invalid embedding response');return j.embeddings;
+  const j=await r.json();if(!Array.isArray(j.embeddings)||j.embeddings.length!==texts.length||j.embeddings.some(v=>!vectorNorm(v)))throw new Error('Invalid local embedding response: expected finite, nonzero vectors');return j.embeddings;
 }
 export async function neuralAnalogues(source,events,asOf,store,{windowDays=10,radiusKm=400,network=null,boundaries=null}={}){
   const catalog=analogueEvents(source,events,asOf);
@@ -53,9 +54,12 @@ export async function neuralAnalogues(source,events,asOf,store,{windowDays=10,ra
   const tags=await(await fetch('http://127.0.0.1:11434/api/tags',{signal:AbortSignal.timeout(4000)})).json();const digest=tags.models?.find(m=>m.name===MODEL)?.digest;if(!digest)throw new Error('Install nomic-embed-text in Ollama to enable neural sequence search');
   const boundaryCache=new Map();
   const graphs=[source,...pool].map(e=>({source:e,...fingerprint(e,catalog,network,boundaries,boundaryCache)}));
-  for(const g of graphs){g.cacheKey='embedding:'+hash({model:MODEL,digest,text:g.text,version:g.version});g.vector=store.get(g.cacheKey);}
+  for(const g of graphs){g.cacheKey='embedding:'+hash({model:MODEL,digest,text:g.text,version:g.version});g.vector=store.get(g.cacheKey);if(!vectorNorm(g.vector))g.vector=null;}
+  // A mixed-width cache cannot identify which entry is correct; rebuild this bounded search.
+  if(new Set(graphs.filter(g=>g.vector).map(g=>g.vector.length)).size>1)for(const g of graphs)g.vector=null;
+  let dimensions=graphs.find(g=>g.vector)?.vector.length;
   const missing=graphs.filter(g=>!g.vector);
-  for(let i=0;i<missing.length;i+=16){const batch=missing.slice(i,i+16);const vectors=await embed(batch.map(g=>'search_document: '+g.text));for(let n=0;n<batch.length;n++){batch[n].vector=vectors[n];store.set(batch[n].cacheKey,vectors[n]);}}
+  for(let i=0;i<missing.length;i+=16){const batch=missing.slice(i,i+16);const vectors=await embed(batch.map(g=>'search_document: '+g.text));dimensions??=vectors[0].length;if(vectors.some(v=>v.length!==dimensions))throw new Error('Incompatible local embedding dimensions; no similarity results were produced');for(let n=0;n<batch.length;n++){batch[n].vector=vectors[n];store.set(batch[n].cacheKey,vectors[n]);}}
   const q=graphs[0];
   const matches=graphs.slice(1).map(g=>({source:g.source,similarity:cosine(q.vector,g.vector),nodeIds:g.nodeIds,nodeCount:g.nodeCount,graph:g.text,midpointStructure:g.midpointStructure,activity:g.activity,routeContext:g.routeContext,boundaryContext:g.boundaryContext})).sort((a,b)=>b.similarity-a.similarity).slice(0,12);
   for(const match of matches){const outcomes=catalog.filter(e=>e.time>match.source.time&&e.time<=match.source.time+windowDays*DAY&&distance(e,match.source)<=radiusKm&&e.mag>=source.mag-1);match.followUps=outcomes.length;match.largest=outcomes.length?Math.max(...outcomes.map(e=>e.mag)):null;}
