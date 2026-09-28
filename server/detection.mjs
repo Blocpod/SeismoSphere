@@ -33,8 +33,9 @@ export class DetectionReviews{
   const wanted=new Set(experiment.forecastIds),forecasts=this.store.ledger().filter(f=>wanted.has(f.id)).map(({resolution,...f})=>f);
   if(wanted.size!==experiment.forecastIds.length||forecasts.length!==wanted.size||forecasts.some(f=>f.experimentId!==experimentId||f.mode!=='hindcast'))throw new Error('Experiment forecast linkage failed');
   const events=this.store.events({asOf:options.end,start:options.start,provider:options.provider}),report=detectionReport(events,forecasts,options),input={options,experiment,forecasts,events,coverage,implementation:this.implementation},id=hash(input);
-  const old=this.store.db.prepare('SELECT body FROM detection_reviews WHERE id=?').get(id);if(old)return {...JSON.parse(old.body),reused:true};
+  const old=this.store.db.prepare('SELECT body FROM detection_reviews WHERE id=?').get(id);if(old)return {...this.get(id),reused:true};
   const body={id,createdAt:Date.now(),input,report,reportHash:hash(report)};this.store.db.prepare('INSERT INTO detection_reviews VALUES(?,?,?)').run(id,body.createdAt,canonical(body));return body;
  }
- get(id){const row=this.store.db.prepare('SELECT body FROM detection_reviews WHERE id=?').get(String(id));if(!row)throw new Error('Detection review not found');const body=JSON.parse(row.body);if(hash(body.input)!==body.id||hash(body.report)!==body.reportHash)throw new Error('Detection review integrity failed');return body;}
+ list(experimentId){return this.store.db.prepare("SELECT id FROM detection_reviews WHERE json_extract(body,'$.input.experiment.experimentId')=? ORDER BY created_at DESC,id").all(String(experimentId)).map(({id})=>{const r=this.get(id);return {id,createdAt:r.createdAt,domain:r.report.domain,events:r.report.eligibleEvents.length};});}
+ get(id){const row=this.store.db.prepare('SELECT body FROM detection_reviews WHERE id=?').get(String(id));if(!row)throw new Error('Detection review not found');const body=JSON.parse(row.body);if(body.id!==String(id)||hash(body.input)!==body.id||hash(body.report)!==body.reportHash)throw new Error('Detection review integrity failed');return body;}
 }

@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Store,hash} from '../server/store.mjs';
@@ -26,6 +27,22 @@ test('saved detection reviews preserve evidence, reuse exact inputs and never re
  assert.throws(()=>store.db.prepare('DELETE FROM detection_reviews WHERE id=?').run(review.id),/immutable/);
  assert.throws(()=>service.run('exp',3),/coverage/);
  store.ingest([event('missed',5000,171,{status:'deleted',updated:12000})],12000);const revised=service.run('exp',4.5);assert.notEqual(revised.id,review.id);assert.equal(revised.report.engines[0].eventRecall,1);assert.equal(service.get(review.id).report.engines[0].eventRecall,.5);
+ assert.equal(service.list('exp').length,3);assert.deepEqual(service.list('other-experiment'),[]);assert.equal(service.list('exp').find(r=>r.id===review.id).domain.minMagnitude,4.5);
  assert.equal(hash(review.input),review.id);assert.equal(hash(review.report),review.reportHash);
+ store.db.exec('DROP TRIGGER frozen_detection_update');store.db.prepare('UPDATE detection_reviews SET body=? WHERE id=?').run(JSON.stringify({...review,report:{...review.report,eligibleEvents:[]}}),review.id);assert.throws(()=>service.list('exp'),/integrity/);assert.throws(()=>service.get(review.id),/integrity/);
  }finally{store.db.close();}
+});
+
+test('saved review selection rejects late results and mismatched experiment context',async()=>{
+ const source=readFileSync(new URL('../public/experiment-history.js',import.meta.url),'utf8'),start=source.indexOf(' detectionHistory.onchange='),end=source.indexOf(' detectionForm.oninput=',start),handler=source.slice(start,end);
+ for(const change of ['none','selection','experiment','threshold','wrong-link','late-error']){
+  let resolve,reject,shown=0;const request=new Promise((yes,no)=>{resolve=yes;reject=no;}),select={value:'review'},first={value:'experiment'},status={textContent:''},form={elements:{minMagnitude:{value:'4.5'}}};
+  const bind=new Function('api','detectionHistory','first','detectionResult','detectionStatus','detectionForm','showDetection',`let detectionSerial=0;${handler};return {run:detectionHistory.onchange,invalidate:()=>detectionSerial++};`);
+  const controls=bind(()=>request,select,first,{replaceChildren(){}},status,form,()=>shown++),pending=controls.run();
+  if(change==='selection')select.value='another';if(change==='experiment')first.value='another';if(['threshold','late-error'].includes(change))controls.invalidate();
+  const data={input:{experiment:{experimentId:change==='wrong-link'?'another':'experiment'}},report:{domain:{minMagnitude:5}}};
+  if(change==='late-error')reject(new Error('late failure'));else resolve(data);await pending;
+  assert.equal(shown,change==='none'?1:0,change);assert.equal(form.elements.minMagnitude.value,change==='none'?'5':'4.5');
+  if(change==='wrong-link')assert.match(status.textContent,/another experiment/);if(change==='late-error')assert.doesNotMatch(status.textContent,/late failure/);
+ }
 });
