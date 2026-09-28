@@ -6,7 +6,7 @@ export async function showDeepContext(event,{earth,getState,selectForecast}){
  const note=document.createElement('p');note.className='muted';note.textContent='The white inspection cursor traces surface to hypocenter; it is not earthquake motion. Slab2 is reference geometry, not proof this earthquake lies within a slab. Linked watches are experimental hypotheses, not measured pressure transfer.';
  root.append(heading,status,note);document.querySelector('#selection').append(root);
  const related=state.analysis?.candidates.filter(f=>f.sources.includes(event.id))??[];
- const label=document.createElement('p');label.textContent=`${related.length} source-linked model watches at ${new Date(cutoff).toISOString()} (before watch-display filters).`;root.append(label);
+ const label=document.createElement('p');label.textContent=`${related.length} source-linked model watches at ${new Date(cutoff).toISOString()} (before watch-display filters). Matching paths and targets are highlighted on Earth when their watch filters and layers permit.`;root.append(label);
  for(const f of related){const button=document.createElement('button');button.className='secondary full';button.textContent=`${f.region} · M${f.magnitude.min.toFixed(1)}–${f.magnitude.max.toFixed(1)} · ${f.modelMatch}/100`;button.onclick=()=>selectForecast(f);root.append(button);}
  const current=()=>root.isConnected&&!document.querySelector('#selection').hidden&&getState().selectedEvent?.id===event.id&&getState().asOf===cutoff;
  try{

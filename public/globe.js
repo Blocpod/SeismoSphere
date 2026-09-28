@@ -82,6 +82,10 @@ export class Earth {
   drawForecastPath(group,path,color=0x72ddd0,opacity=.62){
     for(let i=1;i<path.length;i++){const a=position(path[i-1]),b=position(path[i]),angle=a.angleTo(b);if(angle>Math.PI-.01)continue;const pts=[];for(let n=0;n<=60;n++){const t=n/60;const v=a.clone().multiplyScalar(Math.sin((1-t)*angle)).addScaledVector(b,Math.sin(t*angle));if(v.length()<1e-7)continue;v.normalize().multiplyScalar(1.015+Math.sin(t*Math.PI)*Math.min(.12,angle*.1));pts.push(v);}const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color,transparent:true,opacity,depthWrite:false}));group.add(line);}
   }
+  highlightSourceForecasts(watches,event){
+    if(!event||event.depth<=300)return;
+    for(const watch of watches)if(watch.sources?.includes(event.id))this.highlightForecast(watch);
+  }
   highlightForecast(f){
     this.forecastGroup.add(this.ring(f.center,f.radiusKm,0xffefbd,1.045,1));
     this.drawForecastPath(this.pathGroup,f.path??[],0xffefbd,1);

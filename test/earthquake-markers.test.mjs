@@ -104,4 +104,7 @@ test('watch highlights use retained geometry and honor existing layer visibility
  for(const group of [earth.forecastGroup,earth.pathGroup])for(const line of group.children){assert.equal(line.material.opacity,1);assert.ok([...line.geometry.attributes.position.array].every(Number.isFinite));}
  const start=new THREE.Vector3().fromBufferAttribute(earth.pathGroup.children[0].geometry.attributes.position,0);assert.ok(Math.abs(Math.atan2(-start.z,start.x)*180/Math.PI-170)<1e-5);
  earth.clear(earth.forecastGroup);earth.clear(earth.pathGroup);assert.equal(earth.pathGroup.children.length,0);
+ const linked={...watch,sources:['deep']},other={...watch,sources:['other']};
+ earth.highlightSourceForecasts([linked,other],{id:'deep',depth:602});assert.equal(earth.forecastGroup.children.length,1);assert.equal(earth.pathGroup.children.length,2);assert.equal(earth.pathGroup.visible,false);
+ earth.clear(earth.forecastGroup);earth.clear(earth.pathGroup);earth.highlightSourceForecasts([linked],{id:'deep',depth:300});earth.highlightSourceForecasts([other],{id:'deep',depth:602});assert.equal(earth.forecastGroup.children.length,0);
 });
