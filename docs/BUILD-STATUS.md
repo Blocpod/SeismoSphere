@@ -73,6 +73,8 @@ The stored 2011 experiment yielded DS 28/94 hits, recent-rate 55/94, and uniform
 
 ## Next implementation priorities
 
+Curved Slab2 sample checkpoint: the curved profile now projects original contour vertices into both the profile and X-ray view, preserving original coordinates/depth, vertex indices and provenance. The real Fiji corridor contains 15,489 samples (20–700 km) alongside three observations; desktop, 390-pixel and exit-restoration checks pass. All 143 tests pass. This is a discrete model-sample projection, not an interpolated slab/fault surface or local crust model; those broader requirements remain open.
+
 Curved observation-profile checkpoint: waypoint paths now support bounded great-circle segment selection, cumulative distance/depth profiles, a 3D X-ray path and projected hypocenters, and source-bearing JSON/SVG/CSV evidence. Figure/video context distinguishes curved observations from planar cutaways. Numerical geometry and evidence tests plus live Americas/Fiji, 390-pixel and exit-restoration checks pass. This does not complete curved Slab2 projection, local crust models or continuous subsurface surfaces; see CURVED-SECTIONS.md.
 
 Saved learned-run checkpoint: all retained model runs now have a native selector, compact history API and original-report loading. Polling preserves selection and outdated selection responses cannot replace a newer choice. The oldest of five real runs remains export-integrity-valid; phone layout and 139 automated tests pass, including history beyond the old ten-run list limit. Older-source inference restrictions remain in force.

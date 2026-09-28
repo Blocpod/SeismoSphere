@@ -25,3 +25,9 @@ test('curved sonification uses only projected profile observations',async()=>{
  const {plottedAudioEvents}=await import('../public/sonification.js');const event={id:'inside',depth:600};const earth={geology:{curvedPath:{},evidence:()=>({events:[event]})},eventGroup:{children:[{visible:true,userData:{events:[{id:'outside'}]}}]}};
  assert.deepEqual(plottedAudioEvents(earth),[event]);earth.geology.curvedPath=null;assert.equal(plottedAudioEvents(earth)[0].id,'outside');
 });
+
+test('curved slab samples retain original vertex identities and depth without invented interpolation',async()=>{
+ const {curvedSlabSamples}=await import('../public/curved-section.js');const path=curvedSection([{lat:0,lon:170},{lat:0,lon:-170},{lat:20,lon:-170}],100);
+ const features=[{properties:{depth:300,name:'fixture'},geometry:{type:'LineString',coordinates:[[179,0],[-170,0],[140,40]]}},{properties:{depth:-2,region:'signed'},geometry:{type:'MultiLineString',coordinates:[[[-170,10],[-170,30]]]}}];const original=JSON.stringify(features),samples=curvedSlabSamples(features,path);
+ assert.equal(samples.length,3);assert.deepEqual(samples.map(s=>s.depth),[300,300,-2]);assert.equal(samples[1].segmentIndex,0);assert.equal(samples[2].segmentIndex,1);assert.equal(samples[2].featureIndex,1);assert.equal(samples[2].lineIndex,0);assert.equal(samples[2].nodeIndex,0);assert.equal(samples[2].lat,10);assert.equal(samples[2].lon,-170);assert.equal(JSON.stringify(features),original);
+});

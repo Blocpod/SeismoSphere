@@ -18,3 +18,17 @@ export function curvedCoordinates(point,path){
  return nearest;
 }
 export function curvedTrack(path,depthKm=0){return path.segments.flatMap(({frame},i)=>Array.from({length:Math.ceil(frame.lengthKm/25)+1},(_,j)=>sectionVector((j/Math.ceil(frame.lengthKm/25)-.5)*frame.lengthKm,depthKm,frame)).slice(i?1:0));}
+
+export function curvedSlabSamples(features,path){
+ const samples=[];
+ features.forEach((feature,featureIndex)=>{
+  const depth=feature.properties?.depth;if(!Number.isFinite(depth))return;
+  const lines=feature.geometry?.type==='LineString'?[feature.geometry.coordinates]:feature.geometry?.type==='MultiLineString'?feature.geometry.coordinates:[];
+  lines.forEach((line,lineIndex)=>line.forEach(([lon,lat],nodeIndex)=>{
+   if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)return;
+   const projected=curvedCoordinates({lat,lon},path);
+   if(projected.inside)samples.push({featureIndex,lineIndex,nodeIndex,region:feature.properties.name??feature.properties.region??null,lat,lon,depth,...projected});
+  }));
+ });
+ return samples;
+}

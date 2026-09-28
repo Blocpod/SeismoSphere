@@ -31,7 +31,7 @@ export class Geology {
   }
   updateCaption(){
     for(const [id,value] of [['section-toggle',this.section],['slabs-toggle',this.slabsEnabled]]){const b=document.querySelector('#'+id);b.classList.toggle('active',value);b.setAttribute('aria-pressed',String(value));}
-    if(this.curvedPath){this.caption.hidden=false;this.caption.innerHTML=`<strong>CURVED OBSERVATION PROFILE · TRUE DEPTH</strong><span>${this.curvedPath.segments.length} segments · ±${this.curvedPath.halfWidthKm} km · points projected onto path</span><small>Yellow line: selected path, not a fault or pressure route.</small><button class="secondary" id="curved-configure">Inspect curved profile</button><button class="secondary" id="curved-clear">Exit curved profile</button>`;this.caption.querySelector('#curved-configure').onclick=()=>this.openTools();this.caption.querySelector('#curved-clear').onclick=()=>this.clearCurvedSection(true);return;}
+    if(this.curvedPath){this.caption.hidden=false;this.caption.innerHTML=`<strong>CURVED OBSERVATION PROFILE · TRUE DEPTH</strong><span>${this.curvedPath.segments.length} segments · ±${this.curvedPath.halfWidthKm} km · points projected onto path</span><small>Yellow line: selected path, not a fault or pressure route.${this.slabsEnabled?' Amber squares: projected Slab2 contour vertices.':''}</small><button class="secondary" id="curved-configure">Inspect curved profile</button><button class="secondary" id="curved-clear">Exit curved profile</button>`;this.caption.querySelector('#curved-configure').onclick=()=>this.openTools();this.caption.querySelector('#curved-clear').onclick=()=>this.clearCurvedSection(true);return;}
     this.caption.hidden=!this.section&&!this.slabsEnabled;
     this.caption.innerHTML=this.section?`<strong>${this.cutawayMode==='hemisphere'?'HEMISPHERE CUTAWAY':'OBLIQUE CUTAWAY'} · TRUE DEPTH</strong><span>${this.sectionEvents?.length??0} earthquakes projected · ${this.frame.bearing.toFixed(1)}° bearing · ±${this.frame.halfWidthKm} km</span><span class="section-legend"><i style="background:#56666a"></i>Mantle <i style="background:#c18b42"></i>Outer core <i style="background:#edcf8d"></i>Inner core</span><small>${this.locked?'Fixed corridor.':'Follows selected event.'} Reference layers; uniform 35 km crust is schematic.</small><button class="secondary" id="section-configure">Configure & inspect section</button>`:`<strong>USGS SLAB2 · ${this.features?.length??0} DEPTH CONTOURS</strong><span>Published slab geometry model · Hayes et al., 2018</span><small>Not a measured slab boundary. Depth scale ${this.earth.depthScale}×.</small>`;
     this.caption.querySelector('#section-configure')?.addEventListener('click',()=>this.openTools());
@@ -100,6 +100,7 @@ export class Geology {
     points.userData.events=events;points.userData.section=true;earth.eventGroup.add(points);this.updateCaption();earth.sonification?.checkContext();
   }
   drawSlabs(){
+    if(this.curvedPath){this.earth.clear(this.slabGroup);this.slabGroup.visible=false;this.drawCurvedSection?.();return;}
     this.earth.clear(this.slabGroup);this.sectionSlabs=[];this.slabGroup.visible=this.slabsEnabled;if(!this.slabsEnabled||!this.features)return;
     const positions=[],colors=[],scale=this.section?1:this.earth.depthScale;
     for(const f of this.features){
