@@ -1,3 +1,4 @@
+import {analogueEvents} from './catalog.mjs';
 import {routeWalks,oriented} from './routes.mjs';
 import {insideBounds,validateBounds,longitudeWidth,distance,midpoint,pathMidpoint,equivalentMagnitude,moment,DAY,clamp,seeded,destination} from './geo.mjs';
 import {hash} from './store.mjs';
@@ -30,6 +31,7 @@ export function swarms(events,window=null){
   });
 }
 export function analogues(source,all,asOf,radius=400,windowDays=10){
+  all=analogueEvents(source,all,asOf);
   // Every analogue and its complete outcome window must precede the analysis cutoff.
   const old=all.filter(e=>e.time<asOf-30*DAY&&e.time+windowDays*DAY<asOf&&Math.abs(e.mag-source.mag)<0.6&&Math.abs(e.depth-source.depth)<100);
   return old.map(e=>{

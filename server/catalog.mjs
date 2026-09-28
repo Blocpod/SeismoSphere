@@ -41,3 +41,9 @@ export async function deletedCatalog(since){
   if(!Array.isArray(data.features)||data.features.length>=20000)throw new Error('Deletion response is invalid or truncated');
   return {...normalizeDeletions(data.features,url),url,fetchedAt:Date.now()};
 }
+
+
+export function analogueEvents(source,events,asOf){
+ if(!source||source.type!=='earthquake'||source.status==='deleted'||!Number.isFinite(asOf)||!Number.isFinite(source.time)||source.time>asOf)throw new Error('Select a non-deleted catalog earthquake at or before the analysis cutoff.');
+ return events.filter(e=>e.type==='earthquake'&&e.status!=='deleted'&&e.provider===source.provider&&Number.isFinite(e.time)&&e.time<=asOf);
+}

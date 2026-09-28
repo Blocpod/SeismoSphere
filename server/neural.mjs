@@ -1,3 +1,4 @@
+import {analogueEvents} from './catalog.mjs';
 import {distance,DAY} from './geo.mjs';
 import {hash} from './store.mjs';
 const MODEL='nomic-embed-text:latest';
@@ -17,7 +18,7 @@ async function embed(texts){
   const j=await r.json();if(!Array.isArray(j.embeddings)||j.embeddings.length!==texts.length||j.embeddings.some(v=>!Array.isArray(v)||!v.length||v.some(n=>!Number.isFinite(n))))throw new Error('Invalid embedding response');return j.embeddings;
 }
 export async function neuralAnalogues(source,events,asOf,store,{windowDays=10,radiusKm=400}={}){
-  const catalog=events.filter(e=>e.time<=asOf&&e.provider===source.provider&&e.type==='earthquake');
+  const catalog=analogueEvents(source,events,asOf);
   const pool=catalog.filter(e=>e.time<source.time-30*DAY&&e.time+windowDays*DAY<asOf&&Math.abs(e.mag-source.mag)<1&&Math.abs(e.depth-source.depth)<200).sort((a,b)=>Math.abs(a.mag-source.mag)+Math.abs(a.depth-source.depth)/200-Math.abs(b.mag-source.mag)-Math.abs(b.depth-source.depth)/200||b.time-a.time).slice(0,160);
   if(!pool.length)return {model:MODEL,matches:[],searched:0,method:'No eligible completed historical sequences in this imported catalog.'};
   const tags=await(await fetch('http://127.0.0.1:11434/api/tags',{signal:AbortSignal.timeout(4000)})).json();const digest=tags.models?.find(m=>m.name===MODEL)?.digest;if(!digest)throw new Error('Install nomic-embed-text in Ollama to enable neural sequence search');

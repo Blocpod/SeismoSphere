@@ -28,3 +28,7 @@ The earlier engine returned bin count, maximum magnitude and approximate moment 
 ## Concentric discovery (§10, §18 step 8)
 
 Research now automatically searches the displayed catalog when data/time/filters update. It tests ten fixed spacings (250–2500 km), up to six rings within 10,000 km, ±15% spacing bands, around the strongest 24 sources deeper than the configured trigger. Results require three occupied rings and open the existing inspector at the selected spacing; that inspector retains matching event evidence. This is bounded exploratory discovery, not an unrestricted all-event global search, independent null-controlled significance, directional propagation or a new forecast score. Those stronger claims remain unproved.
+
+## Historical sequence analogues (§23)
+
+The existing neural search encodes a source plus up to seven preceding neighbors within ten days/3500 km, using relative magnitude, depth, time and pair distances; pretrained local text embeddings rank up to 160 eligible completed historical sources. Future outcomes are excluded from encoding and attached after ranking. This is genuine sequence-graph retrieval, but it does not yet explicitly encode configured route topology, tectonic boundary type, swarm dynamics or midpoint structure requested by §23. Those fields remain implementation gaps; the simpler source-magnitude/depth search must not be presented as their replacement. Both paths now share earthquake/provider/deletion/cutoff eligibility, including follow-up counting.
