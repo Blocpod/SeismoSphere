@@ -34,6 +34,7 @@ import {randomizationOptions,randomizationContext} from './randomization.mjs';
 import {Instruments,instrumentContext,instrumentSourceValid,rawSampleMapping} from './instruments.mjs';
 import {SeedLink} from './seedlink.mjs';
 import {Mechanisms,mechanismContext} from './mechanisms.mjs';
+import {RuptureInputs} from './rupture-inputs.mjs';
 import {volcanoDataset,volcanoEvidence} from './volcano-context.mjs';
 import {cratonDataset,cratonEvidence} from './cratons.mjs';
 import {GNSS,gnssEvidence} from './gnss.mjs';
@@ -49,6 +50,7 @@ const learned=new LearnedModel(store);
 const speech=new Speech();
 const instruments=new Instruments(store),seedlink=new SeedLink(instruments),phases=new PhaseAnalysis(instruments);
 const mechanisms=new Mechanisms(store);
+const ruptureInputs=new RuptureInputs(store,mechanisms);
 const gnss=new GNSS(store);
 const volcanoStatus=new VolcanoStatus(store);
 const weeklyVolcanoes=new WeeklyVolcanoes(store);
@@ -160,7 +162,7 @@ const handler=async(req,res)=>{
     if(p==='/api/volcano-status-export'){const record=volcanoStatus.get(q.get('id'));res.setHeader('Content-Disposition','attachment; filename=usgs-volcano-status.'+(q.has('raw')?'geojson':'json'));if(q.has('raw')){res.writeHead(200,{'Content-Type':'application/geo+json; charset=utf-8'});return res.end(record.raw);}return send(res,200,record);}
     if(p==='/api/speech'&&req.method==='GET')return send(res,200,await speech.status());
     if(p==='/api/routes')return send(res,200,{network:q.get('version')?routeHistory.get(q.get('version')):routes,versions:routeHistory.list()});
-    if(p==='/api/status')return send(res,200,{feed,refreshing,statisticalBusy:fittingETAS,speechBusy:speech.busy,volcanoStatusBusy:!!volcanoStatus.pending,weeklyVolcanoBusy:!!weeklyVolcanoes.pending,gnssBusy:gnss.busy,importing:!!importJobs.active,aiBusy,config,routes,integrity:store.verify(),coverage:store.get('coverage',[]),catalogCount:researchEvents().length,deletionSync:store.get('deletionSync',{}),catalogPolicy:'One provider per research run; authoritative aliases associated within that provider'});
+    if(p==='/api/status')return send(res,200,{feed,refreshing,statisticalBusy:fittingETAS,ruptureBusy:ruptureInputs.busy,speechBusy:speech.busy,volcanoStatusBusy:!!volcanoStatus.pending,weeklyVolcanoBusy:!!weeklyVolcanoes.pending,gnssBusy:gnss.busy,importing:!!importJobs.active,aiBusy,config,routes,integrity:store.verify(),coverage:store.get('coverage',[]),catalogCount:researchEvents().length,deletionSync:store.get('deletionSync',{}),catalogPolicy:'One provider per research run; authoritative aliases associated within that provider'});
     if(p==='/api/randomizations')return send(res,200,{activeId:randomizations.active?.id??null,jobs:randomizations.list()});
     if(p==='/api/randomization-job')return send(res,200,randomizations.get(q.get('id')));
     if(p==='/api/randomization-export'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-randomization.json"');return send(res,200,randomizations.export(q.get('id')));}
@@ -180,6 +182,11 @@ const handler=async(req,res)=>{
     if(p==='/api/slab-surfaces')return send(res,200,await slabSurfaces());
     if(p==='/api/slab-sample'){if(!q.has('lat')||!q.has('lon')||!q.get('lat').trim()||!q.get('lon').trim())throw new Error('Provide latitude and longitude.');return send(res,200,await slabSample(q.get('id'),{lat:Number(q.get('lat')),lon:Number(q.get('lon'))},Date.now()));}
     if(p==='/api/slab-source'){const source=await slabSource(q.get('id'),q.get('field'));res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Content-Disposition':`attachment; filename="${source.name}"`});return res.end(source.bytes);}
+    if(p==='/api/rupture-input-export'){
+      const record=ruptureInputs.get(q.get('id')),{id,...body}=record;
+      res.setHeader('Content-Disposition','attachment; filename="seismosphere-rupture-input.json"');
+      return send(res,200,{record,integrity:{recordValid:hash(body)===id,sourceValid:hash(record.raw)===record.receipt.sha256}});
+    }
     if(p==='/api/mechanisms')return send(res,200,{busy:mechanisms.busy,records:mechanisms.list()});
     if(p==='/api/mechanism-export'){
       const record=mechanisms.get(q.get('id')),{id,...body}=record;
@@ -239,6 +246,7 @@ const handler=async(req,res)=>{
         fittingETAS=true;try{const result=await runStatistical({events,options},'completeness'),inputSnapshotId=store.snapshot(events,options.end,'catalog-completeness-revised'),report={...result,id,createdAt:Date.now(),inputSnapshotId,catalogMode:'revised-catalog diagnostic'};store.db.prepare('INSERT INTO catalog_diagnostics VALUES(?,?,?)').run(id,report.createdAt,JSON.stringify(report));return send(res,200,report);}finally{fittingETAS=false;}
       }
       if(p==='/api/stations-query')return send(res,200,await instruments.stations(b));
+      if(p==='/api/rupture-input-query')return send(res,200,await ruptureInputs.query(b));
       if(p==='/api/mechanism-query')return send(res,200,await mechanisms.query(b));
       if(p==='/api/waveform-query')return send(res,200,await instruments.waveform(b));
       if(p==='/api/station-stream-start')return send(res,200,seedlink.start(b));
