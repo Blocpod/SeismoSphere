@@ -182,7 +182,7 @@ const handler=async(req,res)=>{
     if(p==='/api/tectonic-export'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-tectonic-baseline.json"');return send(res,200,learned.getTectonic(q.get('id')));}
     if(p==='/api/learned-report')return send(res,200,learned.report(q.get('id')));
     if(p==='/api/count-forecasts')return send(res,200,{busy:countForecasts.busy,records:countForecasts.list()});
-    if(p==='/api/count-forecast-export'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-count-forecast.json"');return send(res,200,countForecasts.get(q.get('id')));}
+    if(p==='/api/count-forecast-export'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-count-forecast.json"');return send(res,200,countForecasts.export(q.get('id')));}
     if(p==='/api/learned-runs')return send(res,200,learned.list());
     if(p==='/api/catalog-diagnostics')return send(res,200,{fitting:fittingETAS,runs:store.db.prepare('SELECT body FROM catalog_diagnostics ORDER BY created_at DESC LIMIT 20').all().map(r=>JSON.parse(r.body))});
     if(p==='/api/station-stream'&&req.method==='GET')return send(res,200,seedlink.status(q.get('preview')==='1'));
@@ -261,7 +261,7 @@ const handler=async(req,res)=>{
         if(p==='/api/protocol-register')broadcast({type:'protocol'});return send(res,200,result);
       }
       if(p==='/api/protocol-stop'){const result=prospective.stop(b.id);broadcast({type:'protocol'});return send(res,200,result);}
-      if(p==='/api/protocol-check'){const result=prospective.tick(feed);if(result.changes)broadcast({type:'protocol'});return send(res,200,result);}
+      if(p==='/api/protocol-check'){const countResult=countForecasts.tick(feed),result=prospective.tick(feed);if(result.changes||countResult.changes)broadcast({type:'protocol'});return send(res,200,result);}
       if(p==='/api/completeness'){
         if(fittingETAS)return send(res,409,{error:'A statistical analysis is already running'});
         const options=completenessOptions({...b,provider:b.provider??config.catalogProvider});
@@ -476,7 +476,7 @@ const handler=async(req,res)=>{
 const server=http.createServer(handler);
 server.listen(port,'127.0.0.1',()=>{console.log(`SeismoSphere running at http://127.0.0.1:${port}`);if(!process.env.SEISMO_TEST_MODE){importJobs.kick();refresh();weeklyVolcanoes.refresh().then(()=>broadcast({type:'weekly-volcanoes'})).catch(e=>{console.error(e.message);broadcast({type:'weekly-volcanoes'});});volcanoStatus.refresh().then(()=>broadcast({type:'volcano-status'})).catch(e=>{console.error(e.message);broadcast({type:'volcano-status'});});if(access.settings.enabled)access.start(handler).catch(e=>{access.lastError=e.message;console.error('Phone access: '+e.message);});}});
 const interval=setInterval(()=>{if(!process.env.SEISMO_TEST_MODE){refresh();weeklyVolcanoes.refresh().then(()=>broadcast({type:'weekly-volcanoes'})).catch(e=>{console.error(e.message);broadcast({type:'weekly-volcanoes'});});volcanoStatus.refresh().then(()=>broadcast({type:'volcano-status'})).catch(e=>{console.error(e.message);broadcast({type:'volcano-status'});});}},5*60000);interval.unref();
-const protocolInterval=setInterval(()=>{if(!process.env.SEISMO_TEST_MODE)try{const result=prospective.tick(feed);if(result.changes)broadcast({type:'protocol'});}catch(e){console.error('Prospective schedule: '+e.message);}},30000);protocolInterval.unref();
+const protocolInterval=setInterval(()=>{if(!process.env.SEISMO_TEST_MODE)try{const countResult=countForecasts.tick(feed),result=prospective.tick(feed);if(result.changes||countResult.changes)broadcast({type:'protocol'});}catch(e){console.error('Prospective schedule: '+e.message);}},30000);protocolInterval.unref();
 let closing=false;
 function shutdown(){if(closing)return;closing=true;clearInterval(interval);clearInterval(protocolInterval);clearTimeout(reviewTimer);learned.close();speech.close();const importsStopped=Promise.all([seedlink.close(),closeResponseWorkers(),importJobs.shutdown(),randomizations.shutdown(),gnss.shutdown(),volcanoStatus.shutdown(),weeklyVolcanoes.shutdown()]);access.close();for(const client of clients)client.end();server.close(async()=>{await importsStopped;store.close();process.exit(0);});server.closeAllConnections();setTimeout(()=>process.exit(0),3000).unref();}
 process.on('SIGINT',shutdown);process.on('SIGTERM',shutdown);

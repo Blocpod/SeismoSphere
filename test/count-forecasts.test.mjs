@@ -9,3 +9,17 @@ test('prospective counts freeze six models only after strict current-data infere
   learned.tectonic=()=>({createdAt:Date.now()+1000,report:{fit:{cells}}});await assert.rejects(manager.issue('parent',feed),/just prepared/);assert.equal(manager.busy,false);
  }finally{store.close();}
 });
+
+test('fixed-delay count assessments preserve boundaries, outcomes and operational exclusions',async t=>{
+ let now=Date.UTC(2030,0,1);t.mock.method(Date,'now',()=>now);const store=new Store(':memory:'),cells=Array(72).fill(.5),snapshot=store.snapshot([],now,'fixture');
+ const manager=new CountForecasts(store,{tectonic:()=>({createdAt:now-1,report:{fit:{cells}}}),predict:async()=>({report:{grid:{rows:6,columns:12}},projection:{cells,componentCells:Object.fromEntries(['graph','noNeighbors','trainingMean','recentRate'].map(n=>[n,cells])),inputSnapshotId:snapshot}})}),feed=()=>({status:'live',fetchedAt:now,generated:now}),issue=()=>manager.issue('parent',feed());
+ try{
+  const f=await issue();assert.equal(manager.tick(feed()).changes,0);now=f.assessmentDueAt;
+  const e={id:'USGS:one',provider:'USGS',type:'earthquake',mag:5,lat:0,lon:0,depth:10,time:f.validUntil};store.ingest([e,{...e,id:'USGS:left',time:f.validFrom},{...e,id:'USGS:late',time:f.validUntil+1}],now-1);store.ingest([{...e,id:'USGS:unreceived'}],now+1);store.set('coverage',[{provider:'USGS',start:f.validFrom,end:f.validUntil,minMagnitude:5}]);
+  assert.equal(manager.tick({status:'stale'}).changes,0);assert.equal(manager.tick(feed()).changes,1);const a=manager.assessment(f.id);assert.equal(a.status,'SCORED');assert.equal(a.scores.graph.events,1);assert.ok(Math.abs(a.scores.graph.logLikelihood-(-36+Math.log(.5)))<1e-10);assert.equal(a.snapshot.events.length,1);
+  now+=10000;store.ingest([{...e,mag:6}],now);assert.equal(manager.tick(feed()).changes,0);assert.deepEqual(manager.assessment(f.id),a);assert.throws(()=>store.db.exec('DELETE FROM count_assessments'),/immutable/);
+  const missed=await issue();now=missed.assessmentDueAt+300001;manager.tick(feed());assert.equal(manager.assessment(missed.id).status,'MISSED_ASSESSMENT');
+  const gap=await issue();now=gap.assessmentDueAt;store.set('coverage',[]);manager.tick(feed());assert.equal(manager.assessment(gap.id).status,'INCOMPLETE_COVERAGE');assert.equal(manager.assessment(gap.id).scores,undefined);
+  const changed=await issue();now=changed.assessmentDueAt;manager.scoringHash='different';manager.tick(feed());assert.equal(manager.assessment(changed.id).status,'SKIPPED_VERSION');
+ }finally{store.close();}
+});
