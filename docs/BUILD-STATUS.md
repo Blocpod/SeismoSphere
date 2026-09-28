@@ -241,3 +241,6 @@ Calibrated prospective variants: the registration form now selects immutable sav
 
 
 Radial-spacing inspection: selected surface events now expose concentric spherical distance bands with configurable spacing/count/tolerance, subsequent displayed-event matches, live-cutoff updates, clear control and evidence payloads. The globe check showed the expected rings and counts; numerical cutoff/dateline/provider checks and marker regression pass. JSON download completion was not confirmed by the in-app automation. This completes an interactive geometry inspection slice, not automatic global concentric discovery or significance testing. See RADIAL-SPACING.md.
+
+
+Calibration copilot: saved-run evidence now feeds local/Astra explanations with a creation-time cutoff, isolated context, no command actions, delayed-answer suppression and an exact threshold/test-count guard. Seven focused tests and isolated API checks pass. Actual Qwen and Astra retained fixture values; one local-only rerun verified a prompt fix for instruction echo. Broader language-model factual correctness remains unproven; no live experiment or forecast was issued.
