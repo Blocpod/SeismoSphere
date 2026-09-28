@@ -1,3 +1,4 @@
+import {prospectiveCountLeaderboard} from './count-leaderboard.mjs';
 import {CountForecasts} from './count-forecasts.mjs';
 import {learnedUncertainty} from './learned-uncertainty.mjs';
 import {detectionContext} from './detection-context.mjs';
@@ -181,7 +182,7 @@ const handler=async(req,res)=>{
     if(p==='/api/learned-uncertainty'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-learned-uncertainty.json"');return send(res,200,learnedUncertainty(learned.get(q.get('id'))));}
     if(p==='/api/tectonic-export'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-tectonic-baseline.json"');return send(res,200,learned.getTectonic(q.get('id')));}
     if(p==='/api/learned-report')return send(res,200,learned.report(q.get('id')));
-    if(p==='/api/count-forecasts')return send(res,200,{busy:countForecasts.busy,records:countForecasts.list()});
+    if(p==='/api/count-forecasts'){const records=countForecasts.list();return send(res,200,{busy:countForecasts.busy,records,cohorts:prospectiveCountLeaderboard(records)});}
     if(p==='/api/count-forecast-export'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-count-forecast.json"');return send(res,200,countForecasts.export(q.get('id')));}
     if(p==='/api/learned-runs')return send(res,200,learned.list());
     if(p==='/api/catalog-diagnostics')return send(res,200,{fitting:fittingETAS,runs:store.db.prepare('SELECT body FROM catalog_diagnostics ORDER BY created_at DESC LIMIT 20').all().map(r=>JSON.parse(r.body))});
