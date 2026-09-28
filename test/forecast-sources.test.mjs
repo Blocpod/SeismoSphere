@@ -12,3 +12,9 @@ test('route inspection preserves ordered ancestry and never upgrades missing or 
  assert.match(forecastRoutes({routeId:'legacy'}),/provenance not retained/);assert.equal(forecastRoutes({}),'');
  assert.doesNotMatch(forecastRoutes({routeIds:['A'],routeProvenance:[{id:'A',sourceUrl:'https://user:secret@example.com/'}]}),/href=/);
 });
+
+
+test('legacy controls do not present inherited routes as their own reasoning',()=>{
+ const f={engine:'Recent-rate',routeId:'inherited-route',path:[{lat:10,lon:20},{lat:15,lon:25}]},before=structuredClone(f),html=forecastRoutes(f);
+ assert.match(html,/Matched control/);assert.doesNotMatch(html,/inherited-route|Vertex/);assert.deepEqual(f,before);
+});

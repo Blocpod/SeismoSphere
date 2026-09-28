@@ -11,6 +11,7 @@ export function forecastSources(forecast){
 }
 
 export function forecastRoutes(forecast){
+ if(['Null','Recent-rate'].includes(forecast.engine))return '<p class="muted">Matched control: magnitude, radius and time envelope are inherited from a model candidate; the control changes the center. It does not use a Dutchsinse pressure route. Any inherited route fields in a legacy record remain in its raw evidence, not as control reasoning.</p>';
  const ids=[...new Set(forecast.routeIds??(forecast.routeId?[forecast.routeId]:[]))],path=forecast.path??[];
  if(!ids.length&&!path.length)return '';
  const routes=ids.map(id=>{
