@@ -93,9 +93,16 @@ export class LearnedModel {
     return {report:{...report,artifact:undefined,testWindows:undefined},projection,mode};
   }
   export(id){const report=this.get(id),row=this.store.db.prepare('SELECT body FROM snapshots WHERE id=?').get(report.inputSnapshotId);return {report,snapshot:{id:report.inputSnapshotId,...JSON.parse(row.body)},integrity:{weightsValid:hash(report.artifact)===report.weightsSha256,snapshotValid:hash(JSON.parse(row.body))===report.inputSnapshotId},hashMethod:'SHA-256 of recursively key-sorted JSON, UTF-8 (server/store.mjs canonical). Python serialization hash also retained.'};}
+  getTectonic(id){
+    const row=this.store.db.prepare('SELECT created_at,body FROM tectonic_runs WHERE id=?').get(String(id??''));if(!row)throw new Error('Saved tectonic comparison not found');
+    const b=JSON.parse(row.body),parent=this.get(b.input.parentRunId),snapshot=this.store.db.prepare('SELECT body FROM snapshots WHERE id=?').get(b.input.inputSnapshotId);
+    const windows=parent.testWindows.map(w=>({cutoff:w.cutoff,end:w.end,observed:w.observed,graph:w.graph}));
+    if(b.id!==id||hash(b.input)!==id||b.createdAt!==row.created_at||hash(b.report)!==b.reportSha256||hash(b.boundaries)!==b.input.boundariesSha256||hash(b.implementation)!==b.input.implementationSha256||b.report.parentRunId!==parent.id||b.report.version!==b.input.version||parent.inputSnapshotId!==b.input.inputSnapshotId||!snapshot||hash(JSON.parse(snapshot.body))!==b.input.inputSnapshotId||hash(windows)!==hash(b.testWindows))throw new Error('Tectonic comparison integrity check failed');
+    return b;
+  }
   tectonic(id){
     const parent=this.get(id),boundaries=JSON.parse(readFileSync('public/assets/plates.json','utf8')),implementation=Object.fromEntries(['tectonic-baseline','geo'].map(name=>[name,readFileSync(`server/${name}.mjs`,'utf8')]));
-    const input={parentRunId:parent.id,inputSnapshotId:parent.inputSnapshotId,boundariesSha256:hash(boundaries),implementationSha256:hash(implementation),version:TECTONIC_VERSION},key=hash(input),prior=this.store.db.prepare('SELECT body FROM tectonic_runs WHERE id=?').get(key);if(prior)return JSON.parse(prior.body);
+    const input={parentRunId:parent.id,inputSnapshotId:parent.inputSnapshotId,boundariesSha256:hash(boundaries),implementationSha256:hash(implementation),version:TECTONIC_VERSION},key=hash(input),prior=this.store.db.prepare('SELECT id FROM tectonic_runs WHERE id=?').get(key);if(prior)return this.getTectonic(key);
     const row=this.store.db.prepare('SELECT body FROM snapshots WHERE id=?').get(parent.inputSnapshotId);if(!row)throw new Error('Training snapshot unavailable');const snapshot=JSON.parse(row.body);if(hash(snapshot)!==parent.inputSnapshotId)throw new Error('Training snapshot checksum mismatch');
     const report=tectonicComparison(parent,snapshot.events,boundaries),bundle={id:key,createdAt:Date.now(),input,report,reportSha256:hash(report),boundaries,implementation,testWindows:parent.testWindows.map(w=>({cutoff:w.cutoff,end:w.end,observed:w.observed,graph:w.graph}))};
     this.store.db.prepare('INSERT INTO tectonic_runs VALUES(?,?,?)').run(key,bundle.createdAt,JSON.stringify(bundle));return bundle;

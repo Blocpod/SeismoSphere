@@ -177,7 +177,7 @@ const handler=async(req,res)=>{
     if(p==='/api/analysis')return send(res,200,analysisAt(numberParam(q,'asOf',Date.now()),q.get('mode')??'catalog-replay'));
     if(p==='/api/providers')return send(res,200,await providers());
     if(p==='/api/learned-uncertainty'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-learned-uncertainty.json"');return send(res,200,learnedUncertainty(learned.get(q.get('id'))));}
-    if(p==='/api/tectonic-export'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-tectonic-baseline.json"');const row=store.db.prepare('SELECT body FROM tectonic_runs WHERE id=?').get(q.get('id'));if(!row)throw new Error('Saved tectonic comparison not found');return send(res,200,JSON.parse(row.body));}
+    if(p==='/api/tectonic-export'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-tectonic-baseline.json"');return send(res,200,learned.getTectonic(q.get('id')));}
     if(p==='/api/learned-report')return send(res,200,learned.report(q.get('id')));
     if(p==='/api/learned-runs')return send(res,200,learned.list());
     if(p==='/api/catalog-diagnostics')return send(res,200,{fitting:fittingETAS,runs:store.db.prepare('SELECT body FROM catalog_diagnostics ORDER BY created_at DESC LIMIT 20').all().map(r=>JSON.parse(r.body))});

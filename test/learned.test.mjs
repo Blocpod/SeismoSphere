@@ -55,3 +55,19 @@ test('tectonic map uses frozen training cells and exposes distinct AI provenance
  await assert.rejects(manager.predict('parent',3000,'strict','tectonic'),/unavailable/);await assert.rejects(manager.predict('parent',5000,'bad','tectonic'),/Invalid/);
  assert.throws(()=>learnedContext(a.report,a.projection,6000,'catalog-replay'),/cutoff/);
 });
+
+test('tectonic reads reject corrupted saved evidence and changed parent windows',()=>{
+ const store=new Store(path.join(mkdtempSync(path.join(os.tmpdir(),'seismo-tectonic-')),'test.sqlite')),manager=new LearnedModel(store);
+ try{
+  const snapshotId=store.snapshot([],1000,'fixture'),windows=[{cutoff:0,end:1000,observed:Array(72).fill(0),graph:Array(72).fill(1)}],parent={id:'parent',inputSnapshotId:snapshotId,testWindows:windows};
+  store.db.prepare('INSERT INTO learned_runs VALUES(?,?,?)').run('parent',1000,JSON.stringify(parent));
+  const boundaries={features:[]},implementation={source:'fixture'},input={parentRunId:'parent',inputSnapshotId:snapshotId,boundariesSha256:hash(boundaries),implementationSha256:hash(implementation),version:'fixture'},report={parentRunId:'parent',version:'fixture'},id=hash(input),bundle={id,createdAt:1000,input,report,reportSha256:hash(report),boundaries,implementation,testWindows:windows};
+  store.db.prepare('INSERT INTO tectonic_runs VALUES(?,?,?)').run(id,1000,JSON.stringify(bundle));assert.deepEqual(manager.getTectonic(id),bundle);
+  store.db.exec('DROP TRIGGER frozen_tectonic_update');
+  for(const alter of [b=>b.report.version='changed',b=>b.boundaries.features.push({}),b=>b.implementation.source='changed',b=>b.testWindows[0].graph[0]=2,b=>b.createdAt=0,b=>b.id='wrong']){
+   const corrupt=structuredClone(bundle);alter(corrupt);store.db.prepare('UPDATE tectonic_runs SET body=? WHERE id=?').run(JSON.stringify(corrupt),id);assert.throws(()=>manager.getTectonic(id),/integrity/);
+  }
+  store.db.prepare('UPDATE tectonic_runs SET body=? WHERE id=?').run(JSON.stringify(bundle),id);
+  store.db.exec('DROP TRIGGER frozen_learned_update');parent.testWindows[0].observed[0]=1;store.db.prepare('UPDATE learned_runs SET body=? WHERE id=?').run(JSON.stringify(parent),'parent');assert.throws(()=>manager.getTectonic(id),/integrity/);
+ }finally{manager.close();store.close();}
+});
