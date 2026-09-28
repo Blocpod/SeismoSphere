@@ -5,9 +5,9 @@ import path from 'node:path';
 import {Store,hash} from '../server/store.mjs';
 import {Instruments,instrumentContext,instrumentSourceValid} from '../server/instruments.mjs';
 import {waveformUtc} from '../public/waveform-geometry.js';
-import {instrumentResponse,closeResponseWorkers} from '../server/response.mjs';
+import {instrumentResponse,closeResponseWorkers,RESPONSE_TIMEOUT_MS} from '../server/response.mjs';
 test('full response correction preserves immutable sources, known SI scaling, encoding and cutoff isolation',async t=>{
- const fixture=JSON.parse(execFileSync(path.resolve('data/model-runtime',process.platform==='win32'?'Scripts/python.exe':'bin/python'),['scripts/response-decoder-check.py'],{windowsHide:true,encoding:'utf8',timeout:30000}));assert.equal(fixture.knownGainScalingPassed,true);
+ const fixture=JSON.parse(execFileSync(path.resolve('data/model-runtime',process.platform==='win32'?'Scripts/python.exe':'bin/python'),['scripts/response-decoder-check.py'],{windowsHide:true,encoding:'utf8',timeout:RESPONSE_TIMEOUT_MS}));assert.equal(fixture.knownGainScalingPassed,true);
  const store=new Store(':memory:'),instruments=new Instruments(store),start=fixture.station.startUs/1000,end=start+fixture.values.length/fixture.sampleRateHz*1000;
  const metadata='#Network|Station|Location|Channel|Latitude|Longitude|Elevation|Depth|Azimuth|Dip|SensorDescription|Scale|ScaleFreq|ScaleUnits|SampleRate|StartTime|EndTime\nIU|TEST|00|BHZ|34|-106|1600|100|0|-90|Synthetic|2000000|1|m/s|64|2020-01-01T00:00:00|',wave=`# dataset: GeoCSV 2.0\n# delimiter: ,\n# SID: IU_TEST_00_BHZ\n# sample_count: ${fixture.values.length}\n# sample_rate_hz: 64\n# start_time: 2020-01-01T00:00:00\n# field_unit: UTC, Counts\nTime, Sample\n`+fixture.values.map((v,i)=>waveformUtc(start*1000+i*1e6/64)+', '+v).join('\n');let calls=0;
  t.mock.method(globalThis,'fetch',async url=>{calls++;return new Response(url.includes('level=response')?Buffer.from(fixture.xmlBase64,'base64'):url.includes('/station/')?metadata:wave);});
