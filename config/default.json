@@ -6,6 +6,7 @@
   "windowDays": 10,
   "radiusKm": 400,
   "magnitudeTolerance": 1,
+  "midpointMode": "both",
   "magnitudeMode": "moment",
   "deepEscalation": 0.5,
   "maxTargets": 16,

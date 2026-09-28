@@ -20,3 +20,9 @@ Engine 0.3.0 applies the requested rules:
 - Forecast duration: the configured 7–10-day window, unchanged after issuance.
 
 Computational ceilings remain explicit: strongest 180 significant events; at most 24 deep initiators; 64 walks per initiator; eight descriptive two-degree swarm bins and 30 strongest retained sources per bin; eight route anchors per route. Anchoring uses entered waypoints, so add waypoints to represent a corridor accurately. These heuristics are configurable research methodology, not validated earthquake probabilities. Empty or incomplete source geometry is never invented. Earlier stored research runs retain their original engine versions and results. The randomization reproduction tool selects the archived 0.2 implementation for existing 0.2 exports. New 0.3 runs use the new engine; existing protocols retain their original frozen source files.
+
+## Midpoint definition
+
+Settings → Forecast configuration now selects both definitions (the existing behavior), great-circle midpoints between source events, or halfway along the configured route between source anchor waypoints. Route midpoints require both Midpoint and Routes hypotheses. Segment lengths use spherical great-circle distance; waypoint index averaging is not used. The chosen configuration is frozen with issued forecasts, backtests and registered protocols. Engine 0.3.1 distinguishes route-distance fulcrum reasoning from direct geodesic reasoning. Older 0.3.0 and 0.2.0 randomization exports retain their archived engine implementations.
+
+Verification: 19 focused engine/routes/randomization/prospective checks pass. A bent-route fixture separates the two centers, checks omitted-mode compatibility and invalid values. Isolated desktop and phone Settings tests save and reload each definition without issuing forecasts.

@@ -1,0 +1,20 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {generate,validateConfig} from '../server/engine.mjs';
+import {generate as previousGenerate} from '../server/engine-0.3.mjs';
+const defaults=JSON.parse(readFileSync('config/default.json','utf8'));
+test('midpoint definitions select geodesic or cumulative route geometry and preserve omitted-mode compatibility',()=>{
+ const now=Date.UTC(2026,8,20),config={...defaults,radiusKm:50,rules:{deep:false,midpoint:true,silence:false,spacing:false,routes:true,reflection:false,swarm:false}};
+ const events=[0,20].map((lon,i)=>({id:'USGS:test'+i,provider:'USGS',lat:0,lon,mag:5,depth:10,time:now-1000,type:'earthquake',magType:'mw'}));
+ const routes={version:'fixture',status:'illustrative',captureKm:50,routes:[{id:'bent',name:'Bent route',points:[{lat:0,lon:0},{lat:10,lon:10},{lat:0,lon:20}],direction:'forward',kind:'research-corridor',provenance:{status:'illustrative'}}]};
+ const run=mode=>generate(events,now,{...config,midpointMode:mode},routes).candidates;
+ const direct=run('great-circle'),routed=run('route');assert.equal(direct.length,1);assert.equal(routed.length,1);
+ assert.equal(direct[0].kind,'midpoint');assert.ok(Math.abs(direct[0].center.lat)<1e-9);
+ assert.equal(routed[0].kind,'path-midpoint');assert.ok(Math.abs(routed[0].center.lat-10)<1e-8);assert.match(routed[0].factors.find(f=>f.rule==='Route-distance fulcrum').detail,/cumulative/);
+ assert.equal(run('both').length,2);assert.equal(run(undefined).length,2);
+ assert.equal(generate(events,now,{...config,midpointMode:'route',rules:{...config.rules,routes:false}},routes).candidates.length,0);
+ assert.throws(()=>validateConfig({...config,midpointMode:'arithmetic'}),/midpoint/);
+ const {midpointMode,...legacyConfig}=config,old=previousGenerate(events,now,legacyConfig,routes),current=generate(events,now,legacyConfig,routes);
+ assert.deepEqual(current.candidates.map(c=>({key:c.key,center:c.center,modelMatch:c.modelMatch})),old.candidates.map(c=>({key:c.key,center:c.center,modelMatch:c.modelMatch})));
+});

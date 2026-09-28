@@ -1,13 +1,12 @@
 import {routeWalks,oriented} from './routes.mjs';
 import {distance,midpoint,pathMidpoint,equivalentMagnitude,moment,DAY,clamp,seeded,destination} from './geo.mjs';
 import {hash} from './store.mjs';
-export const VERSION='ds-research-0.3.1';
+export const VERSION='ds-research-0.3.0';
 export function validateConfig(c){
   if(c.catalogProvider!==undefined&&!['USGS','EMSC'].includes(c.catalogProvider))throw new Error('Choose one research catalog: USGS or EMSC');
   const limits={triggerDepth:[0,700],minMagnitude:[0,9],lookbackDays:[1,90],windowDays:[7,10],radiusKm:[50,1000],magnitudeTolerance:[0.1,2],deepEscalation:[0,2],maxTargets:[1,40]};
   for(const [k,[lo,hi]] of Object.entries(limits))if(!Number.isFinite(c[k])||c[k]<lo||c[k]>hi)throw new Error(`${k} must be ${lo}–${hi}`);
   if(!['adjacent','escalation','moment','analogue'].includes(c.magnitudeMode))throw new Error('Unknown magnitude mode');
-  if(c.midpointMode!==undefined&&!['both','great-circle','route'].includes(c.midpointMode))throw new Error('Unknown midpoint definition');
   if(!c.rules||['deep','midpoint','silence','spacing','routes','reflection'].some(k=>typeof c.rules[k]!=='boolean'))throw new Error('Invalid rule configuration');
   if(c.rules.swarm!==undefined&&typeof c.rules.swarm!=='boolean')throw new Error('Invalid swarm rule');
   if(!['ollama','codex','deterministic'].includes(c.aiProvider))throw new Error('Invalid AI provider');
@@ -46,7 +45,7 @@ export function generate(all,asOf,config,routeConfig,boundaryPoints=[]){
     const factor=(rule,points,detail,evidence=[])=>factors.push({rule,points,detail,evidence});
     factor('Source activity',15,`${sources.length} observed source event(s), strongest M${flank.toFixed(1)}`,sources.map(e=>e.id));
     if(config.rules.deep&&deepSource)factor('Deep trigger',20,`${deepSource.depth.toFixed(0)} km exceeds configured ${config.triggerDepth} km trigger`,[deepSource.id]);
-    if(kind.includes('midpoint'))factor(kind==='path-midpoint'?'Route-distance fulcrum':'Geodesic fulcrum',18,kind==='path-midpoint'?'Halfway along the cumulative great-circle segment lengths between the two source anchor waypoints on the configured route; not proof of transfer':'Great-circle midpoint of two recent significant events; geometric relationship is not proof of transfer',sources.map(e=>e.id));
+    if(kind.includes('midpoint'))factor('Geodesic fulcrum',18,'Great-circle midpoint of two recent significant events; geometric relationship is not proof of transfer',sources.map(e=>e.id));
     if(route)factor('Configured corridor',12,`${route.name}; ${route.provenance?.status??'illustrative'} geometry, physical transfer unvalidated`,[route.id]);
     if(route?.kind==='craton-edge')factor('Configured craton-edge progression',6,'Follows this explicitly entered craton-edge hypothesis; the geological reference layer does not create routes',[route.id]);
     if(kind==='swarm-redistribution')factor('Swarm redistribution',6,`${sources.length} clustered catalog sources feed the configured path; no measured energy conservation or transfer`,sources.map(e=>e.id));
@@ -69,7 +68,7 @@ export function generate(all,asOf,config,routeConfig,boundaryPoints=[]){
     const match=clamp(factors.reduce((s,f)=>s+f.points,0),0,100);
     candidates.push({key:hash({center,sources:sources.map(e=>e.id),kind,config,asOf,routeVersion:routeConfig.version,routeIds}).slice(0,16),engine:'DS',engineVersion:VERSION,kind,center,radiusKm:config.radiusKm,region:route?.name??`Fulcrum near ${center.lat.toFixed(1)}°, ${center.lon.toFixed(1)}°`,sources:sources.map(e=>e.id),sourceEvents:sources,path,routeId:route?.id??null,routeIds,routeProvenance:route?routeIds.map(id=>({id,...routeConfig.routes.find(r=>r.id===id)?.provenance})):[],modelMatch:match,magnitude:{central:+central.toFixed(2),min:+Math.max(0,central-config.magnitudeTolerance).toFixed(2),max:+Math.min(10,central+config.magnitudeTolerance).toFixed(2),mode:config.magnitudeMode,explanation:magnitudeExplanation},validFrom:asOf,validUntil:asOf+config.windowDays*DAY,asOf,factors,objections,analogueCount:prior.length,boundaryKm,status:'DRAFT',label:'Experimental Dutchsinse-style model hypothesis'});
   }
-  if(config.rules.midpoint&&config.midpointMode!=='route')for(let i=0;i<significant.length;i++)for(let j=i+1;j<significant.length;j++){
+  if(config.rules.midpoint)for(let i=0;i<significant.length;i++)for(let j=i+1;j<significant.length;j++){
     const a=significant[i],b=significant[j],d=distance(a,b);
     if(d<500||d>3500||Math.abs(a.time-b.time)>7*DAY)continue;
     const m=midpoint(a,b);add(m,[a,b],'midpoint',[a,m,b]);
@@ -81,7 +80,7 @@ export function generate(all,asOf,config,routeConfig,boundaryPoints=[]){
       for(let i=0;i<anchors.length;i++)for(let j=i+1;j<anchors.length;j++){
         const a=anchors[i],b=anchors[j];if(a.index===b.index||Math.abs(a.e.time-b.e.time)>7*DAY)continue;
         const left=a.index<b.index?a:b,right=left===a?b:a,path=points.slice(left.index,right.index+1);
-        if(config.rules.midpoint&&config.midpointMode!=='great-circle')add(pathMidpoint(path),[left.e,right.e],'path-midpoint',path,route,[route.id]);
+        if(config.rules.midpoint)add(pathMidpoint(path),[left.e,right.e],'path-midpoint',path,route,[route.id]);
         if(config.rules.spacing&&right.e.time>left.e.time){const spacing=path.slice(1).reduce((s,p,k)=>s+distance(path[k],p),0);let onward=0;for(let k=right.index+1;k<points.length;k++){onward+=distance(points[k-1],points[k]);if(Math.abs(onward-spacing)/spacing<=.15)add(points[k],[left.e,right.e],'equidistant-progression',points.slice(left.index,k+1),route,[route.id]);if(onward>spacing*1.15)break;}}
       }
     }

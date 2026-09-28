@@ -52,7 +52,7 @@ const volcanoStatus=new VolcanoStatus(store);
 const weeklyVolcanoes=new WeeklyVolcanoes(store);
 const resolutionReviews=new ResolutionReviews(store);
 const prospective=new ProspectiveExperiments(store);
-let config={catalogProvider:'USGS',...store.get('config',defaults),rules:{swarm:true,...store.get('config',defaults).rules}},feed=store.get('feed',{status:'empty'}),refreshing=false,aiBusy=false;
+let config={catalogProvider:'USGS',midpointMode:'both',...store.get('config',defaults),rules:{swarm:true,...store.get('config',defaults).rules}},feed=store.get('feed',{status:'empty'}),refreshing=false,aiBusy=false;
 const researchEvents=options=>store.events({provider:config.catalogProvider,...options});
 let fittingETAS=false;
 function runStatistical(data,kind='etas'){
