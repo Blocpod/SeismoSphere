@@ -105,10 +105,13 @@ function issueAnalysis(analysis,mode='prospective',includeBaselines=true,keys=nu
   if(mode==='prospective')targets=targets.map(c=>({...c,validFrom:issuedAt,validUntil:issuedAt+draft.config.windowDays*DAY}));
   const result=store.issue(targets,{snapshotId,config:draft.config,routeConfig:draft.routes,mode,issuedAt,status:'ISSUED'});broadcast({type:'ledger',count:result.length});return result;
 }
-async function refresh(){
-  if(refreshing)return;refreshing=true;
-  if(Date.now()-(store.get('deletionSync',{}).checkedAt??0)>3600000)await syncDeletions();
-  try{const data=await liveCatalog();store.ingest(data.events,data.fetchedAt);feed={status:'live',count:data.events.length,...data,events:undefined};store.set('feed',feed);const coverage=store.get('coverage',[]);coverage.push({provider:'USGS',start:data.generated-30*DAY,end:data.generated,minMagnitude:-3,source:data.url});store.set('coverage',[...coverage.filter(c=>c.importJobId||c.sources),...coverage.filter(c=>!c.importJobId&&!c.sources).slice(-500)]);cache=null;resolveExpired();if(config.autoForecast){const last=store.get('autoIssuedAt',0);if(Date.now()-last>DAY){const a=analysisAt(Date.now(),'strict');if(a.candidates.length){issueAnalysis(a);store.set('autoIssuedAt',Date.now());}}}broadcast({type:'catalog',feed});}
+let refreshPending=null;
+function refresh(){
+  return refreshPending??=refreshCatalog().finally(()=>{refreshPending=null;});
+}
+async function refreshCatalog(){
+  refreshing=true;
+  try{if(Date.now()-(store.get('deletionSync',{}).checkedAt??0)>3600000)await syncDeletions();const data=await liveCatalog();store.ingest(data.events,data.fetchedAt);feed={status:'live',count:data.events.length,...data,events:undefined};store.set('feed',feed);const coverage=store.get('coverage',[]);coverage.push({provider:'USGS',start:data.generated-30*DAY,end:data.generated,minMagnitude:-3,source:data.url});store.set('coverage',[...coverage.filter(c=>c.importJobId||c.sources),...coverage.filter(c=>!c.importJobId&&!c.sources).slice(-500)]);cache=null;resolveExpired();if(config.autoForecast){const last=store.get('autoIssuedAt',0);if(Date.now()-last>DAY){const a=analysisAt(Date.now(),'strict');if(a.candidates.length){issueAnalysis(a);store.set('autoIssuedAt',Date.now());}}}broadcast({type:'catalog',feed});}
   catch(e){feed={...feed,status:'stale',error:e.message};store.set('feed',feed);broadcast({type:'catalog',feed});}
   finally{refreshing=false;}
 }

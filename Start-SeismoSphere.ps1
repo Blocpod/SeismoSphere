@@ -35,7 +35,6 @@ if (-not $NoBrowser) {
     $ollamaCommand = Get-Command ollama -ErrorAction SilentlyContinue
     if ($ollamaCommand) { Start-Process -FilePath $ollamaCommand.Source -ArgumentList 'serve' -WindowStyle Hidden }
   }
-  try { $null = Invoke-RestMethod -Uri "http://127.0.0.1:$appPort/api/refresh" -Method Post -ContentType 'application/json' -Body '{}' -TimeoutSec 15 } catch { Write-Warning 'The workspace will show its saved catalog while synchronization retries.' }
   $appBrowser = @((Join-Path ${env:ProgramFiles(x86)} 'Microsoft\Edge\Application\msedge.exe'),(Join-Path $env:ProgramFiles 'Google\Chrome\Application\chrome.exe')) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
   if ($appBrowser) {
     $profile = Join-Path $projectRoot 'data\desktop-browser'
