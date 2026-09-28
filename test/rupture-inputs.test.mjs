@@ -34,6 +34,7 @@ test('rupture source archives exact bytes once, enforces source identity/cutoffs
     const request={sourceId:id,asOf:Date.now(),mode:'strict',poisson:.25,shearModulusGPa:32,friction:.4,receiver:{strike:0,dip:30,rake:90},points:[{xKm:20,yKm:20,depthKm:10}]};
     const stress=await service.calculate(request);assert.ok(Number.isFinite(stress.report.values[0].coulombPa));assert.equal(stress.sourceHash,record.receipt.sha256);assert.equal(hash(stress.implementation),stress.implementationHash);
     assert.ok(Object.values(stressIntegrity(stress,saved)).every(Boolean));assert.equal(stressIntegrity({...stress,sourceId:'wrong'},saved).sourceLinked,false);assert.equal(stressIntegrity(stress,{...saved,raw:raw+'changed'}).sourceValid,false);assert.equal(stressIntegrity({...stress,report:{}},saved).recordValid,false);
+    assert.equal(service.history({...request,asOf:Date.now()}).length,1);assert.equal(service.history({...request,asOf:stress.createdAt-1}).length,0);assert.equal(service.history({...request,mode:'catalog-replay',asOf:300}).length,1);
     assert.equal((await service.calculate(request)).reused,true);await assert.rejects(service.calculate({...request,asOf:300}),/receipt/);
     const {id:stressId,...stressBody}=service.stress(stress.id);assert.equal(hash(stressBody),stressId);assert.throws(()=>store.db.exec('DELETE FROM rupture_stress'),/immutable/);
     assert.throws(()=>store.db.exec('DELETE FROM rupture_inputs'),/immutable/);assert.throws(()=>store.db.exec("UPDATE rupture_inputs SET body='{}'"),/immutable/);

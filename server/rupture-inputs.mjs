@@ -24,6 +24,12 @@ export class RuptureInputs{
   }
   get(id){const row=this.store.db.prepare('SELECT body FROM rupture_inputs WHERE id=?').get(String(id));if(!row)throw new Error('Saved rupture input not found');return JSON.parse(row.body);}
   stress(id){const row=this.store.db.prepare('SELECT body FROM rupture_stress WHERE id=?').get(String(id));if(!row)throw new Error('Saved stress result not found');return JSON.parse(row.body);}
+  history(input){
+    const source=this.get(input.sourceId),asOf=Number(input.asOf),mode=input.mode??'catalog-replay';
+    if(!Number.isFinite(asOf)||asOf>Date.now()+1000)throw new Error('Choose an elapsed stress cutoff');
+    const reason=finiteFaultAvailability(source,source.product,{asOf,mode});if(reason)throw new Error(reason);
+    return this.store.db.prepare("SELECT id,created_at,json_extract(body,'$.options.receiver') AS receiver,json_extract(body,'$.options.points[0].depthKm') AS depthKm,json_array_length(body,'$.options.points') AS samples FROM rupture_stress WHERE json_extract(body,'$.sourceId')=? AND created_at<=? ORDER BY created_at DESC,id").all(source.id,mode==='strict'?asOf:Number.MAX_SAFE_INTEGER).map(r=>({...r,receiver:JSON.parse(r.receiver)}));
+  }
   async calculate(input){
     const source=this.get(input.sourceId),{id,...body}=source,asOf=Number(input.asOf),mode=input.mode??'catalog-replay';
     if(!Number.isFinite(asOf)||asOf>Date.now()+1000)throw new Error('Choose an elapsed stress cutoff');

@@ -20,7 +20,7 @@ Source inventory, exact rupture file, parsed patches and source reception time a
 
 The actual local API calculated 441 points for the archived 2015 Illapel model on a 20 km grid spanning ±200 km, at depth 10 km. Explicit assumptions: Poisson 0.25, shear modulus 32 GPa, effective friction 0.4, receiver strike/dip/rake 19/19/90 degrees. All values were finite, none were masked, and both result/implementation hashes passed. Saved result: `6f4df72da088c20000eac139d9da14764b1d8134aa1c65a6ffa15dd8c7c83357`. Local export: `artifacts/illapel-static-stress.json`. This receiver orientation is a test assumption, not identification of real future rupture surfaces.
 
-Geographic projection validation, independent end-to-end Coulomb comparison, saved-run browsing/comparison and matched forecast evaluation remain unfinished.
+Geographic projection validation, independent end-to-end Coulomb comparison, saved-run comparison and matched forecast evaluation remain unfinished.
 
 ## Primary references
 
@@ -44,3 +44,12 @@ Actual UI verification: Illapel's 450-patch archive produced 441 displayed sampl
 Run `node scripts/reproduce-stress.mjs EXPORTED_JSON` from the repository. The command verifies the complete source/result chain, requires the locally installed Python solver source to match the saved implementation exactly, reparses the original Coulomb text, and recalculates the numerical report using the bounded worker. It never executes code embedded in an export. Exact report equality is required; a different platform's floating-point result is reported as a mismatch rather than silently accepted.
 
 Both retained 441-point Illapel reports reproduced exactly: the initial API result `6f4df72da088c20000eac139d9da14764b1d8134aa1c65a6ffa15dd8c7c83357` and actual UI result `6db38cfcd7451cb8c92a2db95336f43415b32d8531093ee0852edbd5b02636ed`. All five source/result/implementation integrity flags pass in the running HTTP export. Tests reject changed source text, substituted source IDs and altered result bodies. These are integrity and repeatability checks, not independent scientific validation or proof of source authorship.
+
+
+## Reopen saved runs
+
+After opening an archived input, use **Saved stress calculations**. It lists retained results for that exact source, with reception time, sample count, depth and receiver orientation. Selection verifies all five export integrity flags and source identity before restoring the form and plot. No calculation is rerun. Strict history filters out results created after the selected cutoff; loading also checks the current cutoff. Late responses cannot replace a changed source or edited form.
+
+Stored point order is not assumed: regular square grids are reordered north-to-south, west-to-east for display while preserving coordinate/value pairs and the immutable original report. Irregular, duplicate, missing or mixed-depth grids are rejected by the plot (their original JSON remains exportable).
+
+Three focused grid/persistence tests pass. Following a real server restart, the UI reopened result `6f4df72da088c20000eac139d9da14764b1d8134aa1c65a6ffa15dd8c7c83357`, originally stored in a different point order. The restored east 20 / north 0 / depth 10 km sample matched −0.382249 MPa Coulomb change and its saved shear/normal terms. History remained at two records, confirming that browsing did not create another run. Screenshot: `artifacts/stress-history.png`.
