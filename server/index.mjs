@@ -1,3 +1,4 @@
+import {detectionContext} from './detection-context.mjs';
 import {DetectionReviews} from './detection.mjs';
 import {stressContext} from './stress-context.mjs';
 import {calibrationOptions,calibrationVariant,calibrationContext,CALIBRATION_VERSION} from './calibration.mjs';
@@ -390,7 +391,7 @@ const handler=async(req,res)=>{
           const frozen=b.forecastId?store.ledger().find(f=>f.id===b.forecastId):null;
           if(b.forecastId&&!frozen)throw new Error('Frozen forecast not found');
           let context;
-          if(b.spatialQuestion){const spatial=spatialQuestion(b,drafts.get(b.analysisId));context=spatial.context;b.message=spatial.message;}else if(b.stressRecordId||b.calibrationId||b.protocolId||b.resolutionReviewId||b.weeklyVolcanoId||b.volcanoStatusId||b.slabPoint||b.reliefPoint||b.gnssRecordId||b.cratonId||b.randomizationRunId||b.diagnosticRunId||b.instrumentRecordId||b.mechanismRecordId||b.volcanoId){context={asOf,mode:b.mode??'catalog-replay'};}else if(frozen){
+          if(b.spatialQuestion){const spatial=spatialQuestion(b,drafts.get(b.analysisId));context=spatial.context;b.message=spatial.message;}else if(b.detectionReviewId||b.stressRecordId||b.calibrationId||b.protocolId||b.resolutionReviewId||b.weeklyVolcanoId||b.volcanoStatusId||b.slabPoint||b.reliefPoint||b.gnssRecordId||b.cratonId||b.randomizationRunId||b.diagnosticRunId||b.instrumentRecordId||b.mechanismRecordId||b.volcanoId){context={asOf,mode:b.mode??'catalog-replay'};}else if(frozen){
             asOf=frozen.asOf;
             context={asOf,mode:frozen.mode,selected:frozen,candidates:[frozen],routeStatus:frozen.routeConfig.status,limitations:['Explain the frozen reasoning; do not use later earthquake knowledge.']};
             delete context.selected.resolution;
@@ -442,6 +443,7 @@ const handler=async(req,res)=>{
             const event=b.eventId?researchEvents({asOf,strict:b.mode==='strict'}).find(e=>e.id===b.eventId):null;if(b.eventId&&!event)throw new Error('Selected earthquake is unavailable at this cutoff');
             const {data,sha256}=await volcanoDataset();context={asOf,mode:b.mode??'catalog-replay',volcanoEvidence:{...volcanoEvidence(data,{id:b.volcanoId,event,asOf}),datasetSha256:sha256},candidates:[],selected:null};
           }
+          if(b.detectionReviewId){if(Object.keys(b).some(k=>!['detectionReviewId','message','asOf','mode'].includes(k)))throw new Error('Choose the detection review alone to explain');context={asOf,mode:b.mode??'catalog-replay',detectionEvidence:detectionContext(detectionReviews,b.detectionReviewId,asOf,b.mode??'catalog-replay'),candidates:[],selected:null};}
           if(b.stressRecordId){if(Object.keys(b).some(k=>!['stressRecordId','stressBaselineId','stressSample','message','asOf','mode'].includes(k)))throw new Error('Choose the stress calculation alone to explain');context={asOf,mode:b.mode??'catalog-replay',stressEvidence:stressContext(ruptureInputs,b.stressRecordId,b.stressBaselineId,b.stressSample,asOf,b.mode??'catalog-replay'),candidates:[],selected:null};}
           if(b.calibrationId){if(Object.keys(b).some(k=>!['calibrationId','message','asOf','mode'].includes(k)))throw new Error('Choose the calibration alone to explain');context={asOf,mode:b.mode??'catalog-replay',calibrationEvidence:calibrationContext(store,b.calibrationId,asOf),candidates:[],selected:null};}
           if(b.protocolId){if(Object.keys(b).some(k=>!['protocolId','message','asOf','mode'].includes(k)))throw new Error('Choose the prospective protocol alone to explain');context={asOf,mode:b.mode??'catalog-replay',prospectiveExperiment:prospectiveContext(prospective.view(b.protocolId),asOf),candidates:[],selected:null};}

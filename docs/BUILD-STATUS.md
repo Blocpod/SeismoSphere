@@ -306,3 +306,6 @@ Saved detection history: the research panel now lists retained reviews by experi
 
 
 Detection reproduction: a standalone local checker now validates export input/result hashes, frozen numerical/geometry code, experiment domain and forecast membership, then reproduces every event/forecast match exactly without executing archived code. The actual retained 2,367-event 2011 review passes. Focused tests reject self-consistently rehashed tampered results, changed scope, missing forecasts and altered evaluator source. Retrieval authenticity and external timestamp validation are not implied.
+
+
+Detection copilot checkpoint: saved event-coverage reviews now use isolated, cutoff-checked local/Astra explanations with mandatory counts/matching/denominator sentences and no command actions. Six focused context/routing/stale-response checks and all 132 regression tests pass. Actual Qwen and Astra calls preserved the guarded evidence after explicit empty-forecast clarification; local UI and two HTTP rejection cases pass. Free prose remains AI-labeled and can be imprecise, as documented in DETECTION-REVIEWS.md. Screenshot: artifacts/detection-copilot-ui.png.
