@@ -95,7 +95,7 @@ export class Store {
   ledger(){return this.db.prepare('SELECT f.body,f.hash,r.result FROM forecasts f LEFT JOIN resolutions r ON r.forecast_id=f.id ORDER BY seq DESC').all().map(r=>({...JSON.parse(r.body),hash:r.hash,resolution:r.result?JSON.parse(r.result):null}));}
   resolve(id,result){this.db.prepare('INSERT OR IGNORE INTO resolutions VALUES(?,?,?)').run(id,canonical(result),Date.now());}
   experiment(id){const r=this.db.prepare('SELECT body FROM experiments WHERE id=?').get(id);return r?JSON.parse(r.body):null;}
-  experiments(){return this.db.prepare('SELECT body FROM experiments ORDER BY created_at DESC LIMIT 50').all().map(r=>JSON.parse(r.body));}
+  experiments(){return this.db.prepare('SELECT body FROM experiments ORDER BY created_at DESC').all().map(r=>JSON.parse(r.body));}
   saveExperiment(id,body){this.db.prepare('INSERT OR IGNORE INTO experiments VALUES(?,?,?)').run(id,Date.now(),canonical(body));}
   verify(){
     let prev='GENESIS',count=0;const checked=new Set();
