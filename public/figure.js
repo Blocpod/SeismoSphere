@@ -12,7 +12,13 @@ const credits=[
   {name:'EMSC earthquake catalog (when selected)',url:'https://www.seismicportal.eu/fdsnws/event/1/'},
   {name:'Slab2 contours (when enabled): Hayes et al. (2018)',url:'https://doi.org/10.1126/science.aat4723'}
 ];
-function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+export function figureDownloadLinks(container,capture){
+ for(const [format,type] of [['png','image/png'],['svg','image/svg+xml'],['json','application/json']]){
+  const link=container.querySelector('#figure-'+format),previous=link.getAttribute('href');if(previous)URL.revokeObjectURL(previous);
+  link.removeAttribute('href');link.removeAttribute('download');
+  if(capture){link.href=URL.createObjectURL(format==='png'?capture.png:new Blob([capture[format]],{type}));link.download=capture.name+'.'+format;}
+ }
+}
 function dataURL(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob);});}
 async function png(svg){
   const img=new Image();img.src=await dataURL(new Blob([svg],{type:'image/svg+xml'}));await img.decode();
@@ -36,12 +42,12 @@ export function sceneEvidence(earth,state,title,capture){
 export function setupFigure({earth,getState,toast}){
   const button=document.createElement('button');button.id='figure-open';button.textContent='↓ Figure';button.setAttribute('aria-label','Export Earth figure');document.querySelector('.globe-toolbar').appendChild(button);
   const dialog=document.createElement('dialog');dialog.id='figure-dialog';dialog.className='wide-dialog';
-  dialog.innerHTML=`<div class="dialog-heading"><div><span class="eyebrow">A VIEW WITH ITS EVIDENCE</span><h2>Export Earth figure</h2><p>A fixed snapshot of this view. Your workspace keeps running.</p></div><button class="icon-btn" id="figure-close" aria-label="Close figure export">×</button></div><form id="figure-form" class="figure-form"><label>Figure title<input id="figure-title" maxlength="72" value="A living Earth · seismic observations" required></label><button class="primary" type="submit">Capture current Earth</button></form><p class="muted">2400 × 1800 pixels. The whole Earth is framed from your current direction. SVG retains editable captions around a raster globe. Export does not issue a forecast.</p><div id="figure-status" role="status"></div><img id="figure-preview" alt="Captured Earth figure, including observation cutoff and model-layer disclosure" hidden><div class="figure-downloads" hidden><button id="figure-png" class="primary">Download PNG</button><button id="figure-svg" class="secondary">Download SVG + metadata</button><button id="figure-json" class="secondary">Download evidence JSON</button></div>`;
+  dialog.innerHTML=`<div class="dialog-heading"><div><span class="eyebrow">A VIEW WITH ITS EVIDENCE</span><h2>Export Earth figure</h2><p>A fixed snapshot of this view. Your workspace keeps running.</p></div><button class="icon-btn" id="figure-close" aria-label="Close figure export">×</button></div><form id="figure-form" class="figure-form"><label>Figure title<input id="figure-title" maxlength="72" value="A living Earth · seismic observations" required></label><button class="primary" type="submit">Capture current Earth</button></form><p class="muted">2400 × 1800 pixels. The whole Earth is framed from your current direction. SVG retains editable captions around a raster globe. Export does not issue a forecast.</p><div id="figure-status" role="status"></div><img id="figure-preview" alt="Captured Earth figure, including observation cutoff and model-layer disclosure" hidden><div class="figure-downloads" hidden><a id="figure-png" class="primary">Download PNG</a><a id="figure-svg" class="secondary">Download SVG + metadata</a><a id="figure-json" class="secondary">Download evidence JSON</a></div>`;
   document.body.appendChild(dialog);let current=null,busy=false;
   button.onclick=()=>dialog.showModal();dialog.querySelector('#figure-close').onclick=()=>dialog.close();
   const status=dialog.querySelector('#figure-status'),preview=dialog.querySelector('#figure-preview'),downloads=dialog.querySelector('.figure-downloads');
   dialog.querySelector('#figure-form').onsubmit=async event=>{
-    event.preventDefault();if(busy)return;busy=true;const submit=event.submitter;submit.disabled=true;current=null;downloads.hidden=true;preview.hidden=true;status.textContent='Capturing Earth and matching evidence…';
+    event.preventDefault();if(busy)return;busy=true;const submit=event.submitter;submit.disabled=true;current=null;figureDownloadLinks(downloads,null);downloads.hidden=true;preview.hidden=true;status.textContent='Capturing Earth and matching evidence…';
     try{
       if(!earth)throw new Error('3D rendering is unavailable in this browser.');
       const state=getState();if(!state.analysis)throw new Error('Wait for the catalog to load.');
@@ -62,10 +68,7 @@ export function setupFigure({earth,getState,toast}){
       const activitySvg=payload.volcanoActivity?slabSvg.replace('</svg>',text(80,1314,'USGS VOLCANO STATUS · CHECKED '+iso(payload.volcanoActivity.checkedAt)+(payload.volcanoActivity.stale?' · STALE CHECK':'')+' · AVIATION COLORS; GROUND ALERTS SEPARATE',18,'#b3d4ff')+'</svg>'):slabSvg;
       const weeklySvg=payload.weeklyVolcanoes?activitySvg.replace('</svg>',text(80,1282,'Global Volcanism Program, Smithsonian Institution · PUBLISHED '+(payload.weeklyVolcanoes.publishedAt??'UNKNOWN')+(payload.weeklyVolcanoes.publicationOld?' · OLDER PUBLICATION':''),18,'#b3d4ff')+'</svg>'):activitySvg;
       const image=await png(weeklySvg);current={svg:weeklySvg,png:image,json:JSON.stringify({sha256:hash,hashMethod:'SHA-256 of UTF-8 JSON.stringify(evidence), preserving property order',evidence:payload},null,2),name:`seismosphere-${hash.slice(0,12)}`};
-      preview.src=await dataURL(image);preview.hidden=false;downloads.hidden=false;status.textContent=`Captured ${payload.capturedAt} · Evidence ${hash.slice(0,12)}. Downloads all refer to this capture.${mappedFaults?' Includes GEM faults: this figure is CC BY-SA 4.0, with source credits and changes retained.':''}`;
+      figureDownloadLinks(downloads,current);preview.src=await dataURL(image);preview.hidden=false;downloads.hidden=false;status.textContent=`Captured ${payload.capturedAt} · Evidence ${hash.slice(0,12)}. Downloads all refer to this capture.${mappedFaults?' Includes GEM faults: this figure is CC BY-SA 4.0, with source credits and changes retained.':''}`;
     }catch(error){status.textContent=error.message;toast(error.message,true);}finally{busy=false;submit.disabled=false;}
   };
-  dialog.querySelector('#figure-png').onclick=()=>current&&download(current.png,current.name+'.png');
-  dialog.querySelector('#figure-svg').onclick=()=>current&&download(new Blob([current.svg],{type:'image/svg+xml'}),current.name+'.svg');
-  dialog.querySelector('#figure-json').onclick=()=>current&&download(new Blob([current.json],{type:'application/json'}),current.name+'.json');
 }
