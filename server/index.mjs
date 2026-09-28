@@ -1,3 +1,4 @@
+import {DetectionReviews} from './detection.mjs';
 import {stressContext} from './stress-context.mjs';
 import {calibrationOptions,calibrationVariant,calibrationContext,CALIBRATION_VERSION} from './calibration.mjs';
 import {RouteHistory,validateRoutes} from './routes.mjs';
@@ -46,6 +47,7 @@ const defaults=JSON.parse(readFileSync('config/default.json','utf8'));
 let routes=JSON.parse(readFileSync('config/routes.json','utf8'));
 const store=new Store(process.env.SEISMO_DB??'data/seismosphere.sqlite');
 store.db.exec(`CREATE TABLE IF NOT EXISTS calibration_runs(id TEXT PRIMARY KEY,created_at INTEGER,body TEXT NOT NULL); CREATE TRIGGER IF NOT EXISTS frozen_calibration_update BEFORE UPDATE ON calibration_runs BEGIN SELECT RAISE(ABORT,'Calibration runs are immutable'); END; CREATE TRIGGER IF NOT EXISTS frozen_calibration_delete BEFORE DELETE ON calibration_runs BEGIN SELECT RAISE(ABORT,'Calibration runs are immutable'); END;`);
+const detectionReviews=new DetectionReviews(store);
 const routeHistory=new RouteHistory(store,routes);routes=routeHistory.current();
 const learned=new LearnedModel(store);
 const speech=new Speech();
@@ -225,6 +227,7 @@ const handler=async(req,res)=>{
     if(p==='/api/protocol-export'){res.setHeader('Content-Disposition','attachment; filename=seismosphere-prospective-experiment.json');return send(res,200,prospective.export(q.get('id')));}
     if(p==='/api/calibrations')return send(res,200,{busy:fittingETAS,runs:store.db.prepare('SELECT body FROM calibration_runs ORDER BY created_at DESC').all().map(r=>{const b=JSON.parse(r.body);return {id:b.id,report:b.report};})});
     if(p==='/api/calibration-export'){const row=store.db.prepare('SELECT body FROM calibration_runs WHERE id=?').get(q.get('id'));if(!row)throw new Error('Calibration run not found');const bundle=JSON.parse(row.body),snapshot=store.db.prepare('SELECT body FROM snapshots WHERE id=?').get(bundle.input.inputSnapshotId);if(!snapshot||hash(JSON.parse(snapshot.body))!==bundle.input.inputSnapshotId||hash(bundle.input)!==bundle.id||hash(bundle.report)!==bundle.reportSha256||hash(bundle.implementation)!==bundle.input.implementationSha256)throw new Error('Calibration evidence integrity failed');res.setHeader('Content-Disposition','attachment; filename=seismosphere-depth-calibration.json');return send(res,200,{...bundle,snapshot:{id:bundle.input.inputSnapshotId,...JSON.parse(snapshot.body)}});}
+    if(p==='/api/detection-export'){res.setHeader('Content-Disposition','attachment; filename=seismosphere-detection-review.json');return send(res,200,detectionReviews.get(q.get('id')));}
     if(p==='/api/experiments')return send(res,200,{experiments:store.experiments()});
     if(p==='/api/catalog-quarantine')return send(res,200,{records:Object.values(store.get('deletionQuarantine',{})),policy:'No event is deleted based on an unidentified provider record. Manual/provider reconciliation is required.'});
     if(p==='/api/statistical-runs'){const family=q.get('family'),pattern=family==='spatial'?'rectangular-gaussian-spatial-etas-%':family==='temporal'?'regional-temporal-etas-%':'%';return send(res,200,{fitting:fittingETAS,runs:store.db.prepare("SELECT body FROM statistical_runs WHERE json_extract(body,'$.fit.version') LIKE ? ORDER BY created_at DESC LIMIT 20").all(pattern).map(r=>JSON.parse(r.body))});}
@@ -337,6 +340,7 @@ const handler=async(req,res)=>{
         if(previous)return send(res,200,{...JSON.parse(previous.body),reused:true});
         fittingETAS=true;try{const report={...await runStatistical({events,options,config:frozenConfig,routes:frozenRoutes,boundaries},'calibration'),createdAt:Date.now()},bundle={id,input,implementation,report,reportSha256:hash(report)};store.db.prepare('INSERT INTO calibration_runs VALUES(?,?,?)').run(id,report.createdAt,JSON.stringify(bundle));return send(res,200,{id,report});}finally{fittingETAS=false;}
       }
+      if(p==='/api/experiment-detection')return send(res,200,detectionReviews.run(String(b.experimentId),b.minMagnitude));
       if(p==='/api/backtest'){
         const start=Date.parse(b.start),end=Date.parse(b.end),stepDays=Number(b.stepDays??5),targetBounds=b.region==='rectangle'?validateBounds(b):null;
         if(!Number.isFinite(start)||!Number.isFinite(end)||!Number.isFinite(stepDays))throw new Error('Invalid backtest dates or step');
