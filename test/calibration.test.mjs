@@ -16,7 +16,7 @@ test('saved calibrated inputs freeze into prospective protocols without changing
  const store=new Store(':memory:');
  try{
   store.db.exec('CREATE TABLE calibration_runs(id TEXT PRIMARY KEY,body TEXT)');
-  const report={...calibrateDepth({events,options,config,routes}),createdAt:Date.now()},implementation=Object.fromEntries(['engine','routes','geo'].map(n=>['server/'+n+'.mjs',readFileSync('server/'+n+'.mjs','utf8')])),input={routes,boundaries:[],inputSnapshotId:'fixture-snapshot',implementationSha256:hash(implementation)},id=hash(input),bundle={input,implementation,report,reportSha256:hash(report)};
+  const report={...calibrateDepth({events,options,config,routes}),createdAt:Date.now()},implementation=Object.fromEntries(['engine','configuration-analogues','catalog','swarm-assessment','routes','geo'].map(n=>['server/'+n+'.mjs',readFileSync('server/'+n+'.mjs','utf8')])),input={routes,boundaries:[],inputSnapshotId:'fixture-snapshot',implementationSha256:hash(implementation)},id=hash(input),bundle={input,implementation,report,reportSha256:hash(report)};
   store.db.prepare('INSERT INTO calibration_runs VALUES(?,?)').run(id,JSON.stringify(bundle));
   assert.throws(()=>calibrationContext(store,id,report.createdAt-1),/unavailable/);const evidence=calibrationContext(store,id,report.createdAt);assert.equal(evidence.selectedDepth,report.selectedConfig.triggerDepth);assert.equal(evidence.config,undefined);
   const v=calibrationVariant(store,id),service=new ProspectiveExperiments(store),request={name:'Calibrated variant',hypothesis:'Test the frozen learned threshold',start:Date.now()+600000,issuances:1,stepDays:10,settleDays:2};

@@ -1,3 +1,4 @@
+import {commonComparison} from './common-comparison.mjs';
 import {assessSwarm} from './swarm-assessment.mjs';
 import {boundaryReference} from './boundary-context.mjs';
 import {runProspectiveChecks} from './prospective-checks.mjs';
@@ -55,6 +56,7 @@ process.chdir(path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'));
 const defaults=JSON.parse(readFileSync('config/default.json','utf8'));
 let routes=JSON.parse(readFileSync('config/routes.json','utf8'));
 const store=new Store(process.env.SEISMO_DB??'data/seismosphere.sqlite');
+store.db.exec("CREATE TABLE IF NOT EXISTS common_comparisons(id TEXT PRIMARY KEY,body TEXT NOT NULL); CREATE TRIGGER IF NOT EXISTS frozen_common_update BEFORE UPDATE ON common_comparisons BEGIN SELECT RAISE(ABORT,'Comparisons are immutable'); END; CREATE TRIGGER IF NOT EXISTS frozen_common_delete BEFORE DELETE ON common_comparisons BEGIN SELECT RAISE(ABORT,'Comparisons are immutable'); END;");
 store.db.exec(`CREATE TABLE IF NOT EXISTS calibration_runs(id TEXT PRIMARY KEY,created_at INTEGER,body TEXT NOT NULL); CREATE TRIGGER IF NOT EXISTS frozen_calibration_update BEFORE UPDATE ON calibration_runs BEGIN SELECT RAISE(ABORT,'Calibration runs are immutable'); END; CREATE TRIGGER IF NOT EXISTS frozen_calibration_delete BEFORE DELETE ON calibration_runs BEGIN SELECT RAISE(ABORT,'Calibration runs are immutable'); END;`);
 const detectionReviews=new DetectionReviews(store);
 const routeHistory=new RouteHistory(store,routes);routes=routeHistory.current();
@@ -195,6 +197,7 @@ const handler=async(req,res)=>{
     if(p==='/api/count-schedules')return send(res,200,{plans:countSchedules.list(),error:countSchedules.lastError});
     if(p==='/api/count-forecasts'){const records=countForecasts.list();return send(res,200,{busy:countForecasts.busy,records,cohorts:prospectiveCountLeaderboard(records)});}
     if(p==='/api/count-forecast-export'){res.setHeader('Content-Disposition','attachment; filename="seismosphere-count-forecast.json"');return send(res,200,countForecasts.export(q.get('id')));}
+    if(p==='/api/common-comparison'&&req.method==='GET'){const row=store.db.prepare('SELECT body FROM common_comparisons WHERE id=?').get(String(q.get('id')));if(!row)throw new Error('Comparison not found');const report=JSON.parse(row.body),{id,...body}=report;if(hash(body)!==id)throw new Error('Comparison integrity failed');const snapshot=store.db.prepare('SELECT body FROM snapshots WHERE id=?').get(report.inputSnapshotId);if(!snapshot||hash(JSON.parse(snapshot.body))!==report.inputSnapshotId)throw new Error('Comparison snapshot integrity failed');res.setHeader('Content-Disposition','attachment; filename=seismosphere-common-comparison.json');return send(res,200,{report,snapshot:JSON.parse(snapshot.body)});}
     if(p==='/api/learned-runs')return send(res,200,learned.list());
     if(p==='/api/catalog-diagnostics')return send(res,200,{fitting:fittingETAS,runs:store.db.prepare('SELECT body FROM catalog_diagnostics ORDER BY created_at DESC LIMIT 20').all().map(r=>JSON.parse(r.body))});
     if(p==='/api/station-stream'&&req.method==='GET')return send(res,200,seedlink.status(q.get('preview')==='1'));
@@ -267,6 +270,15 @@ const handler=async(req,res)=>{
       if(p==='/api/weekly-volcanoes-refresh'){await body(req);const result=await weeklyVolcanoes.refresh({force:true});broadcast({type:'weekly-volcanoes'});return send(res,200,result);}
       if(p==='/api/volcano-status-refresh'){await body(req);const result=await volcanoStatus.refresh({force:true});broadcast({type:'volcano-status'});return send(res,200,result);}
       let b=await body(req);
+      if(p==='/api/common-comparison'){
+        const row=store.db.prepare('SELECT body FROM statistical_runs WHERE id=?').get(String(b.etasId??''));if(!row)throw new Error('Choose a saved spatial ETAS fit');
+        const etas=JSON.parse(row.body),o=etas.fit.options,end=o.end+7*DAY;
+        if(b.mode==='strict'||!Number.isFinite(b.asOf)||end>Math.min(b.asOf,Date.now()))throw new Error('Use revised-catalog mode with a cutoff after the complete comparison window');
+        if(!coverageComplete(store.get('coverage',[]),{provider:o.provider,start:o.end,end,minMagnitude:o.minMagnitude,bounds:validateBounds(o)}))throw new Error('Import complete seven-day outcome coverage for this region and magnitude floor');
+        const events=researchEvents({asOf:end,provider:o.provider}),report=commonComparison({etas,events,config,routes,boundaries});
+        report.inputSnapshotId=store.snapshot(events,end,'paired-spatial-rank-revised-catalog');report.createdAt=Date.now();report.routes=structuredClone(routes);report.boundaries=boundaries;report.etasFit=etas.fit;report.implementation=Object.fromEntries(['common-comparison','spatial-etas','etas','engine','configuration-analogues','catalog','swarm-assessment','routes','geo','store'].map(n=>[n,readFileSync('server/'+n+'.mjs','utf8')]));report.id=hash(report);store.db.prepare('INSERT INTO common_comparisons VALUES(?,?)').run(report.id,JSON.stringify(report));
+        return send(res,200,report);
+      }
       if(p==='/api/routes-preview')return send(res,200,{network:validateRoutes(b.network)});
       if(p==='/api/routes-save'){routes=routeHistory.save(b);cache=null;broadcast({type:'routes'});return send(res,200,{network:routes,versions:routeHistory.list()});}
       if(p==='/api/protocol-preview'||p==='/api/protocol-register'){
@@ -365,7 +377,7 @@ const handler=async(req,res)=>{
         const frozenConfig=structuredClone(config),frozenRoutes=structuredClone(routes),options=calibrationOptions(b,frozenConfig);
         const floor=Number(Math.max(0,config.minMagnitude-config.magnitudeTolerance-(config.magnitudeMode==='analogue'?1:0)).toFixed(2))-.5;
         if(!coverageComplete(store.get('coverage',[]),{provider:config.catalogProvider,start:options.start-config.lookbackDays*DAY,end:options.end,minMagnitude:floor}))throw new Error('Import complete global training, conditioning and test coverage, including the partial-hit magnitude floor.');
-        const events=researchEvents({asOf:options.end}),inputSnapshotId=store.snapshot(events,options.end,'calibration-revised-catalog'),implementation=Object.fromEntries(['calibration','engine','routes','geo','store'].map(name=>['server/'+name+'.mjs',readFileSync('server/'+name+'.mjs','utf8')])),input={version:CALIBRATION_VERSION,options,config:frozenConfig,routes:frozenRoutes,boundaries,inputSnapshotId,implementationSha256:hash(implementation)},id=hash(input),previous=store.db.prepare('SELECT body FROM calibration_runs WHERE id=?').get(id);
+        const events=researchEvents({asOf:options.end}),inputSnapshotId=store.snapshot(events,options.end,'calibration-revised-catalog'),implementation=Object.fromEntries(['calibration','engine','configuration-analogues','catalog','swarm-assessment','routes','geo','store'].map(name=>['server/'+name+'.mjs',readFileSync('server/'+name+'.mjs','utf8')])),input={version:CALIBRATION_VERSION,options,config:frozenConfig,routes:frozenRoutes,boundaries,inputSnapshotId,implementationSha256:hash(implementation)},id=hash(input),previous=store.db.prepare('SELECT body FROM calibration_runs WHERE id=?').get(id);
         if(previous)return send(res,200,{...JSON.parse(previous.body),reused:true});
         fittingETAS=true;try{const report={...await runStatistical({events,options,config:frozenConfig,routes:frozenRoutes,boundaries},'calibration'),createdAt:Date.now()},bundle={id,input,implementation,report,reportSha256:hash(report)};store.db.prepare('INSERT INTO calibration_runs VALUES(?,?,?)').run(id,report.createdAt,JSON.stringify(bundle));return send(res,200,{id,report});}finally{fittingETAS=false;}
       }

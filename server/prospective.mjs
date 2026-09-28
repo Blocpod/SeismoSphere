@@ -6,7 +6,7 @@ import {coverageComplete} from './import-jobs.mjs';
 import {DAY,circleBounds} from './geo.mjs';
 const GRACE=300000,FRESH=900000,ENGINES=['DS','Recent-rate','Null'];
 const scientificKeys=['catalogProvider','triggerDepth','minMagnitude','lookbackDays','windowDays','radiusKm','magnitudeTolerance','magnitudeMode','midpointMode','deepEscalation','maxTargets','rules'];
-const files=['server/prospective.mjs','server/engine.mjs','server/routes.mjs','server/geo.mjs','server/store.mjs','server/import-jobs.mjs','server/resolution-reviews.mjs'];
+const files=['server/prospective.mjs','server/engine.mjs','server/configuration-analogues.mjs','server/catalog.mjs','server/swarm-assessment.mjs','server/routes.mjs','server/geo.mjs','server/store.mjs','server/import-jobs.mjs','server/resolution-reviews.mjs'];
 const date=t=>new Date(t).toISOString();
 const frozenBody=r=>{const {id,...body}=r;return body;};
 const metrics=forecasts=>ENGINES.map(engine=>{const values=forecasts.filter(f=>f.engine===engine),resolved=values.filter(f=>f.result.status!=='AMBIGUOUS'),hits=values.filter(f=>f.result.status==='HIT');return {engine,forecasts:values.length,resolved:resolved.length,hits:hits.length,partial:values.filter(f=>f.result.status==='PARTIAL HIT').length,misses:values.filter(f=>f.result.status==='MISS').length,ambiguous:values.length-resolved.length,fullHitFraction:resolved.length?hits.length/resolved.length:null};});

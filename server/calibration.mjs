@@ -12,7 +12,7 @@ function readCalibration(store,id){
 }
 export function calibrationVariant(store,id){
  const b=readCalibration(store,id),r=b.report;
- for(const name of ['engine','routes','geo'])if(b.implementation['server/'+name+'.mjs']!==readFileSync(new URL('./'+name+'.mjs',import.meta.url),'utf8'))throw new Error('The calibrated engine has changed. Fit a new calibration before scheduling this variant.');
+ for(const name of ['engine','configuration-analogues','catalog','swarm-assessment','routes','geo'])if(b.implementation['server/'+name+'.mjs']!==readFileSync(new URL('./'+name+'.mjs',import.meta.url),'utf8'))throw new Error('The calibrated engine has changed. Fit a new calibration before scheduling this variant.');
  return {config:r.selectedConfig,routes:b.input.routes,boundaries:b.input.boundaries,calibration:{id,createdAt:r.createdAt,reportSha256:b.reportSha256,inputSnapshotId:b.input.inputSnapshotId,implementationSha256:b.input.implementationSha256,intervals:r.options,triggerDepth:r.selectedConfig.triggerDepth,objective:r.selection.objective}};
 }
 export function calibrationOptions(input,config,now=Date.now()){
