@@ -9,6 +9,7 @@ test('deep inspection enables sourced context, links only source watches and dis
   const buttons=elements.filter(e=>e.onclick);assert.equal(buttons.length,1);buttons[0].onclick();assert.equal(chosen,watch);
   const late=showDeepContext(event,options);state.selectedEvent={id:'another'};finish();await late;assert.equal(drawn,1);
   state.selectedEvent=event;const replay=showDeepContext(event,options);state.asOf++;finish();await replay;assert.equal(drawn,1);
+  const dismissed=showDeepContext(event,options);selection.hidden=true;finish();await dismissed;assert.equal(drawn,1);
   await showDeepContext({...event,depth:20},options);assert.equal(drawn,1);
  }finally{globalThis.document=previous;}
 });

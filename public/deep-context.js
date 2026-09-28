@@ -8,7 +8,7 @@ export async function showDeepContext(event,{earth,getState,selectForecast}){
  const related=state.analysis?.candidates.filter(f=>f.sources.includes(event.id))??[];
  const label=document.createElement('p');label.textContent=`${related.length} source-linked model watches at ${new Date(cutoff).toISOString()} (before watch-display filters).`;root.append(label);
  for(const f of related){const button=document.createElement('button');button.className='secondary full';button.textContent=`${f.region} · M${f.magnitude.min.toFixed(1)}–${f.magnitude.max.toFixed(1)} · ${f.modelMatch}/100`;button.onclick=()=>selectForecast(f);root.append(button);}
- const current=()=>root.isConnected&&getState().selectedEvent?.id===event.id&&getState().asOf===cutoff;
+ const current=()=>root.isConnected&&!document.querySelector('#selection').hidden&&getState().selectedEvent?.id===event.id&&getState().asOf===cutoff;
  try{
   await earth.geology.load();if(!current()){if(root.isConnected)status.textContent="The selected observation or time changed. Reopen the event to load its context.";return;}
   earth.geology.slabsEnabled=true;earth.geology.drawSlabs();earth.geology.updateCaption();

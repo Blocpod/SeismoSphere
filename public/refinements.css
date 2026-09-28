@@ -88,3 +88,6 @@ dialog .dialog-heading{position:sticky;top:-28px;z-index:3;background:#0e181f;pa
 .event-depth-ruler{margin:12px 0}.event-depth-ruler svg{width:100%;max-height:190px;display:block}.event-depth-ruler path{stroke:#7898a7;fill:none}.event-depth-ruler text{fill:#b8d4df;font:11px system-ui}.event-depth-ruler .depth-indicator{stroke:#98ecff;fill:#98ecff}.event-depth-ruler .depth-value{fill:#e8fbff;font-weight:600}.event-depth-ruler figcaption{font-size:11px;color:#b8d4df;line-height:1.5}
 
 .deep-context{border-top:1px solid #385563;margin-top:18px;padding-top:14px}.deep-context button{min-height:44px;margin:6px 0;text-align:left;white-space:normal}.deep-context p{font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+
+.selection-header{position:sticky;top:-19px;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-19px -19px 14px;padding:8px 14px;background:#102636;border-bottom:1px solid #385563}.selection-header>span{font-size:10px;letter-spacing:1px;color:#b8d4df}.selection .close-selection{position:static;width:44px;min-height:44px;border:1px solid #658695;border-radius:12px}
+@media(max-width:820px),(max-width:1024px) and (max-height:600px){.selection-header{top:-24px;margin:-24px -24px 14px}}
