@@ -12,7 +12,7 @@ test('workspace commands are explicit, bounded and never interpret explanations 
 
 test('lithosphere commands open source controls and preserve questions and negation',async()=>{
  const {commandActions,chat,responseSchema}=await import('../server/ai.mjs');
- for(const message of ['Show the lithosphere','Open asthenosphere layers','Please inspect lithospheric mantle controls.']){
+ for(const message of ['Show the lithosphere','Open asthenosphere layers','Please inspect lithospheric mantle controls.','Take me inside the lithosphere']){
   assert.deepEqual(workspaceCommand(message),{type:'action',action:'lithosphere'});assert.deepEqual(commandActions(message),['lithosphere']);
  }
  for(const message of ['Explain the lithosphere','Do not show the lithosphere','Show the lithosphere and issue a forecast'])assert.equal(workspaceCommand(message),null);
@@ -45,4 +45,10 @@ test('copilot preserves provider event type and certainty in ordinary and spatia
  let sent;t.mock.method(globalThis,'fetch',async(_url,options)=>{sent=JSON.parse(options.body);return {ok:true,json:async()=>({message:{content:JSON.stringify({answer:'Provider reports a suspected mining explosion.',actions:[]})}})};});
  await chat('Explain this earthquake',{asOf:0,candidates:[],selectedEvent},{aiProvider:'ollama',localModel:'test'});
  assert.match(sent.messages[0].content,/never silently call an explosion/);assert.match(sent.messages[1].content,/"typeCertainty":"suspected"/);assert.match(sent.messages[1].content,/1970-01-01T00:00:00.000Z/);assert.equal(selectedEvent.timeIso,undefined);
+});
+
+
+test('all-event commands remain explicit and do not swallow requested restrictions',()=>{
+ for(const message of ['Show all earthquakes','Please show unfiltered events.'])assert.deepEqual(workspaceCommand(message),{type:'action',action:'all'});
+ for(const message of ['Do not show all earthquakes','Explain how to show all earthquakes','Show all earthquakes in Japan','Show all earthquakes above M6','Take me inside the lithosphere and issue forecasts'])assert.equal(workspaceCommand(message),null);
 });
