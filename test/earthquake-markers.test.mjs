@@ -37,6 +37,8 @@ test('deep inspection cursor descends without moving observations and cancels wi
  start();earth.reduced=true;earth.advanceDeepFocus(100);assert.equal(cursor.position.x,.91);assert.equal(earth.deepFocus,null);
  earth.reduced=false;start();earth.clear(earth.selectionGroup);earth.advanceDeepFocus(200);assert.equal(earth.deepFocus,null);
  start();earth.xray=false;earth.advanceDeepFocus(100);assert.equal(cursor.visible,false);assert.equal(earth.deepFocus,null);
+ const depthLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints([surface,hypocenter]));depthLine.userData.inspectionDepthLine=true;cursor.userData.inspectionCursor=true;earth.selectionGroup.add(depthLine);earth.selected={lat:0,lon:0,depth:602};earth.setEvents=()=>{};
+ earth.setDepth(3);const expected=1-602/6371.0088*3;assert.ok(Math.abs(cursor.position.x-expected)<1e-12);assert.ok(Math.abs(depthLine.geometry.attributes.position.getX(1)-expected)<1e-7);assert.ok(Math.abs(depthLine.geometry.attributes.position.getX(0)-1.02)<1e-7);
 });
 
 
