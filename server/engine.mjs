@@ -35,10 +35,12 @@ export function analogues(source,all,asOf,radius=400,windowDays=10){
   all=analogueEvents(source,all,asOf);
   // Every analogue and its complete outcome window must precede the analysis cutoff.
   const old=all.filter(e=>e.time<asOf-30*DAY&&e.time+windowDays*DAY<asOf&&Math.abs(e.mag-source.mag)<0.6&&Math.abs(e.depth-source.depth)<100);
-  return old.map(e=>{
+  // Select by source similarity before scanning outcomes; outcomes never influence rank.
+  const selected=old.map(e=>({source:e,similarity:Math.round(100*(1-clamp(Math.abs(e.mag-source.mag)/2+Math.abs(e.depth-source.depth)/400,0,1)))})).sort((a,b)=>b.similarity-a.similarity).slice(0,100);
+  return selected.map(({source:e,similarity})=>{
     const future=all.filter(f=>f.time>e.time&&f.time<=e.time+windowDays*DAY&&f.time<=asOf&&distance(e,f)<=radius&&f.mag>=source.mag-1);
-    return {source:e,similarity:Math.round(100*(1-clamp(Math.abs(e.mag-source.mag)/2+Math.abs(e.depth-source.depth)/400,0,1))),subsequentCount:future.length,largest:future.length?Math.max(...future.map(f=>f.mag)):null};
-  }).sort((a,b)=>b.similarity-a.similarity).slice(0,100);
+    return {source:e,similarity,subsequentCount:future.length,largest:future.length?Math.max(...future.map(f=>f.mag)):null};
+  });
 }
 export function generate(all,asOf,config,routeConfig,boundaryPoints=[],targetBounds=null){
   if(targetBounds)targetBounds=validateBounds(targetBounds);

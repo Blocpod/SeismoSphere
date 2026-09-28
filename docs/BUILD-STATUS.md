@@ -530,3 +530,7 @@ The brief's configuration replay command now calls the full local sequence-graph
 ### Local embedding validation
 Neural search rejects zero/non-finite/overflowing vectors and incompatible dimensions before ranking. Invalid cached entries are re-embedded; a mixed-dimension cache rebuilds this bounded search. Cosine computation normalizes before multiplying and clamps floating-point drift to [-1,1]. Regression covers malformed response counts, zero/NaN/overflow values, mismatched response/cache dimensions, cache repair and large finite vectors. Five neural tests passed. Actual restarted API reused the local cache for 160 candidates and returned 12 finite bounded similarities.
 
+
+### Source analogue search avoids discarded outcome scans
+Source magnitude/depth similarity is now ranked and capped at 100 before outcome scans. Selection never depends on outcomes; stable ties and returned values are preserved. Fifteen focused tests passed, including explicit comparison with the previous algorithm and proof that discarded candidates do not trigger geometry scans. Same real USGS:us6000txpi request and cutoff returned deeply identical JSON: 2422.8 ms before, 551.9 ms after (one HTTP observation each, not a statistical benchmark). Evidence: artifacts/analogue-search-performance.json. Updated backend is running.
+
